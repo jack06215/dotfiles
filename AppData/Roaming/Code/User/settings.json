@@ -17,7 +17,7 @@
   },
   "terminal.integrated.fontSize": 16,
   "terminal.integrated.fontFamily": "PlemolJP Console NF",
-  "editor.fontSize": 23,
+  "editor.fontSize": 20,
   "editor.lineHeight": 31,
   "editor.fontFamily": "PlemolJP Console NF",
   "editor.fontLigatures": true,
