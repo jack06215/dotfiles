@@ -112,6 +112,10 @@ if os_name:find("windows") or os_name:find("linux") then
 
 		-- Decrease font size
 		{ key = "-", mods = "CTRL", action = act.DecreaseFontSize },
+		-- Disable this key
+		{ key = "w", mods = "CTRL", action = wezterm.action.DisableDefaultAssignment },
+		-- Disable this key
+		{ key = "q", mods = "CTRL", action = wezterm.action.DisableDefaultAssignment },
 	}
 elseif os_name:find("darwin") then
 	keys = {
