@@ -60,61 +60,7 @@
       keys: 'alt+left',
     },
   ],
-  actions: [
-    {
-      command: 'find',
-      id: 'User.find',
-    },
-    {
-      command: {
-        action: 'splitPane',
-        split: 'auto',
-        splitMode: 'duplicate',
-      },
-      id: 'User.splitPane.A6751878',
-    },
-    {
-      command: 'paste',
-      id: 'User.paste',
-    },
-    {
-      command: {
-        action: 'copy',
-        singleLine: false,
-      },
-      id: 'User.copy.644BA8F2',
-    },
-  ],
-
-  copyFormatting: 'none',
-  copyOnSelect: false,
-  defaultProfile: '{574e775e-4f2a-5b96-ac1e-a2962a402336}',
-
-  keybindings: keybindings,
-
-  firstWindowPreference: 'defaultProfile',
-  launchMode: 'maximizedFocus',
-
-  profiles: {
-    defaults: {
-      colorScheme: 'xcad',
-      cursorShape: 'filledBox',
-      font: {
-        face: 'PlemolJP Console NF',
-        weight: 'medium',
-        size: 12,
-      },
-      historySize: 12000,
-      intenseTextStyle: 'bright',
-      opacity: 65,
-      padding: '8',
-      scrollbarState: 'hidden',
-      useAcrylic: false,
-    },
-    list: profileList,
-  },
-
-  schemes: [
+  local schemes = [
     {
       name: 'xcad',
       background: '#1A1A1A',
@@ -141,7 +87,57 @@
       foreground: '#F1F1F1',
     },
   ],
-
+  local actions = [
+    {
+      command: 'find',
+      id: 'User.find',
+    },
+    {
+      command: {
+        action: 'splitPane',
+        split: 'auto',
+        splitMode: 'duplicate',
+      },
+      id: 'User.splitPane.A6751878',
+    },
+    {
+      command: 'paste',
+      id: 'User.paste',
+    },
+    {
+      command: {
+        action: 'copy',
+        singleLine: false,
+      },
+      id: 'User.copy.644BA8F2',
+    },
+  ],
+  actions: actions,
+  copyFormatting: 'none',
+  copyOnSelect: false,
+  defaultProfile: '{574e775e-4f2a-5b96-ac1e-a2962a402336}',
+  keybindings: keybindings,
+  firstWindowPreference: 'defaultProfile',
+  launchMode: 'maximizedFocus',
+  profiles: {
+    defaults: {
+      colorScheme: 'xcad',
+      cursorShape: 'filledBox',
+      font: {
+        face: 'PlemolJP Console NF',
+        weight: 'medium',
+        size: 12,
+      },
+      historySize: 12000,
+      intenseTextStyle: 'bright',
+      opacity: 65,
+      padding: '0',
+      scrollbarState: 'hidden',
+      useAcrylic: false,
+    },
+    list: profileList,
+  },
+  schemes: schemes,
   showTabsInTitlebar: true,
   tabSwitcherMode: 'inOrder',
   useAcrylicInTabRow: true,
