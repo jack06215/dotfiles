@@ -52,11 +52,11 @@
          "keys": "alt+shift+d"
       },
       {
-         "id": "User.nextTab",
+         "command": "nextTab",
          "keys": "alt+right"
       },
       {
-         "id": "User.prevTab",
+         "command": "prevTab",
          "keys": "alt+left"
       }
    ],
