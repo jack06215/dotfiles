@@ -95,8 +95,8 @@ if os_name:find("windows") or os_name:find("linux") then
 		{ key = "f", mods = "CTRL", action = act.Search({ CaseSensitiveString = "" }) },
 
 		-- Copy / Paste
-		{ key = "c", mods = "CTRL", action = act.CopyTo("Clipboard") },
-		{ key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
+		-- { key = "c", mods = "CTRL", action = act.CopyTo("Clipboard") },
+		-- { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
 
 		-- Reset font and window size
 		{ key = "0", mods = "CTRL", action = act.ResetFontAndWindowSize },
