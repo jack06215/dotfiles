@@ -1,0 +1,53 @@
+# PowerShell profile and dotfiles
+
+# Ignore temporary and backup files
+*.tmp
+*.bak
+*.log
+*.old
+*~ 
+
+# PowerShell session history
+ConsoleHost_history.txt
+PSReadLineHistory.txt
+
+# Secret or local-only files
+Secrets.ps1
+env.local.ps1
+extra.ps1
+
+# Compiled and module artifacts
+*.pdb
+*.dll
+*.psd1~ 
+*.psm1~ 
+*.psm1.dll
+
+# Node, Python, Go dependencies (if used)
+node_modules/
+.env
+venv/
+__pycache__/
+go.sum
+go.mod
+
+# Visual Studio Code workspace settings
+.vscode/
+*.code-workspace
+
+# OSX and Windows system files
+.DS_Store
+Thumbs.db
+
+# Git submodule folders (if bootstrap scripts rely on them)
+.gitmodules
+
+# Ignore other config lock or workspace files
+*.swp
+*.swo
+*.lock
+
+Modules/BurntToast/**
+Modules/Terminal-Icons/**
+Modules/WifiTools/**
+Help/**
