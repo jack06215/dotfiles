@@ -1,131 +1,123 @@
 {
-    "$help": "https://aka.ms/terminal-documentation",
-    "$schema": "https://aka.ms/terminal-profiles-schema",
-    "actions": 
-    [
-        {
-            "command": 
-            {
-                "action": "splitPane",
-                "split": "auto",
-                "splitMode": "duplicate"
-            },
-            "id": "User.splitPane.A6751878"
-        },
-        {
-            "command": "find",
-            "id": "User.find"
-        },
-        {
-            "command": "paste",
-            "id": "User.paste"
-        },
-        {
-            "command": 
-            {
-                "action": "copy",
-                "singleLine": false
-            },
-            "id": "User.copy.644BA8F2"
-        }
-    ],
-    "copyFormatting": "none",
-    "copyOnSelect": false,
-    "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
-    "firstWindowPreference": "defaultProfile",
-    "keybindings": 
-    [
-        {
-            "id": "User.paste",
-            "keys": "ctrl+v"
-        },
-        {
-            "id": "User.find",
-            "keys": "ctrl+shift+f"
-        },
-        {
-            "id": "Terminal.ToggleCommandPalette",
-            "keys": "ctrl+p"
-        },
-        {
-            "id": "User.copy.644BA8F2",
-            "keys": "ctrl+c"
-        },
-        {
-            "id": "User.splitPane.A6751878",
-            "keys": "alt+shift+d"
-        }
-    ],
-    "launchMode": "maximizedFocus",
-    "newTabMenu": 
-    [
-        {
-            "type": "remainingProfiles"
-        }
-    ],
-    "profiles": 
-    {
-        "defaults": 
-        {
-            "colorScheme": "xcad",
-            "cursorShape": "filledBox",
-            "font": 
-            {
-                "face": "PlemolJP Console NF",
-                "size": 12,
-                "weight": "medium"
-            },
-            "historySize": 12000,
-            "intenseTextStyle": "bright",
-            "opacity": 65,
-            "padding": "0",
-            "scrollbarState": "hidden",
-            "useAcrylic": false
-        },
-        "list": 
-        [
-            {
-                "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
-                "hidden": false,
-                "name": "PowerShell",
-                "source": "Windows.Terminal.PowershellCore"
-            },
-            {
-                "guid": "{bf2a0656-2c0e-586b-8e6b-6e5509a0c984}",
-                "hidden": false,
-                "name": "ubuntu_default2404",
-                "source": "Microsoft.WSL"
-            }
-        ]
-    },
-    "schemes": 
-    [
-        {
-            "background": "#1A1A1A",
-            "black": "#121212",
-            "blue": "#2B4FFF",
-            "brightBlack": "#666666",
-            "brightBlue": "#5C78FF",
-            "brightCyan": "#5AC8FF",
-            "brightGreen": "#7DFFA2",
-            "brightPurple": "#7F9FFF",
-            "brightRed": "#FF7373",
-            "brightWhite": "#FFFFFF",
-            "brightYellow": "#FFE48D",
-            "cursorColor": "#FFFFFF",
-            "cyan": "#28B9FF",
-            "foreground": "#F1F1F1",
-            "green": "#3AFF7F",
-            "name": "xcad",
-            "purple": "#4F6FFF",
-            "red": "#FF4C4C",
-            "selectionBackground": "#FFFFFF",
-            "white": "#F1F1F1",
-            "yellow": "#FFD93D"
-        }
-    ],
-    "showTabsInTitlebar": true,
-    "tabSwitcherMode": "inOrder",
-    "themes": [],
-    "useAcrylicInTabRow": true
+   "$help": "https://aka.ms/terminal-documentation",
+   "$schema": "https://aka.ms/terminal-profiles-schema",
+   "actions": [
+      {
+         "command": "find",
+         "id": "User.find"
+      },
+      {
+         "command": {
+            "action": "splitPane",
+            "split": "auto",
+            "splitMode": "duplicate"
+         },
+         "id": "User.splitPane.A6751878"
+      },
+      {
+         "command": "paste",
+         "id": "User.paste"
+      },
+      {
+         "command": {
+            "action": "copy",
+            "singleLine": false
+         },
+         "id": "User.copy.644BA8F2"
+      }
+   ],
+   "copyFormatting": "none",
+   "copyOnSelect": false,
+   "defaultProfile": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+   "firstWindowPreference": "defaultProfile",
+   "keybindings": [
+      {
+         "id": "User.paste",
+         "keys": "ctrl+v"
+      },
+      {
+         "id": "User.find",
+         "keys": "ctrl+shift+f"
+      },
+      {
+         "id": "Terminal.ToggleCommandPalette",
+         "keys": "ctrl+p"
+      },
+      {
+         "id": "User.copy.644BA8F2",
+         "keys": "ctrl+c"
+      },
+      {
+         "id": "User.splitPane.A6751878",
+         "keys": "alt+shift+d"
+      },
+      {
+         "id": "User.nextTab",
+         "keys": "alt+right"
+      },
+      {
+         "id": "User.prevTab",
+         "keys": "alt+left"
+      }
+   ],
+   "launchMode": "maximizedFocus",
+   "profiles": {
+      "defaults": {
+         "colorScheme": "xcad",
+         "cursorShape": "filledBox",
+         "font": {
+            "face": "PlemolJP Console NF",
+            "size": 12,
+            "weight": "medium"
+         },
+         "historySize": 12000,
+         "intenseTextStyle": "bright",
+         "opacity": 65,
+         "padding": "8",
+         "scrollbarState": "hidden",
+         "useAcrylic": false
+      },
+      "list": [
+         {
+            "guid": "{574e775e-4f2a-5b96-ac1e-a2962a402336}",
+            "hidden": false,
+            "name": "PowerShell",
+            "source": "Windows.Terminal.PowershellCore"
+         },
+         {
+            "guid": "{bf2a0656-2c0e-586b-8e6b-6e5509a0c984}",
+            "hidden": false,
+            "name": "ubuntu_default2404",
+            "source": "Microsoft.WSL"
+         }
+      ]
+   },
+   "schemes": [
+      {
+         "background": "#1A1A1A",
+         "black": "#121212",
+         "blue": "#2B4FFF",
+         "brightBlack": "#666666",
+         "brightBlue": "#5C78FF",
+         "brightCyan": "#5AC8FF",
+         "brightGreen": "#7DFFA2",
+         "brightPurple": "#7F9FFF",
+         "brightRed": "#FF7373",
+         "brightWhite": "#FFFFFF",
+         "brightYellow": "#FFE48D",
+         "cursorColor": "#FFFFFF",
+         "cyan": "#28B9FF",
+         "foreground": "#F1F1F1",
+         "green": "#3AFF7F",
+         "name": "xcad",
+         "purple": "#4F6FFF",
+         "red": "#FF4C4C",
+         "selectionBackground": "#FFFFFF",
+         "white": "#F1F1F1",
+         "yellow": "#FFD93D"
+      }
+   ],
+   "showTabsInTitlebar": true,
+   "tabSwitcherMode": "inOrder",
+   "useAcrylicInTabRow": true
 }
