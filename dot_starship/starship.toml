@@ -1,0 +1,205 @@
+format = """
+$os\
+$username\
+$hostname\
+$kubernetes\
+$directory\
+$git_branch\
+$git_status\
+$fill\
+$time\
+$python\
+$lua\
+$nodejs\
+$golang\
+$haskell\
+$rust\
+$ruby\
+$package\
+$aws\
+$docker_context\
+$jobs\
+$cmd_duration\
+$line_break\
+$character"""
+
+add_newline = true
+palette = 'nord'
+
+# Drop default prompt characters
+[character]
+success_symbol = ''
+error_symbol = ''
+
+# ---
+
+[os]
+format = '[$symbol](bold white) '   
+disabled = false
+
+[os.symbols]
+Windows = ''
+Arch = '󰣇'
+Ubuntu = ''
+Macos = '󰀵'
+
+# ---
+
+# Time
+[time]
+disabled = false
+format = "🕒 [$time]($style) "
+time_format = "%Y-%m-%d(%A) %I:%M %p"
+style = "bold blue"
+
+# Shows the username
+[username]
+style_user = 'white bold'
+style_root = 'black bold'
+format = '[$user]($style) '
+disabled = false
+show_always = true
+
+# Shows the hostname
+[hostname]
+ssh_only = false
+format = 'on [$hostname](bold yellow) '
+disabled = false
+
+# Shows current directory
+[directory]
+truncation_length = 1
+truncation_symbol = '…/'
+home_symbol = '󰋜 ~'
+read_only_style = '197'
+read_only = '  '
+format = 'at [$path]($style)[$read_only]($read_only_style) '
+
+[directory.substitutions]
+'Documents' = '󰈙'
+'Downloads' = ' '
+'Music' = ' '
+'Pictures' = ' '
+
+# Shows current git branch
+[git_branch]
+symbol = ' '
+format = 'via [$symbol$branch]($style)'
+# truncation_length = 4
+truncation_symbol = '…/'
+style = 'bold green'
+
+# Shows current git status
+[git_status]
+format = '[$all_status$ahead_behind]($style) '
+style = 'bold green'
+conflicted = '🏳'
+up_to_date = ''
+untracked = ' '
+ahead = '⇡${count}'
+diverged = '⇕⇡${ahead_count}⇣${behind_count}'
+behind = '⇣${count}'
+stashed = ' '
+modified = ' '
+staged = '[++\($count\)](green)'
+renamed = '襁 '
+deleted = ' '
+disabled = false
+
+[fill]
+symbol = ' '
+
+# Shows kubernetes context and namespace
+[kubernetes]
+format = 'via [󱃾 $context\($namespace\)](bold purple) '
+disabled = false
+
+# ---
+[python]
+style = 'teal'
+symbol = ' '
+format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
+pyenv_version_name = true
+pyenv_prefix = ''
+
+[lua]
+symbol = ' '
+
+[nodejs]
+style = 'blue'
+symbol = ' '
+
+[golang]
+style = 'blue'
+symbol = ' '
+
+[haskell]
+style = 'blue'
+symbol = ' '
+
+[rust]
+style = 'orange'
+symbol = ' '
+
+[ruby]
+style = 'blue'
+symbol = ' '
+
+[package]
+symbol = '󰏗 '
+
+[aws]
+symbol = ' '
+style = 'yellow'
+format = '[$symbol($profile )(\[$duration\] )]($style)'
+
+[docker_context]
+symbol = ' '
+style = 'fg:#06969A'
+format = '[$symbol]($style) $path'
+detect_files = ['docker-compose.yml', 'docker-compose.yaml', 'Dockerfile']
+detect_extensions = ['Dockerfile']
+
+[jobs]
+symbol = ' '
+style = 'red'
+number_threshold = 1
+format = '[$symbol]($style)'
+
+[cmd_duration]
+min_time = 500
+style = 'fg:gray'
+format = '[$duration]($style)'
+
+[helm]
+disabled = true
+
+[terraform]
+disabled = true
+
+[palettes.nord]
+dark_blue = '#5E81AC'
+blue = '#81A1C1'
+teal = '#88C0D0'
+red = '#BF616A'
+orange = '#D08770'
+green = '#A3BE8C'
+yellow = '#EBCB8B'
+purple = '#B48EAD'
+gray = '#434C5E'
+black = '#2E3440'
+white='#D8DEE9'
+
+[palettes.onedark]
+dark_blue='#61afef'
+blue='#56b6c2'
+red='#e06c75'
+green='#98c379'
+purple='#c678dd'
+cyan='#56b6c2'
+orange='#be5046'
+yellow='#e5c07b'
+gray='#828997'
+white ='#abb2bf'
+black='#2c323c'
+
