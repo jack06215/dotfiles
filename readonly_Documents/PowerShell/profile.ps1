@@ -1,3 +1,13 @@
+# starship configuration
+$ENV:STARSHIP_CONFIG = "$HOME\.starship\starship.toml"
+Invoke-Expression (&starship init powershell)
+Invoke-Expression (& { (zoxide init --cmd cd powershell | Out-String) })
+$env:SHELL = "pwsh"
+
+# Set Alias
+Set-Alias g goto
+Set-Alias pbcopy Set-Clipboard
+Set-Alias -Name su -Value admin
 $GotoPath = @{
     "monorepo"   = "$HOME/Documents/Mycodespace/monorepo"
     "jack06215"  = "$HOME/Documents/Mycodespace/jack06215"
@@ -17,12 +27,3 @@ function goto {
     }
 }
 
-# starship configuration
-$ENV:STARSHIP_CONFIG = "$HOME\.starship\starship.toml"
-Invoke-Expression (&starship init powershell)
-$env:SHELL = "pwsh"
-
-# Set Alias
-Set-Alias g goto
-Set-Alias pbcopy Set-Clipboard
-Set-Alias -Name su -Value admin
