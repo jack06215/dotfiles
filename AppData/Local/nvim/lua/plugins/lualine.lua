@@ -1,7 +1,5 @@
--- ~/.config/nvim/lua/plugins/ui.lua
-
 -- Utility for detecting & caching Python env (Poetry, .venv, system)
-local python_env = require("utils.python_env")
+-- local python_env = require("utils.python_env")
 
 return {
   {
@@ -16,12 +14,9 @@ return {
       -- 🔧 Active LSP
       local function active_lsp()
         local buf_ft = vim.bo.filetype
-        local clients = vim.lsp.get_active_clients()
+        local clients = vim.lsp.get_clients()
         for _, client in ipairs(clients) do
-          if client.config
-              and client.config.filetypes
-              and vim.tbl_contains(client.config.filetypes, buf_ft)
-          then
+          if client.config and client.config.filetypes and vim.tbl_contains(client.config.filetypes, buf_ft) then
             return "🔧 " .. client.name
           end
         end

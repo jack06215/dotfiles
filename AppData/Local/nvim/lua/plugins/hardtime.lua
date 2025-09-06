@@ -4,10 +4,10 @@ return {
     enabled = true,
     lazy = false,
     opts = {
-      -- disable_mouse = false,
-      -- allow_different_key = false,
+      disable_mouse = true,
+      allow_different_key = true,
       disabled_filetypes = { "qf", "NvimTree", "lazy", "mason", "neo-tree", "noice", "NeogitStatus" },
-      -- disabled_keys = {},
+      disabled_keys = {},
     },
   },
 }

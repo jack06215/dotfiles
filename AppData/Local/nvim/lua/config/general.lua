@@ -123,13 +123,13 @@ vim.g.personal_lookup = {
     ["f.sqlfluff"] = {
       extra_args = {
         vim.env.SQLFLUFF_CONFIG_PATH and string.format("--config=%s", vim.env.SQLFLUFF_CONFIG_PATH)
-        or "--dialect=snowflake",
+          or "--dialect=snowflake",
       },
     },
     ["d.sqlfluff"] = {
       extra_args = {
         vim.env.SQLFLUFF_CONFIG_PATH and string.format("--config=%s", vim.env.SQLFLUFF_CONFIG_PATH)
-        or "--dialect=snowflake",
+          or "--dialect=snowflake",
       },
     },
   },
@@ -146,8 +146,7 @@ vim.opt.shortmess:append("C")
 
 -- global status line
 vim.opt.laststatus = 3
-vim.opt.fillchars =
-"vert:┃,horiz:━,verthoriz:╋,horizup:┻,horizdown:┳,vertleft:┫,vertright:┣,eob: " -- more obvious separator
+vim.opt.fillchars = "vert:┃,horiz:━,verthoriz:╋,horizup:┻,horizdown:┳,vertleft:┫,vertright:┣,eob: " -- more obvious separator
 
 local aug = vim.api.nvim_create_augroup("GeneralConfigAUG", { clear = true })
 vim.api.nvim_create_autocmd("VimResized", {

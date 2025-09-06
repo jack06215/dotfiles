@@ -10,6 +10,7 @@ M.lsp_list = {
   -- Foloow https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md#jsonnet_ls to use jsonnet_ls
   "jsonnet_ls",
   -- Add more as needed
+  "powershell_es",
 }
 
 -- Enhanced capabilities (e.g., for nvim-cmp)
@@ -28,7 +29,6 @@ M.capabilities = function()
 
   return capabilities
 end
-
 
 -- Called when any LSP attaches to a buffer
 M.on_attach = function(client, bufnr)
