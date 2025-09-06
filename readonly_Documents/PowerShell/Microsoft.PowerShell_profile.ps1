@@ -520,6 +520,10 @@ function Install-Packages {
     if  (-not (Get-Module -ListAvailable -Name WifiTools)) {
         Install-Module -Name WifiTools -Scope CurrentUser -Force -SkipPublisherCheck
     }
+    if (-not (Get-Module -ListAvailable -Name PSFzf)) {
+        Install-Module -Name PSFzf -Scope CurrentUser -Force -SkipPublisherCheck
+    }
+    Import-Module -Name PSFzf
     Import-Module -Name MyModule
     # Nert Font
     Install-NerdFonts -FontName "PlemolJP_NF" -FontDisplayName "PlemolJP Console NF Medium" -Version "2.0.4"
