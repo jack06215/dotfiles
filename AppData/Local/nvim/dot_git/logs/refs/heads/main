@@ -1,0 +1,60 @@
+0000000000000000000000000000000000000000 4d971833bbe0c4a170fc6e6b8ec4eaa745c718b1 Jack Cho <jack06215@gmail.com> 1748092439 +0900	clone: from github.com:jack06215/lazyvim-starter.git
+4d971833bbe0c4a170fc6e6b8ec4eaa745c718b1 fda460daa73c7eae375efb8d6b6eb5bb15f9c36d Jack Cho <jack06215@gmail.com> 1748100905 +0900	commit: init setup
+fda460daa73c7eae375efb8d6b6eb5bb15f9c36d df3d31deec64ddf7c0d2fcc6b111af0b1249fa9f Jack Cho <jack06215@gmail.com> 1748103488 +0900	commit: modularize
+df3d31deec64ddf7c0d2fcc6b111af0b1249fa9f 8aaf48e3fc50c1de7f4742f3bddb3159c98b68bf Jack Cho <jack06215@gmail.com> 1748104137 +0900	commit: customize ui
+8aaf48e3fc50c1de7f4742f3bddb3159c98b68bf f30dda7b2f08c9463b514d053c3198ffeeb2084b Jack Cho <jack06215@gmail.com> 1748132680 +0900	commit: add module
+f30dda7b2f08c9463b514d053c3198ffeeb2084b 345720a52513300dd440507f068324364d08af31 Jack Cho <jack06215@gmail.com> 1748133484 +0900	commit: add map to toggle relative line number
+345720a52513300dd440507f068324364d08af31 c33492dc822a33748ace2adbdbe7668753b15e14 Jack Cho <jack06215@gmail.com> 1748147141 +0900	commit: edit readme
+c33492dc822a33748ace2adbdbe7668753b15e14 49b93170e068a6364236dd9e2c6fdb8c4b69d997 Jack Cho <jack06215@gmail.com> 1748147290 +0900	commit: edit readme
+49b93170e068a6364236dd9e2c6fdb8c4b69d997 ea2d7492b19ebfd87179f9b9768e09bb9f72bb00 Jack Cho <jack06215@gmail.com> 1748147482 +0900	commit: update readme
+ea2d7492b19ebfd87179f9b9768e09bb9f72bb00 39e75d40b5ad1847462b374fde21961f5f3c111e Jack Cho <jack06215@gmail.com> 1748150830 +0900	pull --tags origin main: Fast-forward
+39e75d40b5ad1847462b374fde21961f5f3c111e 5c795f3b3f3cd489cc013b5ce604e103f73c4a1f Jack Cho <jack06215@gmail.com> 1748155754 +0900	pull --tags origin main: Fast-forward
+5c795f3b3f3cd489cc013b5ce604e103f73c4a1f 224041b57ae4da21cd182d25e56e02fdc19df74f Jack Cho <jack06215@gmail.com> 1748157290 +0900	commit: use cache mechanism to load poetry
+224041b57ae4da21cd182d25e56e02fdc19df74f 6eb9213108217aa524f9021c80d3f7cfc3ce1d49 Jack Cho <jack06215@gmail.com> 1748159057 +0900	commit: fix python env detect to use cache
+6eb9213108217aa524f9021c80d3f7cfc3ce1d49 881865a75e99fef0de33d5ac6ebfa371e4c61723 Jack Cho <jack06215@gmail.com> 1748164493 +0900	commit: add markdown plugin
+881865a75e99fef0de33d5ac6ebfa371e4c61723 41e20ac4565558d49a37c2105ec47e2de55ba65b Jack Cho <jack06215@gmail.com> 1748167221 +0900	commit: add python group
+41e20ac4565558d49a37c2105ec47e2de55ba65b 91f7bc12753663de91995e6d40399cdc246d4d83 Jack Cho <jack06215@gmail.com> 1748168127 +0900	commit: rename
+91f7bc12753663de91995e6d40399cdc246d4d83 bfa6d263ec9b80ec3dcbcd6d58d9d1b4b40dbf77 Jack Cho <jack06215@gmail.com> 1748169423 +0900	commit: owner code search
+bfa6d263ec9b80ec3dcbcd6d58d9d1b4b40dbf77 a539703897ebc31aa5cb1a4991e0a70077bd7f5c Jack Cho <jack06215@gmail.com> 1748171486 +0900	commit: setup github copilot and summarize commit
+a539703897ebc31aa5cb1a4991e0a70077bd7f5c 461c857e39f8f92e81902a9a9bcb6d3c046fe8c9 Jack Cho <jack06215@gmail.com> 1748360929 +0900	pull: Fast-forward
+461c857e39f8f92e81902a9a9bcb6d3c046fe8c9 078d0ed5d2a3e4ed5b253a21eea34bf9e8fccb3c Jack Cho <jack06215@gmail.com> 1748524858 +0900	commit: rename file
+078d0ed5d2a3e4ed5b253a21eea34bf9e8fccb3c 22d8d35ee51c7f67c49bc7c83d04173600d41be3 Jack Cho <jack06215@gmail.com> 1748531529 +0900	commit: fix
+22d8d35ee51c7f67c49bc7c83d04173600d41be3 7938224866fd7ac99bc8dcf9630857a5196065ec Jack Cho <jack06215@gmail.com> 1748615890 +0900	commit: add firevim and noice
+7938224866fd7ac99bc8dcf9630857a5196065ec ce66ba23a3c59afb9a1bb539dc6bf1adf035dac6 Jack Cho <jack06215@gmail.com> 1748880023 +0900	pull: Fast-forward
+ce66ba23a3c59afb9a1bb539dc6bf1adf035dac6 743cf96aa22f4eab8819e23b78ae0fc613799c60 Jack Cho <jack06215@gmail.com> 1748880280 +0900	commit: add stuff
+743cf96aa22f4eab8819e23b78ae0fc613799c60 8451634c8bba822231b14294a7ae7d892bf0c931 Jack Cho <jack06215@gmail.com> 1748958082 +0900	commit: add copilot settings
+8451634c8bba822231b14294a7ae7d892bf0c931 2c8f435735d451309dada7a30e18790956c1b5d3 Jack Cho <jack06215@gmail.com> 1749052622 +0900	pull: Fast-forward
+2c8f435735d451309dada7a30e18790956c1b5d3 556c1a2bd6b6a7440d2b36cc285e3d6dddd36c3d Jack Cho <jack06215@gmail.com> 1749052702 +0900	commit: Replace with neogit, add gitsigns
+556c1a2bd6b6a7440d2b36cc285e3d6dddd36c3d 932871b9d209942a81d8d9f5e6eb6d5a44bb155c Jack Cho <jack06215@gmail.com> 1749054865 +0900	commit: add custom dashboard
+932871b9d209942a81d8d9f5e6eb6d5a44bb155c 9215243dff34535285fcf74ad399b827c2e96ace Jack Cho <jack06215@gmail.com> 1749308900 +0900	pull: Fast-forward
+9215243dff34535285fcf74ad399b827c2e96ace 579da8c37b437bce93fe50f8a9e5c0a658fe63a8 Jack Cho <jack06215@gmail.com> 1749960104 +0900	pull: Fast-forward
+579da8c37b437bce93fe50f8a9e5c0a658fe63a8 26900a39462744616fa7e74332d62d5efcf68c49 Jack Cho <jack06215@gmail.com> 1749962983 +0900	commit: config lint and formatter
+26900a39462744616fa7e74332d62d5efcf68c49 fab4719307d46bd370462bc301f7b19537e69121 Jack Cho <jack06215@gmail.com> 1750084917 +0900	pull: Fast-forward
+fab4719307d46bd370462bc301f7b19537e69121 4e1e30796707005fa91b5fd5785562b111ccf47c Jack Cho <jack06215@gmail.com> 1750085694 +0900	commit: remove latex ts sitter
+4e1e30796707005fa91b5fd5785562b111ccf47c 98bdf68f43115dfb8cfc3e107f008da42eeceb4f Jack Cho <jack06215@gmail.com> 1750254161 +0900	commit: add hardtime
+98bdf68f43115dfb8cfc3e107f008da42eeceb4f 56f27e33124c513cb432a6c828e5f52a8b9a732b Jack Cho <jack06215@gmail.com> 1750254191 +0900	pull: Merge made by the 'ort' strategy.
+56f27e33124c513cb432a6c828e5f52a8b9a732b 8fa848219e1bc03dc0b3849dd9f94c5fe284c893 Jack Cho <jack06215@gmail.com> 1750331828 +0900	pull: Fast-forward
+8fa848219e1bc03dc0b3849dd9f94c5fe284c893 d62fcb2f9d3edbb3821f0abff0b83de9ce405126 Jack Cho <jack06215@gmail.com> 1750331847 +0900	commit: add flash keybindings
+d62fcb2f9d3edbb3821f0abff0b83de9ce405126 25177f5e76ea4f2975fe2caa35c0b65f199f0ee6 Jack Cho <jack06215@gmail.com> 1750430551 +0900	pull: Fast-forward
+25177f5e76ea4f2975fe2caa35c0b65f199f0ee6 be5ef38aa5bb599ef35d2a35594f2a2a76c53ed1 Jack Cho <jack06215@gmail.com> 1750767304 +0900	pull: Fast-forward
+be5ef38aa5bb599ef35d2a35594f2a2a76c53ed1 1c16220435e7e1786009c33a399ddf2d13c5bab5 Jack Cho <jack06215@gmail.com> 1750770416 +0900	commit: add mappings telescope
+1c16220435e7e1786009c33a399ddf2d13c5bab5 b9a5116355a8f45e245b1600a9a1aa1dba57d590 Jack Cho <jack06215@gmail.com> 1750781325 +0900	commit: change dashboard header
+b9a5116355a8f45e245b1600a9a1aa1dba57d590 c162da126e5daa8c9862210a698e413bc2d115e6 Jack Cho <jack06215@gmail.com> 1750858838 +0900	commit: add space
+c162da126e5daa8c9862210a698e413bc2d115e6 fe19d85fb9b54874f03b1ba828bdfdd9fe894c76 Jack Cho <jack06215@gmail.com> 1750859066 +0900	commit: move neogit mapping to keymaps
+fe19d85fb9b54874f03b1ba828bdfdd9fe894c76 c0ec5739f2aeb8e5cd29ebfebfeb9b1cccfdeea6 Jack Cho <jack06215@gmail.com> 1750862545 +0900	commit: add package info
+c0ec5739f2aeb8e5cd29ebfebfeb9b1cccfdeea6 671a1c2db786f1f8812b32e7c05201d0a0db18fb Jack Cho <jack06215@gmail.com> 1750863499 +0900	commit: add goyo
+671a1c2db786f1f8812b32e7c05201d0a0db18fb 902e5dbedbf37ef217fc3fe2b83bb5bb302e6288 Jack Cho <jack06215@gmail.com> 1750863684 +0900	commit: add new line
+902e5dbedbf37ef217fc3fe2b83bb5bb302e6288 173e2d4c9c11ded5e47a6173b2a94f6951d6bd55 Jack Cho <jack06215@gmail.com> 1751010604 +0900	pull: Fast-forward
+173e2d4c9c11ded5e47a6173b2a94f6951d6bd55 da4145509a1cfe8430c2ac4769a1a89071da6193 Jack Cho <jack06215@gmail.com> 1751033280 +0900	pull: Fast-forward
+da4145509a1cfe8430c2ac4769a1a89071da6193 870114087d7ba1cfae7178a256462d764675220e Jack Cho <jack06215@gmail.com> 1751072618 +0900	commit: config: remove flake8 from python linters
+870114087d7ba1cfae7178a256462d764675220e 10004a752af8bc8ec1dd70aaf68c4d55b2c735d9 Jack Cho <jack06215@gmail.com> 1751072855 +0900	commit: chore(lazy-lock): update lockfile
+10004a752af8bc8ec1dd70aaf68c4d55b2c735d9 160bf95fc9dc8961cef4d9ce83e29a0e68745225 Jack Cho <jack06215@gmail.com> 1752071949 +0900	commit: Remove undundent curly braces
+160bf95fc9dc8961cef4d9ce83e29a0e68745225 80494795daec6fd8b5f84a38edea84b17a029ea4 Jack Cho <jack06215@gmail.com> 1752071961 +0900	pull --no-edit: Merge made by the 'ort' strategy.
+80494795daec6fd8b5f84a38edea84b17a029ea4 ed8bec7dac8ccd8152b86136759bcb93f684dba4 Jack Cho <jack06215@gmail.com> 1752318857 +0900	commit: Lockfile
+ed8bec7dac8ccd8152b86136759bcb93f684dba4 668d633050324788bbe66aefe7c72875734115f2 Jack Cho <jack06215@gmail.com> 1752939282 +0900
+668d633050324788bbe66aefe7c72875734115f2 f531e1536b27bfd1766480fc4f0b177e2d48c0aa Jack Cho <jack06215@gmail.com> 1752983675 +0900	commit: feat(pwsh): Add lsp setup
+f531e1536b27bfd1766480fc4f0b177e2d48c0aa 4b406d6fe129c35a740d8e4eeaf21e85c0294a67 Jack Cho <jack06215@gmail.com> 1754056996 +0900	commit: comment out powershell_es.
+4b406d6fe129c35a740d8e4eeaf21e85c0294a67 9956523586709d60ebeb6b7d5aa6489dd40086bb Jack Cho <jack06215@gmail.com> 1754059304 +0900	commit: refafctoring
+9956523586709d60ebeb6b7d5aa6489dd40086bb 0aeadd4cd28addd6609b991a89f4a713eba9ba4e Jack Cho <jack06215@gmail.com> 1755779460 +0900	commit: feat(conform): add bazel
+0aeadd4cd28addd6609b991a89f4a713eba9ba4e 162f9aaf5d0ca36d33ab70ebab0550b812eb8784 Jack Cho <jack06215@gmail.com> 1756045510 +0800	pull: Fast-forward
+162f9aaf5d0ca36d33ab70ebab0550b812eb8784 f4f58f019ea5c8597ebe665057afcc8fdc885b7a Jack Cho <jack06215@gmail.com> 1756911743 +0800	pull: Fast-forward
