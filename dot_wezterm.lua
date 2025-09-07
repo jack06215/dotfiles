@@ -39,9 +39,18 @@ local hyperlink_rules = {
 local is_maximized = false
 
 wezterm.on("gui-startup", function(cmd)
-	local tab, pane, window = mux.spawn_window(cmd or {})
+	-- Create initial window and pane
+	local tab, left, window = mux.spawn_window(cmd or {})
+
+	-- Maximize window
 	window:gui_window():maximize()
-	is_maximized = true
+	is_maximized = true -- optional flag if you use it elsewhere
+
+	-- Split vertically (Right)
+	local right = left:split({ direction = "Right", size = 0.5 })
+
+	-- Split horizontally on LEFT
+	local bottom_left = left:split({ direction = "Bottom", size = 0.5 })
 end)
 
 wezterm.on("toggle_maximize", function(window, pane)
@@ -58,7 +67,7 @@ end)
 local keys_common = {
 	{
 		key = "p",
-		mods = "CTRL",
+		mods = "CTRL | SHIFT",
 		action = wezterm.action_callback(function(window, pane)
 			window:perform_action(wezterm.action.ActivateCommandPalette, pane)
 		end),
@@ -95,8 +104,8 @@ if os_name:find("windows") or os_name:find("linux") then
 		{ key = "f", mods = "CTRL", action = act.Search({ CaseSensitiveString = "" }) },
 
 		-- Copy / Paste
-		-- { key = "c", mods = "CTRL", action = act.CopyTo("Clipboard") },
-		-- { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
+		{ key = "c", mods = "CTRL", action = act.CopyTo("Clipboard") },
+		{ key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
 
 		-- Reset font and window size
 		{ key = "0", mods = "CTRL", action = act.ResetFontAndWindowSize },
@@ -112,10 +121,6 @@ if os_name:find("windows") or os_name:find("linux") then
 
 		-- Decrease font size
 		{ key = "-", mods = "CTRL", action = act.DecreaseFontSize },
-		-- Disable this key
-		{ key = "w", mods = "CTRL", action = wezterm.action.DisableDefaultAssignment },
-		-- Disable this key
-		{ key = "q", mods = "CTRL", action = wezterm.action.DisableDefaultAssignment },
 	}
 elseif os_name:find("darwin") then
 	keys = {
