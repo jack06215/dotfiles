@@ -8,6 +8,7 @@ $env:SHELL = "pwsh"
 Set-Alias g goto
 Set-Alias pbcopy Set-Clipboard
 Set-Alias -Name su -Value admin
+Set-Alias lg lazygit
 $GotoPath = @{
     "monorepo"   = "$HOME/Documents/Mycodespace/monorepo"
     "jack06215"  = "$HOME/Documents/Mycodespace/jack06215"
