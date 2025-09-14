@@ -5,4 +5,12 @@ AppData/**
 .starship/**
 .wezterm.lua
 {{ end }}
+{{ if ne .chezmoi.os "darwin" }}
+.zshrc
+.config/zellij/**
+.config/starship/**
+.config/lazygit/**
+.config/gh/**
+.config/gh-dash/**
+{{ end }}
 

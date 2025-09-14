@@ -38,6 +38,31 @@ local hyperlink_rules = {
 
 local is_maximized = false
 
+local zebar_height = tonumber(os.getenv("ZEBAR_HEIGHT") or "36")
+
+local function apply_padding_for_zebar(window, is_max)
+	local overrides = window:get_config_overrides() or {}
+	local base_pad = {
+		left = 10,
+		right = 5,
+		top = 10,
+		bottom = 0,
+	}
+
+	if os_name:find("windows") then
+		-- When maximized, give Zebar its space (bar height + your original top padding)
+		if is_max then
+			base_pad.top = zebar_height + 10
+		else
+			-- When not maximized you can keep it smaller; change if you prefer the gap always
+			base_pad.top = 10
+		end
+	end
+
+	overrides.window_padding = base_pad
+	window:set_config_overrides(overrides)
+end
+
 wezterm.on("gui-startup", function(cmd)
 	-- Create initial window and pane
 	local tab, left, window = mux.spawn_window(cmd or {})
@@ -83,6 +108,20 @@ local keys_common = {
 
 	-- New tab fallback (CTRL + N)
 	{ key = "n", mods = "CTRL", action = wezterm.action({ SpawnTab = "CurrentPaneDomain" }) },
+	{
+		key = "o",
+		mods = "CTRL|ALT",
+		-- toggling opacity
+		action = wezterm.action_callback(function(window, _)
+			local overrides = window:get_config_overrides() or {}
+			if overrides.window_background_opacity == 1.0 then
+				overrides.window_background_opacity = 0.9
+			else
+				overrides.window_background_opacity = 1.0
+			end
+			window:set_config_overrides(overrides)
+		end),
+	},
 }
 
 -- OS-specific keybindings
@@ -174,7 +213,8 @@ return {
 	disable_default_key_bindings = true,
 	font = wezterm.font("PlemolJP Console NF", { weight = "Medium", stretch = "Normal", style = "Normal" }),
 	font_size = 12,
-	window_background_opacity = 0.65, -- Set window transparency
+	cell_width = 0.9,
+	window_background_opacity = 0.9, -- Set window transparency
 	text_background_opacity = 0.65, -- Set text background transparency
 	macos_window_background_blur = 30, -- blur for macOS
 	hide_tab_bar_if_only_one_tab = true,
@@ -190,7 +230,8 @@ return {
 	},
 	front_end = "OpenGL",
 	webgpu_power_preference = "HighPerformance",
-	window_decorations = "INTEGRATED_BUTTONS|RESIZE",
+	-- window_decorations = "INTEGRATED_BUTTONS|RESIZE",
+	window_decorations = "NONE | RESIZE",
 	window_padding = {
 		left = 10,
 		right = 5,
