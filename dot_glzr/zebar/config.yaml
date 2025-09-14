@@ -1,0 +1,26 @@
+
+general:
+  # Commands to run on startup (optional)
+  startup_commands: []
+
+bars:
+  - position: "top"
+    height: "30px"
+    background: "#1e1e2e"
+    font: "JetBrainsMono Nerd Font 12"
+
+    widgets:
+      - type: "text"
+        text: " Jack Cho on MSI"
+        margin: "0 10px"
+
+      - type: "spacer"
+
+      - type: "custom"
+        command: ["python", "C:/Users/jack0/myscripts/get_keyboard_language.py"]  # <-- adjust python path
+        refresh_interval: 1
+        margin: "0 10px"
+
+      - type: "clock"
+        format: "🕒 yyyy-MM-dd(dddd) hh:mm tt"
+        margin: "0 10px"
