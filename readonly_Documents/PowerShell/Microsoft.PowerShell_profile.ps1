@@ -532,9 +532,41 @@ function Install-Packages {
 
 #### Startup Script ####
 # Improved prediction settings
-Set-PSReadLineOption -PredictionSource HistoryAndPlugin
-Set-PSReadLineOption -MaximumHistoryCount 10000
-Set-PSReadlineOption -EditMode vi
-Set-PSReadLineOption -ViModeIndicator Cursor
 Write-Host "$($PSStyle.Foreground.Yellow)Use 'Show-Help' to display help$($PSStyle.Reset)"
 Install-Packages
+# starship configuration
+$ENV:STARSHIP_CONFIG = "$HOME\.starship\starship.toml"
+Invoke-Expression (&starship init powershell)
+Invoke-Expression (& { (zoxide init --cmd cd powershell | Out-String) })
+$env:SHELL = "pwsh"
+
+# Set Alias
+Set-Alias g goto
+Set-Alias pbcopy Set-Clipboard
+Set-Alias -Name su -Value admin
+Set-Alias lg lazygit
+
+if (Get-Module PSReadLine) {
+    $vimCommand = Get-Command vim -ErrorAction Ignore
+    if ($vimCommand) {
+        if (Get-Module PSFzf) {
+            Write-Warning "PSFzf is already loaded. Setting Vim keybindings will override PSFzf keybinds (like Ctrl+r)."
+        }
+        Set-PSReadLineOption -EditMode Vi
+        Set-PSReadLineOption -PredictionSource HistoryAndPlugin
+        Set-PSReadLineOption -MaximumHistoryCount 10000
+        Set-PSReadLineOption -ViModeIndicator Cursor
+        # Set-PSReadlineKeyHandler -Key Ctrl+r -Function ReverseSearchHistory
+        # Set-PSReadlineKeyHandler -Key Ctrl+Shift+r -Function ForwardSearchHistory
+        Set-PSReadLineKeyHandler -Key Tab -Function MenuComplete
+        Set-PSReadLineKeyHandler -Key Shift+Tab -Function TabCompletePrevious
+        if (!($env:VISUAL)) {
+            $env:VISUAL = "vim"
+        }
+        if (!($env:GIT_EDITOR)) {
+            $env:GIT_EDITOR = "'$($vimCommand.Path)'"
+        }
+    }
+    Remove-Variable vimCommand
+}
+
