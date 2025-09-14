@@ -534,5 +534,7 @@ function Install-Packages {
 # Improved prediction settings
 Set-PSReadLineOption -PredictionSource HistoryAndPlugin
 Set-PSReadLineOption -MaximumHistoryCount 10000
+Set-PSReadlineOption -EditMode vi
+Set-PSReadLineOption -ViModeIndicator Cursor
 Write-Host "$($PSStyle.Foreground.Yellow)Use 'Show-Help' to display help$($PSStyle.Reset)"
 Install-Packages
