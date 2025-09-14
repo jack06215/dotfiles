@@ -1,0 +1,8 @@
+.config/surfingkeys.js
+{{ if ne .chezmoi.os "windows" }}
+AppData/**
+.glzr/**
+.starship/**
+.wezterm.lua
+{{ end }}
+
