@@ -1,0 +1,14 @@
+disableStartupPopups: true
+
+gui:
+  nerdFontsVersion: "3"
+  filterMode: "fuzzy"
+  showRandomTip: false
+  showCommandLog: false
+  language: "en"
+  editorCommand: "nvim --wait"
+
+git:
+  overrideGpg: true
+  parseEmoji: false
+

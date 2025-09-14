@@ -1,0 +1,211 @@
+# shellcheck shell=bash
+
+# ==== Private credentials (never commit these) ================================
+[ -f $HOME/.zshrc.local ] && source $HOME/.zshrc.local
+
+# Add in zsh plugins
+source $HOMEBREW_PREFIX/opt/zinit/zinit.zsh
+zinit light zsh-users/zsh-syntax-highlighting
+zinit light Aloxaf/fzf-tab
+
+# History
+HISTSIZE=100000
+HISTFILE=~/.zsh_history
+SAVEHIST=$HISTSIZE
+HISTDUP=erase
+setopt appendhistory
+setopt sharehistory
+setopt hist_ignore_space
+setopt hist_ignore_all_dups
+setopt hist_save_no_dups
+setopt hist_ignore_dups
+setopt hist_find_no_dups
+
+# Completion styling
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
+zstyle ':completion:*' menu no
+zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls --color $realpath'
+zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls --color $realpath'
+
+# Aliases
+alias ls='ls --color'
+alias vim='nvim'
+alias c='clear'
+alias lg='lazygit'
+alias zshrc_edit='vim $HOME/.zshrc'
+alias zshrc_reload='source $HOME/.zshrc'
+
+
+function fman() {
+  local cmd
+  cmd=$(print -rl -- ${(k)commands} | fzf) || return
+  man -- "$cmd"
+}
+
+# ==== PATH utilities ==========================================================
+# Use zsh's $path array for dedupe and easy manipulation
+typeset -gU path
+add_path_front() { [[ -d "$1" ]] && path=("$1" $path) }
+add_path_back()  { [[ -d "$1" ]] && path+=("$1") }
+
+# ~/.local/bin first
+add_path_front "$HOME/.local/bin"
+
+# ==== Bun ====================================================================
+export BUN_INSTALL="$HOME/Library/Application Support/reflex/bun"
+add_path_front "$BUN_INSTALL/bin"
+
+# ==== Go =====================================================================
+add_path_back "$HOME/go/bin"
+
+# ==== Homebrew MySQL (optional, if installed) ================================
+# Prefer mysql@8.0, then mysql-client@8.0
+add_path_back "/opt/homebrew/opt/mysql@8.0/bin"
+add_path_back "/opt/homebrew/opt/mysql-client@8.0/bin"
+
+# ==== asdf / Poetry / Flutter / personal scripts =============================
+add_path_back "$HOME/.asdf/installs/poetry/2.1.2/bin"
+add_path_back "$HOME/tools/flutter/bin"
+add_path_back "$HOME/myscripts"
+alias nlof="$HOME/myscripts/fzf-listoldfiles"
+alias nzo="$HOME/myscripts/zoxide-openfiles-nvim"
+
+
+# ==== Ruby (rbenv) ===========================================================
+if [[ -d "$HOME/.rbenv" ]]; then
+  add_path_front "$HOME/.rbenv/bin"
+  # Lazy init rbenv only if command exists
+  if command -v rbenv >/dev/null 2>&1; then
+    eval "$(rbenv init - zsh)"
+  fi
+fi
+
+# ==== MySQL client flags (asdf or Homebrew) ==================================
+# Prefer asdf-installed MySQL; fall back to Homebrew include/lib if present
+if command -v asdf >/dev/null 2>&1; then
+  mysql_prefix="$(asdf where mysql 2>/dev/null | tr -d '\n')"
+  if [[ -n "$mysql_prefix" && -d "$mysql_prefix" ]]; then
+    export MYSQLCLIENT_CFLAGS="-I${mysql_prefix}/include"
+    # Link statically only if lib exists; otherwise leave to pkg-config
+    if [[ -f "${mysql_prefix}/lib/libmysqlclient.a" ]]; then
+      export MYSQLCLIENT_LDFLAGS="-L${mysql_prefix}/lib -lmysqlclient -lpthread -lm -ldl"
+    fi
+  fi
+fi
+
+# ==== kubectl helper ==========================================================
+# Wrapper that echos the full command (in color if TTY) then runs it
+function k() {
+  local ctx="${CONTEXT:-${KUBE_CONTEXT:-}}"
+  local ns="${NAMESPACE:-default}"
+  local cmd=(kubectl)
+  [[ -n "$ctx" ]] && cmd+=(--context "$ctx")
+  cmd+=(-n "$ns" "$@")
+
+  if [[ -t 2 ]]; then tput setaf 3; fi
+  printf '%s\n' "\$ ${cmd[*]}" >&2
+  if [[ -t 2 ]]; then tput sgr0; fi
+
+  command "${cmd[@]}"
+}
+
+# ==== AWS Azure SSO helper ====================================================
+function aws_login() {
+  local profile="$1"
+  if [[ -z "$profile" ]]; then
+    echo "Usage: aws_login <profile>" >&2
+    return 2
+  fi
+  if ! command -v aws-azure-login >/dev/null 2>&1; then
+    echo "aws-azure-login not found" >&2
+    return 127
+  fi
+  aws-azure-login --profile "$profile" --no-prompt && export AWS_PROFILE="$profile"
+}
+
+# ==== Completion ==============================================================
+# Dart CLI completion (optional)
+[[ -f "$HOME/.dart-cli-completion/zsh-config.zsh" ]] && source "$HOME/.dart-cli-completion/zsh-config.zsh"
+
+# zsh completion cache init
+autoload -Uz compinit
+# If compdump exists but perms are wrong, fix silently
+_compdump="${ZDOTDIR:-$HOME}/.zcompdump"
+if [[ -f "$_compdump" && ! -w "$_compdump" ]]; then chmod 600 "$_compdump" 2>/dev/null || true; fi
+compinit -C
+
+# carapace
+if command -v carapace >/dev/null 2>&1; then
+  export CARAPACE_BRIDGES='zsh,fish,bash,inshellisense'
+  source <(carapace _carapace)
+fi
+
+# starship prompt
+export STARSHIP_CONFIG="$HOME/.config/starship/starship.toml"
+if command -v starship >/dev/null 2>&1; then
+  eval "$(starship init zsh)"
+fi
+
+# ==== fzf integration ====
+if command -v fzf >/dev/null 2>&1; then
+  eval "$(fzf --zsh)"
+fi
+
+if command -v zoxide >/dev/null 2>&1; then
+    eval "$(zoxide init --cmd cd zsh)"
+fi
+
+# ==== FLYWHEEL specific =======================================================
+[ -f $HOME/.zshrc.flywheel ] && source $HOME/.zshrc.flywheel
+
+# ==== Helpers =================================================================
+function topcmds() {
+  local n=${1:-10}  # default to 10 if no argument given
+  history | awk '{print $2}' | sort | uniq -c | sort -nr | head -n "$n"
+}
+
+function mkcd() {
+  if [ ! -n "$1" ]; then
+    echo "Enter a directory name"
+  elif [ -d $1 ]; then
+    echo "\`$1' already exists"
+  else
+    mkdir $1 && cd $1
+  fi
+}
+
+# fzf でブランチ切り替え
+function gcb() {
+  local branch
+  branch=$(git branch --all | grep -v 'HEAD' | sed 's/.* //' | fzf) || return
+  git checkout "$branch"
+}
+
+# fzf でコミットを選んで checkout
+function gco() {
+  local commit
+  commit=$(git log --oneline | fzf | awk '{print $1}') || return
+  git checkout "$commit"
+}
+
+# fzf でローカルブランチを選んで git switch
+function gbs() {
+  local branch
+  branch=$(git branch --color=never \
+            | sed 's/^..//' \
+            | fzf --prompt="Git branches > ") || return
+
+  git switch "$branch"
+}
+
+# ==== Bindkey =================================================================
+bindkey -v
+bindkey '\e[3~' delete-char
+bindkey '^p' history-search-backward
+bindkey '^n' history-search-forward
+bindkey ' '  magic-space
+
+# ==== Profiling (opt-in) ======================================================
+# Enable only when investigating shell startup performance
+# zmodload zsh/zprof
