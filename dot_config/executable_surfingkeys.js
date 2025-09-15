@@ -1,3 +1,32 @@
+// ブラウザ履歴の最大数
+settings.omnibarHistoryCacheSize = 500;
+// ビジュアルモードでテキストコピー後にノーマルモードへ
+settings.modeAfterYank = 'Normal';
+// j/k のスクロール量
+settings.scrollStepSize = 100;
+// 前/次 のページリンクに一致する正規表現
+settings.prevLinkRegex = /((<<|prev(ious)?)|<|‹|«|←|前[のへ]+)/i;
+settings.nextLinkRegex = /((>>|next)|>|›|»|→|次[のへ]+)/i;
+// ヒント表示位置
+settings.hintAlign = 'left';
+// ヒントキー表示中にShift押しながらヒントキーで新タブで開く
+settings.hintShiftNonActive = true;
+// Surfingkeys無効サイト
+settings.blocklistPattern = /mail.google.com/i;
+// 最近使用した順へ
+settings.tabsMRUOrder = false;
+settings.historyMUOrder = false;
+// 入力ボックスからフォーカスが外れたときにカーソルがあった場所にカーソル
+// Xでiで入力ボックスに切り替えるとiが入力され、ヒントキーも表示されるため
+settings.cursorAtEndOfInput = false;
+
+api.Hints.setCharacters('asdfwerxcvuionm');
+
+// PassThrough mode 1.5秒間だけSurfingkeys無効
+api.mapkey('p', '#0enter ephemeral PassThrough mode to temporarily suppress SurfingKeys', function() {
+  api.Normal.passThrough(1500);
+});
+
 // -- Utilities --
 const unmapKeys = (keys) => keys.forEach((key) => api.unmap(key));
 const iunmapKeys = (keys) => keys.forEach((key) => api.iunmap(key));
@@ -39,7 +68,7 @@ const tabOpenBackground = (url) =>
 
 const copyTitleAndUrl = (format) => {
   const text = format
-    .replace("%URL%", location.href)
+
     .replace("%TITLE%", document.title);
   api.Clipboard.write(text);
 };
@@ -134,19 +163,10 @@ api.addSearchAlias(
 );
 
 // Google jp 3ヶ月以内
-api.addSearchAlias(
-  "a3",
-  "Google 3ヶ月以内",
-  "https://www.google.co.jp/search?q={0}&tbs=qdr:m3,lr:lang_1ja&lr=lang_ja"
-);
+api.addSearchAlias("a3", "Google 3ヶ月以内", "https://www.google.co.jp/search?q={0}&tbs=qdr:m3,lr:lang_1ja&lr=lang_ja");
 
 // MDN
-api.addSearchAlias(
-  "amdn",
-  "MDN",
-  "https://developer.mozilla.org/search?q=",
-  "s",
-  "https://developer.mozilla.org/api/v1/search?q=",
+api.addSearchAlias("amdn", "MDN", "https://developer.mozilla.org/search?q=", "s", "https://developer.mozilla.org/api/v1/search?q=",
   function (response) {
     console.log(response);
     return res.documents.map((s) =>
@@ -236,6 +256,12 @@ api.addSearchAlias(
       );
   }
 );
+
+// Python 言語リファレンス
+api.addSearchAlias('pp', 'python-言語リファレンス', 'https://docs.python.org/3/search.html?q=');
+api.mapkey('opp', 'Search with alias python 言語リファレンス', function() {
+  api.Front.openOmnibar({type: 'SearchEngine', extra: 'pp'});
+});
 
 // -- Key mappings -- //
 api.mapkey("cm", "#7Copy title and link to markdown", () => {
@@ -503,6 +529,23 @@ api.mapkey(";h", "#00Show site-specific help", () => {
     api.Front.showPopup("No site-specific help available.");
   }
 });
+
+api.mapkey(';dd', 'display the date, day, and time', function () {
+  const padZero2 = (num) => String(num).padStart(2, '0');
+  const today = new Date();
+  const month = padZero2(today.getMonth() + 1);
+  const date = padZero2(today.getDate());
+  const day = today.getDay();
+  const dayList = ['日', '月', '火', '水', '木', '金', '土'];
+  const dayWeek = dayList[day];
+  const hour = padZero2(today.getHours());
+  const minutes = padZero2(today.getMinutes());
+  const formatTodayDate = `${month}月${date}日(${dayWeek}) ${hour}:${minutes}`;
+api.Front.showPopup(formatTodayDate);
+});
+
+// Disable SurfingKeys on Google editors
+// settings.blocklistPattern = /https?:\/\/(?:docs\.google\.com\/(?:document|spreadsheets|presentation)\/|slides\.google\.com\/)/i;
 
 /**
  * Theme customization
