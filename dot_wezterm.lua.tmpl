@@ -1,3 +1,4 @@
+---@diagnostic disable: keyword, miss-sep-in-table, exp-in-action, miss-symbol, unknown-symbol
 local wezterm = require("wezterm")
 local mux = wezterm.mux
 local act = wezterm.action
@@ -35,7 +36,9 @@ local hyperlink_rules = {
 		format = "https://www.github.com/$1/$3",
 	},
 }
-
+{{ if eq .chezmoi.os "darwin" }}
+local hello = "hello world"
+{{ end }}
 local is_maximized = false
 
 wezterm.on("gui-startup", function(cmd)
