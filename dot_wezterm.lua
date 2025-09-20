@@ -1,6 +1,6 @@
 local wezterm = require("wezterm")
 local mux = wezterm.mux
-local act = wezterm.action
+local action = wezterm.action
 
 default_prog = { "pwsh" }
 
@@ -54,21 +54,17 @@ local keys = {
 			window:perform_action(wezterm.action.ActivateCommandPalette, pane)
 		end),
 	},
-	{ key = "L", mods = "CTRL", action = act.ShowDebugOverlay },
-	-- { key = "RightArrow", mods = "ALT", action = act.ActivateTabRelative(1) },
-	-- { key = "LeftArrow", mods = "ALT", action = act.ActivateTabRelative(-1) },
-	{ key = "n", mods = "CTRL", action = wezterm.action({ SpawnTab = "CurrentPaneDomain" }) },
-	{ key = "w", mods = "CTRL", action = act.CloseCurrentTab({ confirm = false }) },
-	{ key = "RightArrow", mods = "CTRL", action = act.ActivateTabRelative(1) },
-	{ key = "LeftArrow", mods = "CTRL", action = act.ActivateTabRelative(-1) },
-	{ key = "f", mods = "CTRL", action = act.Search({ CaseSensitiveString = "" }) },
-	-- { key = "c", mods = "CTRL", action = act.CopyTo("Clipboard") },
-	-- { key = "v", mods = "CTRL", action = act.PasteFrom("Clipboard") },
-	{ key = "0", mods = "CTRL", action = act.ResetFontAndWindowSize },
-	{ key = "m", mods = "CTRL", action = act.EmitEvent("toggle_maximize") },
-	{ key = "q", mods = "CTRL", action = act.QuitApplication },
-	{ key = "=", mods = "CTRL", action = act.IncreaseFontSize },
-	{ key = "-", mods = "CTRL", action = act.DecreaseFontSize },
+	{ key = "L", mods = "CTRL", action = action.ShowDebugOverlay },
+	{ key = "n", mods = "CTRL", action = action({ SpawnTab = "CurrentPaneDomain" }) },
+	{ key = "w", mods = "CTRL", action = action.CloseCurrentTab({ confirm = false }) },
+	{ key = "RightArrow", mods = "CTRL", action = action.ActivateTabRelative(1) },
+	{ key = "LeftArrow", mods = "CTRL", action = action.ActivateTabRelative(-1) },
+	{ key = "f", mods = "CTRL", action = action.Search({ CaseSensitiveString = "" }) },
+	{ key = "0", mods = "CTRL", action = action.ResetFontAndWindowSize },
+	{ key = "m", mods = "CTRL", action = action.EmitEvent("toggle_maximize") },
+	{ key = "q", mods = "CTRL", action = action.QuitApplication },
+	{ key = "=", mods = "CTRL", action = action.IncreaseFontSize },
+	{ key = "-", mods = "CTRL", action = action.DecreaseFontSize },
 }
 
 return {
