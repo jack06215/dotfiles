@@ -359,7 +359,7 @@ $env.config = {
         vi_normal: blink_underscore
     }
     # if you want a light theme, replace `$dark_theme` to `$light_theme`
-    color_config: $light_theme,
+    color_config: $dark_theme,
     # always, never, number_of_rows, auto
     footer_mode: "auto"
     # the precision for displaying floats in tables
