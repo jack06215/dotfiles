@@ -1,0 +1,154 @@
+@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
+
+:root {
+  --tab-active-bg-color: #111117;
+  --tab-inactive-bg-color: #262639;
+  --tab-active-fg-fallback-color: #c1c1d1;
+  --tab-inactive-fg-fallback-color: #6c6c93;
+  --urlbar-focused-bg-color: #262639;
+  --urlbar-not-focused-bg-color: #262639;
+  --toolbar-bgcolor: #111117 !important;
+  --tab-font: "Cozette", monospace;
+  --urlbar-font: monospace;
+  --tab-private-icon: "P";
+  --tab-private-icon-colour: #00ffe0;
+  --urlbar-height-setting: 24px;
+  --tab-min-height: 20px !important;
+  --arrowpanel-menuitem-padding: 2px !important;
+  --toolbarbutton-inner-padding: 0px 2px !important;
+  --toolbar-field-background-color: var(--urlbar-not-focused-bg-color) !important;
+  --toolbar-field-focus-background-color: var(--urlbar-focused-bg-color) !important;
+}
+
+/* === FIX: Tabs stay visible at top === */
+#titlebar {
+  --tab-block-margin: 0px !important;
+  --proton-tab-block-margin: 0px !important;
+}
+
+#TabsToolbar {
+  background-color: var(--toolbar-bgcolor) !important;
+  min-height: var(--tab-min-height) !important;
+  padding-block: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
+/* Remove the autohide rotation completely */
+#navigator-toolbox,
+#nav-bar,
+#PersonalToolbar {
+  transform: none !important;
+  transition: none !important;
+  margin-bottom: 0 !important;
+}
+
+/* === Toolbar styling === */
+#navigator-toolbox {
+  border: none !important;
+  background: var(--toolbar-bgcolor) !important;
+}
+
+#nav-bar {
+  background: var(--toolbar-bgcolor) !important;
+  min-height: var(--urlbar-height-setting) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* === URL bar === */
+#urlbar-container {
+  --urlbar-container-height: var(--urlbar-height-setting) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  font-family: var(--urlbar-font);
+  font-size: 11px;
+}
+
+#urlbar {
+  --urlbar-height: var(--urlbar-height-setting) !important;
+  background-color: var(--urlbar-not-focused-bg-color) !important;
+  border: none !important;
+  min-height: var(--urlbar-height-setting) !important;
+}
+
+#urlbar-input {
+  color: #fff !important;
+  margin: 0.5em !important;
+}
+
+/* === Tabs === */
+.tabbrowser-tab {
+  min-height: var(--tab-min-height) !important;
+  background-color: var(--tab-inactive-bg-color) !important;
+  color: var(--tab-inactive-fg-fallback-color) !important;
+  font-family: var(--tab-font);
+  border: none !important;
+  padding-inline: 6px !important;
+}
+
+.tabbrowser-tab[selected] {
+  background-color: var(--tab-active-bg-color) !important;
+  color: var(--tab-active-fg-fallback-color) !important;
+  z-index: 2 !important;
+}
+
+.tabbrowser-tab:hover:not([selected]) {
+  background-color: #1c1c28 !important;
+}
+
+/* Hide tab close buttons */
+.tabbrowser-tab .tab-close-button { display: none !important; }
+
+/* Hide tab favicon unless pinned */
+.tab-icon-stack:not([pinned]) { display: none !important; }
+
+/* Remove tab shadows and spacers */
+#tabbrowser-tabs:not([noshadowfortests]) .tab-background {
+  box-shadow: none !important;
+}
+.titlebar-spacer, .titlebar-buttonbox-container { display: none !important; }
+
+/* === Other cleanup === */
+#back-button,
+#forward-button,
+#reload-button,
+#stop-button,
+#home-button,
+#library-button,
+#fxa-toolbar-menu-button,
+#customizableui-special-spring1,
+#customizableui-special-spring2 {
+  display: none !important;
+}
+
+/* === Unified extensions === */
+#unified-extensions-view {
+  --uei-icon-size: 12px !important;
+}
+.unified-extensions-item-message-deck,
+#unified-extensions-view > .panel-header,
+#unified-extensions-view > toolbarseparator,
+#unified-extensions-manage-extensions {
+  display: none !important;
+}
+
+/* === Private browsing indicator === */
+#private-browsing-indicator-with-label { display: none !important; }
+#main-window[privatebrowsingmode] .tabbrowser-tab[selected] .tab-content::before {
+  content: var(--tab-private-icon);
+  color: var(--tab-private-icon-colour);
+  margin-right: 0.5em;
+}
+
+/* === Status panel fix === */
+#statuspanel {
+  position: fixed !important;
+  bottom: 1vh !important;
+  left: 1vw !important;
+  background: #111117 !important;
+  border: none !important;
+  color: #c1c1d1 !important;
+  font-size: 10px !important;
+  max-width: 50% !important;
+}
