@@ -1,5 +1,9 @@
 @namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
 
+/* === Global Theme Variables ===
+   Defines all the color, font, and sizing variables used below.
+   Adjust these to quickly restyle the entire theme.
+*/
 :root {
   --tab-active-bg-color: #111117;
   --tab-inactive-bg-color: #262639;
@@ -20,12 +24,32 @@
   --toolbar-field-focus-background-color: var(--urlbar-focused-bg-color) !important;
 }
 
-/* === FIX: Tabs stay visible at top === */
+/* === Tabs stay visible at top ===
+   Removes default top/bottom tab margins and ensures tabs always stay flush at the top.
+*/
 #titlebar {
   --tab-block-margin: 0px !important;
   --proton-tab-block-margin: 0px !important;
 }
 
+/* === Tab Label and Icon Adjustments ===
+   Tightens tab label spacing and removes unnecessary padding.
+*/
+.tabbrowser-tab[selected]:not(:hover):not([pinned]) .tab-label-container,
+#tabbrowser-tabs:not([closebuttons="activetab"]) .tabbrowser-tab:not(:hover):not([pinned]) .tab-label-container {
+  padding-inline-end: 6px !important;
+}
+.tab-icon-stack {
+  margin-inline-start: auto;
+}
+.tab-label-container {
+  max-width: min-content;
+  margin-inline-end: auto;
+}
+
+/* === Tabs Toolbar ===
+   Sets toolbar color, removes extra padding, and reduces tab height.
+*/
 #TabsToolbar {
   background-color: var(--toolbar-bgcolor) !important;
   min-height: var(--tab-min-height) !important;
@@ -34,7 +58,9 @@
   border: none !important;
 }
 
-/* Remove the autohide rotation completely */
+/* === Disable Autohide/Slide Animations ===
+   Prevents Firefox UI elements from sliding or fading on hover.
+*/
 #navigator-toolbox,
 #nav-bar,
 #PersonalToolbar {
@@ -43,7 +69,9 @@
   margin-bottom: 0 !important;
 }
 
-/* === Toolbar styling === */
+/* === Toolbar Styling ===
+   Simplifies toolbar background and removes borders for a clean look.
+*/
 #navigator-toolbox {
   border: none !important;
   background: var(--toolbar-bgcolor) !important;
@@ -56,7 +84,9 @@
   margin: 0 !important;
 }
 
-/* === URL bar === */
+/* === URL Bar Container ===
+   Minimizes padding and sets consistent height and font for URL bar.
+*/
 #urlbar-container {
   --urlbar-container-height: var(--urlbar-height-setting) !important;
   padding: 0 !important;
@@ -65,6 +95,9 @@
   font-size: 11px;
 }
 
+/* === URL Bar Field ===
+   Removes borders and uses the same background color when unfocused.
+*/
 #urlbar {
   --urlbar-height: var(--urlbar-height-setting) !important;
   background-color: var(--urlbar-not-focused-bg-color) !important;
@@ -72,12 +105,17 @@
   min-height: var(--urlbar-height-setting) !important;
 }
 
+/* === URL Bar Input Text ===
+   Sets white text and tighter margins inside the address bar.
+*/
 #urlbar-input {
   color: #fff !important;
   margin: 0.5em !important;
 }
 
-/* === Tabs === */
+/* === Tabs Appearance ===
+   Defines colors, fonts, and hover behavior for tabs.
+*/
 .tabbrowser-tab {
   min-height: var(--tab-min-height) !important;
   background-color: var(--tab-inactive-bg-color) !important;
@@ -87,29 +125,40 @@
   padding-inline: 6px !important;
 }
 
+/* === Active Tab ===
+   Highlights the selected tab with brighter text and topmost z-index.
+*/
 .tabbrowser-tab[selected] {
   background-color: var(--tab-active-bg-color) !important;
   color: var(--tab-active-fg-fallback-color) !important;
   z-index: 2 !important;
 }
 
+/* === Hovered Tab ===
+   Slightly brightens inactive tabs on hover.
+*/
 .tabbrowser-tab:hover:not([selected]) {
   background-color: #1c1c28 !important;
 }
 
-/* Hide tab close buttons */
+/* === Hide Tab Close Buttons ===
+   Keeps interface clean by hiding close icons unless pinned.
+*/
 .tabbrowser-tab .tab-close-button { display: none !important; }
 
-/* Hide tab favicon unless pinned */
+/* === Hide Tab Favicons ===
+   Removes site icons from tabs unless they are pinned.
+*/
 .tab-icon-stack:not([pinned]) { display: none !important; }
 
-/* Remove tab shadows and spacers */
+/* === Remove Tab Shadows & Titlebar Buttons */
 #tabbrowser-tabs:not([noshadowfortests]) .tab-background {
   box-shadow: none !important;
 }
-.titlebar-spacer, .titlebar-buttonbox-container { display: none !important; }
+.titlebar-spacer,
+.titlebar-buttonbox-container { display: none !important; }
 
-/* === Other cleanup === */
+/* Hides navigation and extra toolbar buttons. */
 #back-button,
 #forward-button,
 #reload-button,
@@ -122,7 +171,7 @@
   display: none !important;
 }
 
-/* === Unified extensions === */
+/*  Simplifies extension popup menu by removing headers and footers. */
 #unified-extensions-view {
   --uei-icon-size: 12px !important;
 }
@@ -133,7 +182,7 @@
   display: none !important;
 }
 
-/* === Private browsing indicator === */
+/* Adds indicator on the active tab when in private mode. */
 #private-browsing-indicator-with-label { display: none !important; }
 #main-window[privatebrowsingmode] .tabbrowser-tab[selected] .tab-content::before {
   content: var(--tab-private-icon);
@@ -141,7 +190,7 @@
   margin-right: 0.5em;
 }
 
-/* === Status panel fix === */
+/* Moves the status panel to the lower-left corner with custom styling. */
 #statuspanel {
   position: fixed !important;
   bottom: 1vh !important;
@@ -151,4 +200,34 @@
   color: #c1c1d1 !important;
   font-size: 10px !important;
   max-width: 50% !important;
+}
+
+/* Creates a colorful animated border around active tab */
+@keyframes filter{from{ filter: hue-rotate(0deg) } to { filter: hue-rotate(360deg) }}
+.tabbrowser-tab[selected] > .tab-stack::before{
+  grid-area: 1/1;
+  content: "";
+  display: inherit;
+  margin-block: var(--tab-block-margin);
+  border-radius: var(--tab-border-radius);
+  z-index: 0;
+  background-image: conic-gradient(
+    hsl(0 100% 70%),
+    hsl(60 100% 45%) 70deg,
+    hsl(120 100% 55%) 105deg,
+    hsl(160 100% 60%) 160deg,
+    hsl(200 100% 60%) 200deg,
+    hsl(240 100% 65%) 255deg,
+    hsl(300 100% 60%) 290deg,
+    hsl(360 100% 70%) 360deg);
+  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPg0KICA8cmVjdCB4PSIwIiB5PSIwIiByeD0iNCIgc3Ryb2tlPSJyZWQiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIi8+DQo8L3N2Zz4");
+  background-size: cover;
+  background-position: center;
+  animation: filter steps(30) 2s infinite;
+  
+}
+.tab-background[selected]{
+  border: 1px solid transparent !important;
+  outline: none !important;
+  background-clip: padding-box !important;
 }
