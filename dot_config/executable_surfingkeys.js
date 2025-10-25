@@ -359,24 +359,20 @@ siteMapkey(/booklog\.jp/, () => {
 
 // GitHub
 const github_username = "jack06215";
+const github_profile = ["jack06215", "flywheel-jp"];
+
 siteMapkey(/github\.com/, () => {
-  api.mapkey(
-    "ga",
-    "Go to assigned PRs for current GitHub repo",
-    function goToAssignedPRs() {
-      const match = window.location.href.match(
-        /^https:\/\/github\.com\/([^\/]+)\/([^\/?#]+)/
-      );
-      if (match && match[1] == github_username) {
-        const user = match[1];
-        const repo = match[2];
-        const assignedUrl = `https://github.com/${user}/${repo}/pulls?q=is%3Apr+is%3Aopen+assignee%3A${user}+author%3A${user}`;
-        window.location.href = assignedUrl;
-      } else {
-        Front.showPopup("Not a valid GitHub repo URL.");
-      }
+  api.mapkey("ga", "Go to assigned PRs for current GitHub repo", function goToAssignedPRs() {
+    const match = window.location.href.match(/^https:\/\/github\.com\/([^\/]+)\/([^\/?#]+)/);
+    if (match && github_profile.includes(match[1])) {
+      const user = match[1];
+      const repo = match[2];
+      const assignedUrl = `https://github.com/${user}/${repo}/pulls?q=is%3Apr+is%3Aopen+assignee%3A${github_username}`;
+      window.location.href = assignedUrl;
+    } else {
+      api.Front.showPopup("Not a valid GitHub repo URL.");
     }
-  );
+  });
 });
 
 // amazon.co.jp product page
@@ -570,9 +566,9 @@ settings.theme = `
 /* Edit these variables for easy theme making */
 :root {
   /* Font */
-  --font: 'Source Code Pro', Ubuntu, sans;
+  --font: 'JetBrains Mono NL', monospace;
   --font-size: 12;
-  --font-weight: bold;
+  --font-weight: normal;
 
   /* -------------- */
   /* --- THEMES --- */
