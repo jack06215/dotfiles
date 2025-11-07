@@ -198,3 +198,22 @@
   background-clip: padding-box !important;
 }
 
+/* === URL Bar Expansion on Focus === */
+#urlbar-container {
+  transition: all 0.25s ease-in-out !important;
+  max-width: 20vw !important;
+}
+#urlbar-container[breakout][breakout-extend],
+#urlbar-container:focus-within {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  transition: all 0.25s ease-in-out !important;
+}
+#urlbar {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  transition: all 0.25s ease-in-out !important;
+}
