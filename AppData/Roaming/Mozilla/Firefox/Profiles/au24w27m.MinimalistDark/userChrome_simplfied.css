@@ -203,7 +203,6 @@
   transition: all 0.25s ease-in-out !important;
   max-width: 20vw !important;
 }
-
 #urlbar-container[breakout][breakout-extend],
 #urlbar-container:focus-within {
   width: 100vw !important;
@@ -212,8 +211,6 @@
   margin-right: 0 !important;
   transition: all 0.25s ease-in-out !important;
 }
-
-/* Optional: center or realign contents */
 #urlbar {
   background: transparent !important;
   border: none !important;
