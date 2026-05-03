@@ -10,4 +10,4 @@ meetingbar
 powershell
 session-manager-plugin
 snowflake-snowsql
-wezterm
+wezterm@nightly
