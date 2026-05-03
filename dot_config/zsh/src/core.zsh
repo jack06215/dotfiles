@@ -1,4 +1,3 @@
-export GPG_TTY=$(tty)
 # Core options
 setopt appendhistory
 setopt sharehistory
