@@ -1,85 +1,109 @@
 # shellcheck shell=bash
-# shellcheck disable=SC1091
-# filetype=sh
 
-ROOT_CACHE_DIR="${HOME}/.flywheel"
-TARGETS_CACHE_FILE="${ROOT_CACHE_DIR}/.bazel-targets"
+# Shared flags for all bazel query invocations.
+# Centralised here so changes apply everywhere.
+_BAZEL_QUERY_FLAGS=(
+  --output=label
+  --noshow_progress
+  --keep_going          # continue past errors in broken targets
+  --color=yes
+)
 
-function _stat_mtime() {
-  local file="${1}"
+# _bazel_fzf_pick <prompt> [multi]
+#
+# Wrap fzf with a consistent preview and layout.
+# Pass "multi" as the second argument to enable multi-select (returns
+# newline-separated targets).
+function _bazel_fzf_pick() {
+  local prompt="$1"
+  local multi="${2:-}"
 
-  if stat -f %m "${file}" >/dev/null 2>&1; then
-    # macOS
-    stat -f %m "${file}"
-  else
-    # Linux
-    stat -c %Y "${file}"
-  fi
+  local -a fzf_args=(
+    --prompt="${prompt}"
+    --height=40%
+    --layout=reverse
+    --preview='bazel query "kind(.*, {})" --output=build 2>/dev/null \
+               | { command -v bat &>/dev/null \
+                   && bat --language=python --color=always --style=plain \
+                   || cat; }'
+    --preview-window=right:60%:wrap
+  )
+
+  [[ "${multi}" == "multi" ]] && fzf_args+=(--multi --bind='ctrl-a:select-all')
+
+  fzf "${fzf_args[@]}"
 }
 
-function _ensure_bazel_cache_dir() {
-  [[ -d "${ROOT_CACHE_DIR}" ]] || mkdir -p "${ROOT_CACHE_DIR}"
+# _bazel_buffer_and_pick <prompt> <bazel-query-expr> [multi]
+#
+# Runs `bazel query <expr>`, buffers the output in a temp file (so that
+# progress/warning messages printed to stderr don't corrupt the fzf layout),
+# then hands the buffer to fzf for interactive selection.
+#
+# Returns the selected target(s) on stdout, one per line.
+# Returns 1 if the user cancels or no target is matched.
+function _bazel_buffer_and_pick() {
+  local prompt="$1"
+  local query="$2"
+  local multi="${3:-}"
+
+  local tmp
+  tmp="$(mktemp)" || return 1
+  # Use a subshell so the EXIT trap is scoped to this function's lifetime only.
+  (
+    trap 'rm -f "${tmp}"' EXIT
+
+    # stdout (labels) → buffer for fzf
+    # stderr (server startup, progress, warnings) → /dev/tty so they're
+    # visible above the fzf prompt without polluting the selection list
+    bazel query \
+      "${query}" \
+      "${_BAZEL_QUERY_FLAGS[@]}" \
+      >"${tmp}" 2>/dev/tty
+
+    local selection
+    selection="$(_bazel_fzf_pick "${prompt}" "${multi}" <"${tmp}")"
+
+    [[ -n "${selection}" ]] || exit 1
+    printf '%s\n' "${selection}"
+  )
 }
 
-function _bazel_cache_stale() {
-  [[ ! -f "${TARGETS_CACHE_FILE}" ]] && return 0
+# ---------------------------------------------------------------------------
+# Public helpers
+# ---------------------------------------------------------------------------
 
-  local now mtime
-  now="$(date +%s)"
-  mtime="$(_stat_mtime "${TARGETS_CACHE_FILE}")" || return 0
-
-  # 24 hours = 86400 seconds
-  ((now - mtime > 86400))
+# Select a single runnable target (binary).
+function bazel_find_runnable_target() {
+  _bazel_buffer_and_pick \
+    "Select a runnable target > " \
+    'kind(".*_binary", ...)'
 }
 
-function bazel_refresh_targets() {
-  _ensure_bazel_cache_dir
-
-  echo "Refreshing Bazel targets..."
-
-  bazel query \
-    'kind("(.*_binary|.*_test)", //...)' \
-    --output=label \
-    --noshow_progress \
-    --keep_going |
-    sort -u >|"${TARGETS_CACHE_FILE}"
-
-  echo "✔ Cached $(wc -l <"${TARGETS_CACHE_FILE}") targets → ${TARGETS_CACHE_FILE}"
+# Select one or more testable targets (supports multi-select with TAB / ctrl-a).
+function bazel_find_testable_target() {
+  _bazel_buffer_and_pick \
+    "Select testable target(s) > " \
+    'kind("(test|test_suite) rule", ...)' \
+    "multi"
 }
 
-function bazel_get_targets() {
-  local mode="${1:-any}"
-  local filter='.'
+# Select any single target.
+function bazel_find_any_target() {
+  _bazel_buffer_and_pick \
+    "Select a target > " \
+    '...'
+}
 
-  _ensure_bazel_cache_dir
-
-  if _bazel_cache_stale; then
-    echo "Bazel target cache stale — refreshing..." >&2
-    bazel_refresh_targets || return 1
-  fi
-
-  [[ -s "${TARGETS_CACHE_FILE}" ]] || {
-    echo "Target cache missing or empty — run bazel_refresh_targets" >&2
-    return 1
-  }
-
-  case "${mode}" in
-  test) filter='_test$' ;;
-  api) filter='(^|[^a-zA-Z0-9])api([^a-zA-Z0-9]|$)' ;;
-  console) filter='(^|[^a-zA-Z0-9])console([^a-zA-Z0-9]|$)' ;;
-  sealedsecrets) filter='(^|[^a-zA-Z0-9])sealedsecrets([^a-zA-Z0-9]|$)' ;;
-  *) filter='.' ;;
-  esac
-
-  local target
-  target="$(
-    grep -E "${filter}" "${TARGETS_CACHE_FILE}" |
-      fzf \
-        --prompt="Bazel ${mode} ❯ " \
-        --preview 'bazel query "kind(.*, {})" --output=build 2>/dev/null' \
-        --preview-window=right:60%:wrap
-  )" || return 1
-
-  [[ -n "${target}" ]] || return 1
-  echo "${target}"
+# bazel_find_target_by_kind <kind-pattern>
+#
+# Ad-hoc kind filter without writing a new function.
+# Example:
+#   bazel_find_target_by_kind "go_library"
+#   bazel_find_target_by_kind ".*_library"
+function bazel_find_target_by_kind() {
+  local kind="${1:?Usage: bazel_find_target_by_kind <kind-pattern>}"
+  _bazel_buffer_and_pick \
+    "Select a ${kind} target > " \
+    "kind(\"${kind}\", ...)"
 }

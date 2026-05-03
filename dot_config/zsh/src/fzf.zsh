@@ -10,6 +10,7 @@ export FZF_DEFAULT_OPTS='
   --height=40%
   --layout=reverse
   --border
+  --bind="ctrl-/:toggle-preview"
   --preview="
     if [ -d {} ]; then
       eza --tree --level=2 --color=always -- {}
