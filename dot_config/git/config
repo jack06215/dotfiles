@@ -1,0 +1,75 @@
+[secrets]
+  providers = git secrets --aws-provider
+  patterns = (A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}
+  patterns = (\"|')?(AWS|aws|Aws)?_?(SECRET|secret|Secret)?_?(ACCESS|access|Access)?_?(KEY|key|Key)(\"|')?\\s*(:|=>|=)\\s*(\"|')?[A-Za-z0-9/\\+=]{40}(\"|')?
+  patterns = (\"|')?(AWS|aws|Aws)?_?(ACCOUNT|account|Account)_?(ID|id|Id)?(\"|')?\\s*(:|=>|=)\\s*(\"|')?[0-9]{4}\\-?[0-9]{4}\\-?[0-9]{4}(\"|')?
+  allowed = AKIAIOSFODNN7EXAMPLE
+  allowed = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+[color]
+  status = auto
+  diff = auto
+  branch = auto
+  interactive = auto
+  grep = auto
+  ui = auto
+[alias]
+  a = "!git status --short | fzf | awk '{print $2}' | xargs git add"
+  d = diff
+  dw = diff HEAD
+  df = diff --name-only HEAD
+  isclean = diff --no-ext-diff --quiet --exit-code
+  f = fetch --all
+  co = checkout
+  ci = commit
+  ca = commit -a
+  ce = commit --allow-empty
+  name = rev-parse --abbrev-ref HEAD
+  root = rev-parse --show-toplevel
+  ps = "!git push origin $(git name)"
+  psf = "!git push origin $(git name) --force-with-lease"
+  psF = "!git push origin $(git name) --force"
+  pu = push -u origin HEAD
+  pl = "!git pull origin $(git name)"
+  ri = rebase -i
+  rc = rebase --continue
+  ra = rebase --abort
+  rs = rebase --skip
+  fp = format-patch
+  ap = apply -v
+  st = status
+  sha = stash
+  shl = stash --all
+  shp = stash pop
+  sw = switch
+  swc = switch -c
+  br = branch
+  ba = branch -a
+  bm = branch --merged
+  bn = branch --no-merged
+  bl = blame -w -C -C -C
+  df = "!git hist | fzf | awk '{print $2}' | xargs -I {} git diff {}^ {}"
+  hist = log --pretty=format:\"%Cgreen%h %Creset%cd %Cblue[%cn] %Creset%s%C(yellow)%d%C(reset)\" --graph --date=relative --decorate --all
+  llog = log --graph --name-status --pretty=format:\"%C(red)%h %C(reset)(%cd) %C(green)%an %Creset%s %C(yellow)%d%Creset\" --date=relative
+  open = "!hub browse"
+  type = cat-file -t
+  dump = cat-file -p
+  find = "!f() { git log --pretty=format:\"%h %cd [%cn] %s%d\" --date=relative -S'pretty' -S\"$@\" | fzf | awk '{print $1}' | xargs -I {} git diff {}^ {}; }; f"
+  # edit conflicted file on merge
+  edit-unmerged = "!f() { git ls-files --unmerged | cut -f2 | sort -u ; }; vim `f`"
+  # add conflicted file on merge
+  add-unmerged = "!f() { git ls-files --unmerged | cut -f2 | sort -u ; }; git add `f`"
+[pull]
+  rebase = false
+[core]
+  excludeFile = ~/.config/git/ignore
+  ignorecase = false
+  fsmonitor = true
+  untrackedcache = true
+[init]
+  defaultBranch = main
+[rerere]
+  enabled = true
+[branch]
+  sort = -committerdate
+[commit]
+  gpgsign = true

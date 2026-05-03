@@ -1,0 +1,32 @@
+#!/usr/bin/env zsh
+# shellcheck shell=bash
+if [ -z "$1" ]; then
+  echo "Usage: $0 <YouTube-URL> [language]"
+  exit 1
+fi
+
+URL="$1"
+LANG="${2:-en}"   # default to English if no second argument is given
+
+# Step 1: Download audio as WAV (16kHz mono), safe filename
+yt-dlp -x \
+  --audio-format wav \
+  --audio-quality 0 \
+  --postprocessor-args "ffmpeg:-ar 16000 -ac 1" \
+  --restrict-filenames \
+  -o "%(title)s[%(id)s].%(ext)s" \
+  "$URL"
+
+AUDIO_FILE=$(find . -maxdepth 1 -type f -name '*.wav' -print0 | xargs -0 ls -t | head -n1)
+
+if [ ! -f "$AUDIO_FILE" ]; then
+  echo "Error: No .wav file found. Something went wrong with download."
+  exit 1
+fi
+
+whisper-cpp \
+  -m ~/tools/llm-models/ggml-large-v3-turbo.bin \
+  -f "$AUDIO_FILE" \
+  -l "$LANG" \
+  --output-txt \
+  --output-srt

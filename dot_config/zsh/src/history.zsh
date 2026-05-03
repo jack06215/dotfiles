@@ -1,0 +1,5 @@
+# History
+HISTSIZE=100000
+HISTFILE="$HOME/.zsh_history"
+SAVEHIST=$HISTSIZE
+HISTDUP=erase

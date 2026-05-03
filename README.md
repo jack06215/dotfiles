@@ -1,4 +1,5 @@
-# dotfiles
+# My custom `dotfiles`
 
-## Pre-requsiste
+## Pre-requisite
+
 - [chezmoi](https://www.chezmoi.io/)

@@ -1,0 +1,110 @@
+#!/usr/bin/env zsh
+# shellcheck shell=bash
+# List recently worked-on *projects* (dirs) based on Neovim oldfiles, pick with fzf, open in nvim.
+
+set -euo pipefail
+
+# -------- Config --------
+# Customize project root markers via env var if you like:
+# export PROJECT_MARKERS=".git package.json pyproject.toml poetry.lock requirements.txt setup.cfg setup.py Cargo.toml go.mod Makefile Gemfile composer.json mix.exs .hg .svn"
+typeset -a markers
+markers=(${=PROJECT_MARKERS:-.git package.json pyproject.toml poetry.lock requirements.txt setup.cfg setup.py Cargo.toml go.mod Makefile Gemfile composer.json mix.exs .hg .svn})
+
+# -------- Helpers --------
+# Find project root for a path:
+project_root_of() {
+  local path=$1 dir
+  # If a directory was passed, use it; else use its parent
+  if [[ -d $path ]]; then
+    dir=${path:A}
+  else
+    dir=${path:A:h}
+  fi
+
+  # Fast path: git repo?
+  if command -v git >/dev/null 2>&1; then
+    if root=$(git -C "$dir" rev-parse --show-toplevel 2>/dev/null); then
+      print -r -- "$root"
+      return 0
+    fi
+  fi
+
+  # Walk upward looking for markers
+  while [[ $dir != "/" ]]; do
+    for m in $markers; do
+      if [[ -e "$dir/$m" ]]; then
+        print -r -- "$dir"
+        return 0
+      fi
+    done
+    dir=${dir:h}
+  done
+
+  # Fallback: use the directory itself
+  print -r -- "${path:A:h}"
+}
+
+# -------- Collect recent files from Neovim --------
+# Use newline splitting to preserve spaces in filenames.
+typeset -a oldfiles
+oldfiles=("${(@f)$(nvim -u NONE --headless +'lua io.write(table.concat(vim.v.oldfiles, "\n") .. "\n")' +qa)}")
+
+# Keep only existing files and map to project roots
+typeset -A seen
+typeset -a projects
+for f in "${oldfiles[@]}"; do
+  [[ -n $f && -f $f ]] || continue
+  root=$(project_root_of "$f")
+  # Deduplicate while keeping recency order
+  if [[ -n $root && -d $root && -z ${seen[$root]:-} ]]; then
+    projects+=("$root")
+    seen[$root]=1
+  fi
+done
+
+# If nothing found, optional fallback to zoxide recent dirs (comment out if not wanted)
+if (( ${#projects[@]} == 0 )) && command -v zoxide >/dev/null 2>&1; then
+  projects=("${(@f)$(zoxide query -l)}")
+fi
+
+(( ${#projects[@]} > 0 )) || { echo "No recent projects found."; exit 0; }
+
+# -------- FZF selection --------
+# Preview shows git status (if repo) and README (if present); otherwise a short ls.
+# Tip: press Tab for multi-select.
+selection=("${(@f)$(printf '%s\n' "${projects[@]}" | \
+  fzf --multi \
+      --height=70% \
+      --layout=default \
+      --prompt='Projects > ' \
+      --preview '
+        p="{}"
+        if [ -d "$p/.git" ] && command -v git >/dev/null 2>&1; then
+          (git -C "$p" status -sb || true)
+          echo
+        fi
+        readme=$(ls -1 "$p"/README* 2>/dev/null | head -n1)
+        if [ -n "$readme" ] && command -v bat >/dev/null 2>&1; then
+          echo "==> $(basename "$readme")"
+          bat -n --color=always --line-range=:200 "$readme" 2>/dev/null || true
+        else
+          ls -la "$p" 2>/dev/null | sed -n "1,200p"
+        fi
+      ' \
+)}")
+
+(( ${#selection[@]} > 0 )) || exit 0
+
+# -------- Open in Neovim --------
+# If multiple projects selected, open one tab per project and set tab-local cwd.
+typeset -a cmds
+for idx in {1..${#selection[@]}}; do
+  dir=${selection[$idx]}
+  if (( idx == 1 )); then
+    cmds+=(-c "tcd ${dir:q}")
+  else
+    cmds+=(-c "tabnew | tcd ${dir:q}")
+  fi
+done
+
+exec nvim "${cmds[@]}"

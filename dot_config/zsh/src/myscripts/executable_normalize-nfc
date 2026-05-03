@@ -1,0 +1,9 @@
+#!/usr/bin/env zsh
+# shellcheck shell=bash
+
+function normalized_nfc() {
+  python3 -c 'import sys, unicodedata; print(unicodedata.normalize("NFC", sys.argv[1]))' "$1"
+}
+
+normalized_nfc "$@"
+

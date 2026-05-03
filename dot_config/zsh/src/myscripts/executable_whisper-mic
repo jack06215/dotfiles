@@ -1,0 +1,50 @@
+#!/usr/bin/env zsh
+# shellcheck shell=bash
+
+set -euo pipefail
+
+# default: use system default input (-c omitted)
+DEVICE_ID=""
+
+while getopts ":c:h" opt; do
+  case "$opt" in
+    c)
+      DEVICE_ID="$OPTARG"
+      ;;
+    h)
+      echo "Usage: whisper-mic [-c device_id]"
+      echo "  -c device_id   Audio capture device ID (optional)"
+      exit 0
+      ;;
+    \?)
+      echo "❌ Invalid option: -$OPTARG" >&2
+      exit 1
+      ;;
+    :)
+      echo "❌ Option -$OPTARG requires an argument" >&2
+      exit 1
+      ;;
+  esac
+done
+
+shift $((OPTIND - 1))
+
+# build optional capture arg
+CAPTURE_ARGS=()
+[[ -n "$DEVICE_ID" ]] && CAPTURE_ARGS=(-c "$DEVICE_ID")
+
+exec whisper-stream \
+  -m ~/tools/llm-models/ggml-large-v3-turbo.bin \
+  -l ja \
+  -t 4 \
+  --step 0 \
+  --length 8000 \
+  --keep 800 \
+  --beam-size 5 \
+  --max-tokens 64 \
+  --keep-context \
+  --vad-thold 0.65 \
+  --freq-thold 120.0 \
+  -ps \
+  "${CAPTURE_ARGS[@]}" \
+  -f whisper_output.txt

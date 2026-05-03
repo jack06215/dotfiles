@@ -1,0 +1,91 @@
+#!/usr/bin/env zsh
+# shellcheck shell=bash
+
+# Usage:
+#   fetch_blob -p PROFILE -b BUCKET S3_KEY
+#   fetch_blob -p PROFILE s3://BUCKET/key
+#
+
+function fetch_blob() {
+  local profile=""
+  local bucket=""
+
+  # Parse flags
+  local opt
+  while getopts ":p:b:h" opt; do
+    case "$opt" in
+      p) profile="$OPTARG" ;;
+      b) bucket="$OPTARG" ;;
+      h)
+        cat <<'USAGE' >&2
+Usage:
+  fetch_blob -p PROFILE -b BUCKET S3_KEY
+  fetch_blob -p PROFILE s3://BUCKET/key
+
+Required:
+  -p PROFILE   AWS profile
+  -b BUCKET    S3 bucket name (ignored if using full s3:// URL)
+USAGE
+        return 2
+        ;;
+      \?)
+        echo "Unknown option: -$OPTARG" >&2
+        return 2
+        ;;
+      :)
+        echo "Option -$OPTARG requires an argument." >&2
+        return 2
+        ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+
+  if [[ -z "$profile" ]]; then
+    echo "Error: -p PROFILE is required." >&2
+    return 2
+  fi
+  if [[ $# -lt 1 ]]; then
+    echo "Error: missing S3 key or URL." >&2
+    return 2
+  fi
+
+  local key_or_url="$1"
+  local s3_url
+
+  # Build the S3 URL
+  if [[ "$key_or_url" == s3://* ]]; then
+    s3_url="$key_or_url"
+  else
+    if [[ -z "$bucket" ]]; then
+      echo "Error: -b BUCKET is required when not using a full s3:// URL." >&2
+      return 2
+    fi
+    s3_url="s3://$bucket/$key_or_url"
+  fi
+
+  # Try original path
+  if aws --profile "$profile" s3 cp "$s3_url" -; then
+    return 0
+  fi
+
+  # Try NFD-normalized path if available
+  if ! command -v normalize-nfd >/dev/null 2>&1; then
+    echo "First attempt failed, and 'normalize-nfd' not found for fallback." >&2
+    return 1
+  fi
+
+  local normalized_url
+  normalized_url=$(normalize-nfd "$s3_url")
+
+  if aws --profile "$profile" s3 cp "$normalized_url" -; then
+    return 0
+  else
+    echo "Failed to fetch blob from both original and NFD-normalized paths." >&2
+    return 1
+  fi
+}
+
+# Allow running standalone
+if [[ "${(%):-%N}" == "$0" ]]; then
+  fetch_blob "$@"
+fi

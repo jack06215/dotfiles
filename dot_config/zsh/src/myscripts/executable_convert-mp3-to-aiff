@@ -1,0 +1,51 @@
+#!/usr/bin/env zsh
+# shellcheck shell=bash
+
+function convert_mp3_to_aiff() {
+  input="$1"
+  custom_name="$2"
+  install_flag="$3"
+
+  if [[ -z "$input" ]]; then
+    echo "Usage: convert_mp3_to_aiff <input.mp3> [output_name] [--install]"
+    return 1
+  fi
+
+  if [[ ! -f "$input" ]]; then
+    echo "Error: File not found: $input"
+    return 1
+  fi
+
+  # Determine output name
+  if [[ -n "$custom_name" && "$custom_name" != "--install" ]]; then
+    base="$custom_name"
+  else
+    base="${input:t:r}"
+  fi
+
+  output="${base}.aiff"
+
+  echo "Converting '$input' → '$output' ..."
+  ffmpeg -v quiet -i "$input" -c:a pcm_s16be "$output"
+
+  if [[ $? -ne 0 ]]; then
+    echo "Conversion failed."
+    return 1
+  fi
+
+  echo "Created: $output"
+
+  # Handle installation if --install flag appears in either 2nd or 3rd position
+  if [[ "$custom_name" == "--install" || "$install_flag" == "--install" ]]; then
+    mkdir -p ~/Library/Sounds
+    cp "$output" ~/Library/Sounds/
+    echo "Installed to ~/Library/Sounds/"
+    echo
+    echo "✔ Ready to use in terminal-notifier:"
+    echo "    -sound \"$base\""
+  fi
+
+  echo "Done."
+}
+
+convert_mp3_to_aiff "$@"

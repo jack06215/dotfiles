@@ -1,16 +1,19 @@
-.config/surfingkeys.js
+**/__pycache__/**
+**/*.pyc
+**/.mypy_cache/**
+**/.git/**
+**/.gitignore
+**/poetry.lock
+**/*.egg-info/**
+**/node_modules/**
+.zsh_history
+.zsh_sessions/**
+.zcompdump
+
 {{ if ne .chezmoi.os "windows" }}
 AppData/**
 .glzr/**
 .starship/**
 .wezterm.lua
-{{ end }}
-{{ if ne .chezmoi.os "darwin" }}
-.zshrc
-.config/zellij/**
-.config/starship/**
-.config/lazygit/**
-.config/gh/**
-.config/gh-dash/**
 {{ end }}
 
