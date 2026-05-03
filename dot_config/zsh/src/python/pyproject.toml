@@ -1,0 +1,239 @@
+[tool.poetry]
+name = "zsh-python"
+version = "1.0.0"
+description = "zsh python script."
+authors = ["Jack Cho"]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "3.13.11"
+
+aiostream = "^0.6.2"
+beautifulsoup4 = "^4.9.1"
+boto3 = "^1.37"
+cryptography = "^44.0.1"
+dagster = "^1.9.13"
+dlt = "^1.18.2"
+gdown = "^5.2.1"
+greenlet = "^3.1.1"
+langchain = "^1.0.1"
+langchain-community = "^0.4.1"
+langchain-core = "^1.2.5"
+langchain-ollama = "^1.0.1"
+langchain-openai = "^1.0.1"
+langgraph = "^1.0.1"
+lark = "^1.3.0"
+llm = "^0.28"
+markdown-it-py = "^3.0.0"
+more_itertools = "^10.7.0"
+opencv-python-headless = "^4.11.0"
+openpyxl = "^3.0.7"
+pandas = "^2.2.2"
+pandera = "^0.27.0"
+pdf2image = "^1.17.0"
+pillow = "^11.0.0"
+psutil = "^5.8.0"
+psycopg2-binary = "^2.9.5"
+pyarrow = "^23.0.0"
+pydantic = "^2.0.0"
+pypdf = "^6.4.0"
+python-dateutil = "^2.8.2"
+python-docx = "^1.1.2"
+python-pptx = "^1.0.1"
+pytz = "^2023.4"
+pyyaml = "^6.0.1"
+requests = "^2.32.0"
+slack-sdk = "^3.31.0"
+snowflake-connector-python = { extras = ["pandas"], version = "^3.13.1" }
+sqlglot = "^27.27.0"
+tenacity = "^8.2.2"
+tqdm = "^4.64.0"
+typed-argument-parser = "^1.8.1"
+typing_extensions = "^4.8.0"
+urllib3 = "^2.6.3"
+xlrd = "^2.0.2"
+
+[tool.poetry.group.dev.dependencies]
+# TODO: Sync with the version of requests once urllib3 has been upgraded to 2.x.
+boto3-stubs = { extras = ["s3", "secretsmanager", "rds"], version = "^1.37" }
+mypy = "^1.7.0"
+pandas-stubs = "^2.3.3.251219"
+pytest = "^9.0.2"
+ruff = "^0.9.6"
+shandy-sqlfmt = "^0.21.4"
+sqlfluff = "^3.0.3"
+sqlfluff-templater-dbt = "^3.0.3"
+types-python-dateutil = "^2.8.2"
+types-pytz = "^2025.2.0.20251108"
+types-pyyaml = "^6.0.12"
+types-requests = "^2.32.4.20250913"
+types-urllib3 = "^1.26.12"
+
+[tool.mypy]
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_untyped_defs = true
+enable_error_code = [
+  "ignore-without-code",
+  "redundant-expr",
+  "truthy-bool",
+  "truthy-iterable",
+]
+exclude = ['_pb2\.pyi?$', '_pb2_grpc\.pyi?$', 'generated']
+explicit_package_bases = true # added to fix hoge_lib_mypy_test.runfiles is not a valid Python package name in bazel mypy test
+extra_checks = true
+follow_imports = 'silent'
+follow_imports_for_stubs = true
+ignore_missing_imports = true
+namespace_packages = true
+no_implicit_reexport = true
+plugins = ['pydantic.mypy']
+python_version = '3.12'
+strict_equality = true
+warn_redundant_casts = true
+warn_unreachable = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_untyped_fields = true
+warn_required_dynamic_aliases = true
+
+[tool.pyright]
+include = ["python"]
+
+# The following config for sqlfluff has not been fixed yet and not enforced yet.
+# TODO: Enforce the following config once it has been fixed.
+[tool.sqlfluff.core]
+templater = 'raw'
+rules = 'all'
+# Exclude the following rules:
+# - AL05 (aliasing.unused): Excluded because renaming columns impacts the
+#   exporting of query results as files, such as CTAS in Athena.
+# - AL07 (aliasing.forbid): To allow subqueries within FROM and JOIN clauses.
+# - JJ01 (jinja.padding): Excluded because Python-format-style placeholders are
+#   wrongly considered as Jinja placeholders.
+# - ST05 (structure.subquery): To allow subqueries within FROM and JOIN clauses.
+# - ST06 (structure.column_order): Excluded because the order of columns impacts
+#   the exporting of query results as files, such as CTAS in Athena.
+# - ST07 (structure.using): To allow using USING.
+exclude_rules = 'aliasing.unused,aliasing.forbid,jinja.padding,structure.column_order,structure.subquery,structure.using'
+encoding = 'utf-8'
+sql_file_exts = '.sql'
+large_file_skip_byte_limit = 1048576  # 1 MiB
+max_line_length = 150
+
+[tool.sqlfluff.indentation]
+indent_unit = 'space'
+tab_space_size = 2
+indented_joins = true
+indented_ctes = false
+indented_using_on = true
+indented_on_contents = true
+indented_then = true
+indented_then_contents = true
+allow_implicit_indents = false
+template_blocks_indent = true
+trailing_comments = 'before'
+
+[tool.sqlfluff.rules]
+allow_scalar = true
+single_table_references = 'consistent'
+unquoted_identifiers_policy = 'all'
+
+[tool.sqlfluff.rules.capitalisation.keywords]
+capitalisation_policy = 'upper'
+
+[tool.sqlfluff.rules.capitalisation.identifiers]
+extended_capitalisation_policy = 'consistent'
+
+[tool.sqlfluff.rules.capitalisation.functions]
+extended_capitalisation_policy = 'upper'
+
+[tool.sqlfluff.rules.capitalisation.literals]
+capitalisation_policy = 'upper'
+
+[tool.sqlfluff.rules.capitalisation.types]
+extended_capitalisation_policy = 'consistent'
+
+[tool.sqlfluff.rules.ambiguous.join]
+fully_qualify_join_types = 'inner'
+
+[tool.sqlfluff.rules.ambiguous.column_references]
+group_by_and_order_by_style = 'consistent'
+
+[tool.sqlfluff.rules.layout.long_lines]
+ignore_comment_lines = true
+ignore_comment_clauses = true
+
+[tool.ruff]
+extend-exclude = [
+  "*_pb2.py",
+  "*_pb2.pyi",
+  "*_pb2_grpc.py",
+  "*_pb2_grpc.pyi",
+  "bazel-*",
+  "generated",
+  "node_modules",
+]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = [
+  "B",  # bugbear
+  "C90",  # mccabe
+  "D",  # pydocstyle
+  "E",  # pycodestyle (error)
+  "F",  # Pyflakes
+  "G",  # flake8-logging-format
+  "I",  # isort
+  "N",  # pep8-naming
+  "RUF",  # Ruff-specific rules
+  "S",  # bandit
+  "TCH",  # type-checking
+  "UP",  # pyupgrade
+  "W",  # pycodestyle (warning)
+]
+# Ignore specific rules over monorepo.
+ignore = [
+  # RUF001: ambiguous-unicode-character-string is noisy because it points many full-width characters.
+  "RUF001",
+  # RUF002: ambiguous-unicode-character-docstring is noisy because it points many full-width characters.
+  "RUF002",
+  # RUF003: ambiguous-unicode-character-comment is noisy because it points many full-width characters.
+  "RUF003",
+  # NOTE: The original `bandit` uses prefix 'B' but 'S' is used to avoid conflicts with `bugbear`.
+  # S105: hardcoded_password_string generates some false positives with low severity and low confidence
+  # https://bandit.readthedocs.io/en/latest/plugins/b105_hardcoded_password_string.html
+  "S105",
+  # S106: hardcoded_password_funcarg also generates some false positives
+  # https://bandit.readthedocs.io/en/latest/plugins/b106_hardcoded_password_funcarg.html
+  "S106",
+  # S311: See the following site about blacklist calls for details.
+  # https://bandit.readthedocs.io/en/1.7.5/blacklists/blacklist_calls.html
+  "S311",
+  "S403",
+  "S404",
+  "S405",
+  "S406",
+  "S407",
+  "S408",
+  "S409",
+  # S603: subprocess_without_shell_equals_true is noisy and is low severity.
+  # https://bandit.readthedocs.io/en/latest/plugins/b603_subprocess_without_shell_equals_true.html
+  "S603",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["python"]
+# To prioritize the third-party libraries over the first-party libraries.
+known-third-party = []
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

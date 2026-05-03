@@ -1,0 +1,10 @@
+# shellcheck shell=bash
+# shellcheck disable=SC1091
+# filetype=sh
+
+MY_ZSH=${ZDOTDIR}/src
+export GPG_TTY=$(tty)
+FW_MONOREPO_HOME="$HOME/workspace/flywheel-jp/monorepo"
+[[ -f "$HOME/.zshrc.flywheel" ]] && source "$HOME/.zshrc.flywheel"
+[[ -f "$FW_MONOREPO_HOME/tools/shell/fzf.sh" ]] && source "$FW_MONOREPO_HOME/tools/shell/fzf.sh"
+[[ -f "$MY_ZSH/init.zsh" ]] && source "$MY_ZSH/init.zsh"

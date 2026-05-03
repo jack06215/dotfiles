@@ -1,0 +1,1 @@
+do shell script "echo triggered >> /Users/jack.cho/Desktop/meetingbar_test.log"

@@ -25,6 +25,7 @@ $character"""
 
 add_newline = true
 palette = 'nord'
+command_timeout = 100
 
 # Drop default prompt characters
 [character]
@@ -106,46 +107,59 @@ renamed = '襁 '
 deleted = ' '
 disabled = false
 
+# [git_status]
+# format = '[$all_status]($style) '
+# ahead = ''
+# behind = ''
+# diverged = ''
+
 [fill]
 symbol = ' '
 
 # Shows kubernetes context and namespace
 [kubernetes]
 format = 'via [󱃾 $context\($namespace\)](bold purple) '
-disabled = false
+disabled = true
 
 # ---
 [python]
 style = 'teal'
 symbol = ' '
-format = '[${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
+format = 'via [${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
 pyenv_version_name = true
 pyenv_prefix = ''
 
 [lua]
+disabled = true
 symbol = ' '
 
 [nodejs]
+disabled = true
 style = 'blue'
 symbol = ' '
 
 [golang]
+disabled = true
 style = 'blue'
 symbol = ' '
 
 [haskell]
+disabled = true
 style = 'blue'
 symbol = ' '
 
 [rust]
+disabled = true
 style = 'orange'
 symbol = ' '
 
 [ruby]
+disabled = true
 style = 'blue'
 symbol = ' '
 
 [package]
+disabled = true
 symbol = '󰏗 '
 
 [aws]

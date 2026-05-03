@@ -1,0 +1,9 @@
+#!/usr/bin/env zsh
+# shellcheck shell=bash
+
+timenow-jst() {
+    TZ="Asia/Tokyo" date "+%Y-%m-%d %H:%M:%S %Z"
+}
+
+timenow-jst "$@"
+

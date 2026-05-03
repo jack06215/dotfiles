@@ -1,0 +1,13 @@
+aerospace
+alt-tab
+chatbox
+font-plemol-jp-nf
+gcloud-cli
+google-cloud-sdk
+jetbrains-toolbox
+libreoffice
+meetingbar
+powershell
+session-manager-plugin
+snowflake-snowsql
+wezterm

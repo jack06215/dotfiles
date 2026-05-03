@@ -1,0 +1,9 @@
+#!/usr/bin/env zsh
+# optional: vim modeline
+# vim: filetype=zsh
+
+function normalized_nfd() {
+  python3 -c 'import sys, unicodedata; print(unicodedata.normalize("NFD", sys.argv[1]))' "$1"
+}
+
+normalized_nfd "$@"

@@ -1,0 +1,13 @@
+name: fetch-blob
+description: Fetch a blob from s3://fw-strada-staging/<key>
+completion:
+  positional:
+    - name: key
+      description: key relative to fw-strada-staging (e.g., kmm/source/...)
+      # Static hints; replace with common prefixes in your bucket if helpful
+      values:
+        - kmm/source/
+        - kmm/target/
+        - j800/
+        - imc/
+        - tmc/
