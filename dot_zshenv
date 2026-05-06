@@ -10,6 +10,7 @@ ZDOTDIR="$XDG_CONFIG_HOME/zsh"
 
 export BUN_INSTALL="$XDG_DATA_HOME/bun"
 export CABAL_CONFIG="$XDG_CONFIG_HOME/cabal/config"
+export GLAZEWM_CONFIG_PATH="$XDG_CONFIG_HOME/glazewm/config.yaml"
 export CABAL_DIR="$XDG_CACHE_HOME/cabal"
 export CARGO_HOME="$XDG_DATA_HOME/cargo"
 export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git
