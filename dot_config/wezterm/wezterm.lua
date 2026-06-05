@@ -196,7 +196,7 @@ return {
 	},
 	front_end = "WebGpu",
 	webgpu_power_preference = "HighPerformance",
-	window_decorations = "INTEGRATED_BUTTONS|RESIZE",
+	window_decorations = "RESIZE",
 	window_padding = {
 		left = 10,
 		right = 5,

@@ -1,0 +1,42 @@
+[[snippets]]
+  command = """gh api graphql -f query='
+{
+  search(
+    query: "repo:<org=flywheel-jp>/<repo=monorepo> author:<author=jack06215> created:<after=2026-01-01>..<until=2026-05-31> type:pr",
+    type: ISSUE,
+    first: 100
+  ) {
+    nodes {
+      ... on PullRequest {
+        number
+        body
+        reviews(first: 100) {
+          nodes {
+            author { login }
+            body
+            submittedAt
+            state
+          }
+        }
+      }
+    }
+  }
+}' | jq '[.data.search.nodes[] | {
+  pr_number: .number,
+  body: .body,
+  reviews: [
+    .reviews.nodes[] | {
+      author: .author.login,
+      body: .body,
+      submitted_at: .submittedAt,
+      state: .state
+    }
+  ],
+  reviews_count: (
+    [.reviews.nodes[].state]
+    | group_by(.)
+    | map({state: .[0], count: length})
+  )
+}]'"""
+  description = "List PRs with reviews in a date range"
+  tag = ["github", "pr", "review"]
