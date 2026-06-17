@@ -5,4 +5,5 @@ function pet-select() {
 }
 zle -N pet-select
 stty -ixon
-bindkey '^s' pet-select
+bindkey -M viins '^s' pet-select
+bindkey -M emacs '^s' pet-select

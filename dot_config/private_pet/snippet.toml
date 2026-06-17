@@ -1,42 +1,43 @@
 [[snippets]]
-  command = """gh api graphql -f query='
-{
-  search(
-    query: "repo:<org=flywheel-jp>/<repo=monorepo> author:<author=jack06215> created:<after=2026-01-01>..<until=2026-05-31> type:pr",
-    type: ISSUE,
-    first: 100
-  ) {
-    nodes {
-      ... on PullRequest {
-        number
-        body
-        reviews(first: 100) {
-          nodes {
-            author { login }
-            body
-            submittedAt
-            state
-          }
-        }
-      }
-    }
-  }
-}' | jq '[.data.search.nodes[] | {
-  pr_number: .number,
-  body: .body,
-  reviews: [
-    .reviews.nodes[] | {
-      author: .author.login,
-      body: .body,
-      submitted_at: .submittedAt,
-      state: .state
-    }
-  ],
-  reviews_count: (
-    [.reviews.nodes[].state]
-    | group_by(.)
-    | map({state: .[0], count: length})
-  )
-}]'"""
-  description = "List PRs with reviews in a date range"
-  tag = ["github", "pr", "review"]
+    command = "python ~/.config/pet/scripts/gh_pr_reviews.py <org=flywheel-jp> <repo=monorepo> <author=jack06215> <after=2026-01-01> <until=2026-05-31>"
+    description = "GitHub: List PRs with reviews in a date range"
+    tag = ["gh", "pr", "review"]
+[[snippets]]
+    # https://github.com/flywheel-jp/monorepo/pull/114699
+    command = "aws --profile <profile=saml_flywheel_opal> ecr list-images --repository-name=<repository_name> --output json | jq -r '.imageIds[] | select(.imageTag)'"
+    description = "AWS ECR: List of image tags"
+    tag = ["aws", "ecr", "image tags"]
+[[snippets]]
+    # https://github.com/flywheel-jp/monorepo/pull/114699
+    command = "aws --profile <profile=saml_flywheel_opal> ecr describe-repositories --output json | jq -r '.repositories[] | select(.repositoryName | test(\"<regex>\"))'"
+    description = "AWS ECR: Find Repository"
+    tag = ["aws", "ecr", "repository"]
+[[snippets]]
+    command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_user_groups.py <idp_id=auth0-> <project_id>"
+    description = "quor: Read user groups"
+    tag = ["grpc", "quor", "authorization"]
+[[snippets]]
+    command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_modes.py <idp_id=auth0-> <project_id>"
+    description = "quor: Read user modes"
+    tag = ["grpc", "quor", "authorization"]
+[[snippets]]
+    command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_datasets.py <idp_id=auth0-> <project_id>"
+    description = "quor: Read user datasets"
+    tag = ["grpc", "quor", "authorization"]
+[[snippets]]
+    command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_consumer_project_modes.py <idp_id=auth0-> <project_id> <mode_id>"
+    description = "quor: Read consumer_project associated to project_id"
+    tag = ["grpc", "quor", "authorization"]
+[[snippets]]
+    description = "FW Monorepo: Find image tags"
+    command = """bazel build //kubernetes/clusters/<cluster=opal-staging>/image_tags:image_tags_libsonnet && jsonnet \"$(bazel info bazel-bin 2>/dev/null)/kubernetes/clusters/<cluster=opal-staging>/image_tags/generated/image_tags.libsonnet\" | jq 'with_entries(select(.key | contains("<regex>")))'"""
+    tag = ["bazel", "k8s", "image tag", "flywheel-jp"]
+[[snippets]]
+    # https://flywheel-jp.slack.com/archives/C074QT8EMPB/p1773141477017639
+    description = "FW Monorepo: List all image tags"
+    command = """bazel build //kubernetes/clusters/<cluster=opal-staging>/image_tags:image_tags_libsonnet && jsonnet \"$(bazel info bazel-bin 2>/dev/null)/kubernetes/clusters/<cluster=opal-staging>/image_tags/generated/image_tags.libsonnet\" | jq"""
+    tag = ["bazel", "k8s", "image tag", "flywheel-jp"]
+[[snippets]]
+  description = "FW Monorepo: Filter workflows by path regex"
+  command = "gh workflow list --json name,path,state --limit 300 | jq '[.[] | select(.path | test(\"<workflow_yml>\")) | . + {url: (\"https://github.com/flywheel-jp/monorepo/actions/workflows/\" + (.path | split(\"/\") | last))}]'"
+  tag = ["gh", "workflow", "flywheel-jp"]

@@ -11,6 +11,7 @@
 .zcompdump
 history.sqlite3
 history.txt
+**/flywheel/**
 
 {{ if ne .chezmoi.os "windows" }}
 AppData/**
