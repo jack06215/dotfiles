@@ -41,3 +41,24 @@
   description = "FW Monorepo: Filter workflows by path regex"
   command = "gh workflow list --json name,path,state --limit 300 | jq '[.[] | select(.path | test(\"<workflow_yml>\")) | . + {url: (\"https://github.com/flywheel-jp/monorepo/actions/workflows/\" + (.path | split(\"/\") | last))}]'"
   tag = ["gh", "workflow", "flywheel-jp"]
+[[snippets]]
+  description = "FW Monorepo: Show image tag age in days"
+  command = """bazel build //kubernetes/clusters/<cluster=opal-staging>/image_tags:image_tags_libsonnet && jsonnet "$(bazel info bazel-bin 2>/dev/null)/kubernetes/clusters/<cluster=opal-staging>/image_tags/generated/image_tags.libsonnet" | python3 -c "
+import sys, json
+from datetime import datetime, timezone, timedelta
+
+JST = timezone(timedelta(hours=9))
+now = datetime.now(JST)
+data = json.load(sys.stdin)
+for repo, tags in data.items():
+    for tag_name, tag_val in tags.items():
+        try:
+            dt = datetime.strptime(tag_val[:15], '%Y%m%d-%H%M%S').replace(tzinfo=JST)
+            days = (now - dt).days
+            tags[tag_name] = f'{tag_val} ({days}d ago)'
+        except ValueError:
+            tags[tag_name] = f'{tag_val} (unable to calculate)'
+print(json.dumps(data, indent=2, ensure_ascii=False))
+"
+"""
+  tag = ["bazel", "k8s", "image tag", "flywheel-jp"]
