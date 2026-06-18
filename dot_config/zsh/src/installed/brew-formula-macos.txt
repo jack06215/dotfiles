@@ -1,6 +1,7 @@
 abseil
 acli
 actionlint
+ada-url
 aom
 asdf
 atuin
@@ -53,6 +54,7 @@ ffmpeg
 findutils
 fish
 flyway
+fmt
 fontconfig
 freetype
 fribidi
@@ -80,6 +82,7 @@ grpcui
 grpcurl
 hadolint
 harfbuzz
+hdrhistogram_c
 highway
 htop
 ibazel
@@ -146,6 +149,8 @@ libxrender
 libyaml
 lima
 little-cms2
+llhttp
+llvm
 lpeg
 lua
 luajit
@@ -156,15 +161,18 @@ lzo
 m4
 markdownlint-cli
 marksman
+merve
 minijinja-cli
 moreutils
 mpdecimal
 mpfr
+msedit
 mysql
 mysql-client
 mysql-client@8.0
 mysql@8.0
 mysql@8.4
+nbytes
 ncurses
 neovim
 nettle
@@ -189,6 +197,7 @@ pango
 pcre
 pcre2
 peco
+pet
 pinentry
 pinentry-mac
 pipenv
@@ -219,6 +228,7 @@ sdl2
 shared-mime-info
 shellcheck
 simdjson
+simdutf
 sleepwatcher
 snappy
 sql-formatter
@@ -247,6 +257,7 @@ xorgproto
 xz
 yamllint
 yt-dlp
+z3
 zellij
 zlib
 zoxide
