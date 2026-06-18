@@ -9,6 +9,9 @@
 .zsh_history
 .zsh_sessions/**
 .zcompdump
+history.sqlite3
+history.txt
+**/flywheel/**
 
 {{ if ne .chezmoi.os "windows" }}
 AppData/**

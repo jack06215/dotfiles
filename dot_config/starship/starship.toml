@@ -105,7 +105,7 @@ modified = ' '
 staged = '[++\($count\)](green)'
 renamed = '襁 '
 deleted = ' '
-disabled = false
+disabled = true
 
 # [git_status]
 # format = '[$all_status]($style) '

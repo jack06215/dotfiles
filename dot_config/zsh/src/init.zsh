@@ -66,6 +66,7 @@ fi
 # Domain-specific
 # =============================================================================
 [ -f "$ZSH_DIR/aws.zsh" ] && source "$ZSH_DIR/aws.zsh"
+[ -f "$ZSH_DIR/pet.zsh" ] && source "$ZSH_DIR/pet.zsh"
 [ -f "$ZSH_DIR/bazel.zsh" ] && source "$ZSH_DIR/bazel.zsh"
 [ -f "$ZSH_DIR/dart.zsh" ] && source "$ZSH_DIR/dart.zsh"
 [ -f "$ZSH_DIR/gh.zsh" ] && source "$ZSH_DIR/gh.zsh"
