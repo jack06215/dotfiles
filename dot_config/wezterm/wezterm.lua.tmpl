@@ -172,13 +172,8 @@ local config = {
 }
 
 -- macOS-only settings
-if tmpl.tmpl([=[
-  {{- if .myComputer.isDarwin -}}
-    true
-  {{- else -}}
-  {{- end -}}
-]=]) == "true" then
-	config.macos_window_background_blur = 20
+if tmpl.is_true("myComputer.isDarwin") then
+	config.macos_window_background_blur = 10
 end
 
 return config

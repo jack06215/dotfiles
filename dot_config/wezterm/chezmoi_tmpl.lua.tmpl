@@ -19,6 +19,30 @@ function M.tmpl(s)
 	return result
 end
 
+--- Check if a chezmoi boolean data key is true at apply time.
+--- Key must match an entry in M._data.
+---
+--- Example:
+---   if tmpl.is_true("myComputer.isDarwin") then
+---     config.macos_window_background_blur = 40
+---   end
+---
+M._data = {
+	["myComputer.isDarwin"] = M.tmpl([=[{{- if index .myComputer "isDarwin" -}}true{{- end -}}]=]) == "true",
+	["myComputer.isWindows"] = M.tmpl([=[{{- if index .myComputer "isWindows" -}}true{{- end -}}]=]) == "true",
+	["myComputer.isLinux"] = M.tmpl([=[{{- if index .myComputer "isLinux" -}}true{{- end -}}]=]) == "true",
+	["myComputer.isArm"] = M.tmpl([=[{{- if index .myComputer "isArm" -}}true{{- end -}}]=]) == "true",
+	["myComputer.isX86"] = M.tmpl([=[{{- if index .myComputer "isX86" -}}true{{- end -}}]=]) == "true",
+	["myComputer.isCompanyMachine"] = M.tmpl([=[{{- if index .myComputer "isCompanyMachine" -}}true{{- end -}}]=])
+		== "true",
+}
+
+---@param key string   dot-separated chezmoi data path
+---@return boolean
+function M.is_true(key)
+	return M._data[key] == true
+end
+
 --- Build a string list, appending each extra value only if it is non-empty.
 --- Useful for constructing command arrays where some arguments are platform-
 --- conditional and render to "" when not applicable.
