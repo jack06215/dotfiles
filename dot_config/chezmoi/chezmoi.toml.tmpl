@@ -1,3 +1,7 @@
 [data.git]
     name = "Jack Cho"
     email = "jack06215@gmail.com"
+[data]
+    shell = {{ output "sh" "-c" "echo $SHELL" | trim | quote }}
+[data.laptops]
+    is_fw_mac = {{ output "sh" "-c" "hostname | grep -q 'A0229' && echo true || echo false" | trim }}
