@@ -5,7 +5,7 @@ local M = {}
 ---
 --- Example:
 ---   local val = M.tmpl([=[
----   {{- if .myComputer.is_darwin -}}
+---   {{- if .myComputer.isDarwin -}}
 ---       /bin/zsh
 ---   {{- else -}}
 ---       pwsh
@@ -47,7 +47,7 @@ end
 ---@return string
 function M.mod()
 	return M.tmpl([=[
-        {{- if .myComputer.is_darwin -}}
+        {{- if .myComputer.isDarwin -}}
             CMD
         {{- else -}}
             CTRL

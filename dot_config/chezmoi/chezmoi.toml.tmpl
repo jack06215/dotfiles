@@ -8,13 +8,15 @@
     username = {{ .chezmoi.username | quote }}
     arch = {{ .chezmoi.arch | quote }}
     homeDir = {{ .chezmoi.homeDir | quote }}
-    is_company_machine  = {{ env "IS_COMPANY_MACHINE" | eq "true" | toString | trim }}
-    is_darwin = {{ eq .chezmoi.os "darwin" | toString | trim }}
-    is_linux = {{ eq .chezmoi.os "linux" | toString | trim }}
-    is_windows = {{ eq .chezmoi.os "windows" | toString | trim }}
-    is_arm = {{ eq .chezmoi.arch "arm64" | toString | trim }}
-    is_x86 = {{ eq .chezmoi.arch "amd64" | toString | trim }}
+    isCompanyMachine  = {{ env "IS_COMPANY_MACHINE" | eq "true" | toString | trim }}
+    isDarwin = {{ eq .chezmoi.os "darwin" | toString | trim }}
+    isLinux = {{ eq .chezmoi.os "linux" | toString | trim }}
+    isWindows = {{ eq .chezmoi.os "windows" | toString | trim }}
+    isArm = {{ eq .chezmoi.arch "arm64" | toString | trim }}
+    isX86 = {{ eq .chezmoi.arch "amd64" | toString | trim }}
 [data.xdg]
     configHome = {{ env "XDG_CONFIG_HOME" | default (joinPath .chezmoi.homeDir ".config") | quote }}
     dataHome = {{ env "XDG_DATA_HOME" | default (joinPath .chezmoi.homeDir ".local/share") | quote }}
     cacheHome = {{ env "XDG_CACHE_HOME" | default (joinPath .chezmoi.homeDir ".cache") | quote }}
+[template]
+  options = ["missingkey=error"]
