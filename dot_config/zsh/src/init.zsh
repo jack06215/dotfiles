@@ -66,8 +66,8 @@ fi
 # Domain-specific
 # =============================================================================
 [ -f "$ZDOTDIR/src/aws.zsh" ] && source "$ZDOTDIR/src/aws.zsh"
-[ -f "$ZDOTDIR/src/pet.zsh" ] && source "$ZDOTDIR/src/pet.zsh"
 [ -f "$ZDOTDIR/src/bazel.zsh" ] && source "$ZDOTDIR/src/bazel.zsh"
+[ -f "$ZDOTDIR/src/chezmoi.zsh" ] && source "$ZDOTDIR/src/chezmoi.zsh"
 [ -f "$ZDOTDIR/src/dart.zsh" ] && source "$ZDOTDIR/src/dart.zsh"
 [ -f "$ZDOTDIR/src/gh.zsh" ] && source "$ZDOTDIR/src/gh.zsh"
 [ -f "$ZDOTDIR/src/git.zsh" ] && source "$ZDOTDIR/src/git.zsh"
@@ -76,6 +76,7 @@ fi
 [ -f "$ZDOTDIR/src/ls.zsh" ] && source "$ZDOTDIR/src/ls.zsh"
 [ -f "$ZDOTDIR/src/mysql.zsh" ] && source "$ZDOTDIR/src/mysql.zsh"
 [ -f "$ZDOTDIR/src/notify.zsh" ] && source "$ZDOTDIR/src/notify.zsh"
+[ -f "$ZDOTDIR/src/pet.zsh" ] && source "$ZDOTDIR/src/pet.zsh"
 [ -f "$ZDOTDIR/src/search.zsh" ] && source "$ZDOTDIR/src/search.zsh"
 
 # =============================================================================
