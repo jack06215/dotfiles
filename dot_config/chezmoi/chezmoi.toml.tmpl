@@ -3,5 +3,18 @@
     email = "jack06215@gmail.com"
 [data]
     shell = {{ output "sh" "-c" "echo $SHELL" | trim | quote }}
-[data.laptops]
-    is_work = {{ output "sh" "-c" "hostname | grep -q 'A0229' && echo 1 || echo 0" | trim }}
+[data.myComputer]
+    hostname = {{ .chezmoi.hostname | quote }}
+    username = {{ .chezmoi.username | quote }}
+    arch = {{ .chezmoi.arch | quote }}
+    homeDir = {{ .chezmoi.homeDir | quote }}
+    is_company_machine  = {{ env "IS_COMPANY_MACHINE" | eq "true" | toString | trim }}
+    is_darwin = {{ eq .chezmoi.os "darwin" | toString | trim }}
+    is_linux = {{ eq .chezmoi.os "linux" | toString | trim }}
+    is_windows = {{ eq .chezmoi.os "windows" | toString | trim }}
+    is_arm = {{ eq .chezmoi.arch "arm64" | toString | trim }}
+    is_x86 = {{ eq .chezmoi.arch "amd64" | toString | trim }}
+[data.xdg]
+    configHome = {{ env "XDG_CONFIG_HOME" | default (joinPath .chezmoi.homeDir ".config") | quote }}
+    dataHome = {{ env "XDG_DATA_HOME" | default (joinPath .chezmoi.homeDir ".local/share") | quote }}
+    cacheHome = {{ env "XDG_CACHE_HOME" | default (joinPath .chezmoi.homeDir ".cache") | quote }}
