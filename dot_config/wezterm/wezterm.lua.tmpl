@@ -20,19 +20,56 @@ else
 	default_prog = { "bash" } -- fallback
 end
 
+-- The correct order is: most specific first, most general last.
 local hyperlink_rules = {
-	{ regex = "\\b\\w+://(?:[\\w.-]+)\\.[a-z]{2,15}\\S*\\b", format = "$0" },
-	{ regex = "\\b\\w+@[\\w-]+(\\.[\\w-]+)+\\b", format = "mailto:$0" },
-	{ regex = "\\bfile://\\S*\\b", format = "$0" },
-	{ regex = "\\((\\w+://\\S+)\\)", format = "$1", highlight = 1 },
-	{ regex = "\\[(\\w+://\\S+)\\]", format = "$1", highlight = 1 },
-	{ regex = "\\{(\\w+://\\S+)\\}", format = "$1", highlight = 1 },
-	{ regex = "<(\\w+://\\S+)>", format = "$1", highlight = 1 },
-	{ regex = "\\b\\w+://\\S+[)/a-zA-Z0-9-]+", format = "$0" },
-	{ regex = "\\b\\w+@[\\w-]+(\\.[\\w-]+)+\\b", format = "mailto:$0" },
+	-- Bracketed URLs — must come before bare URL rules
 	{
-		regex = [[["]?([\w\d]{1}[-\w\d]+)(/){1}([-\w\d\.]+)["]?]],
-		format = "https://www.github.com/$1/$3",
+		regex = [[\((\w+://[^\s)]+)\)]],
+		format = "$1",
+		highlight = 1,
+	},
+	{
+		regex = [=[\[(\w+://[^\s\]]+)\]]=],
+		format = "$1",
+		highlight = 1,
+	},
+	{
+		regex = [[\{(\w+://[^\s}]+)\}]],
+		format = "$1",
+		highlight = 1,
+	},
+	{
+		regex = [[<(\w+://[^\s>]+)>]],
+		format = "$1",
+		highlight = 1,
+	},
+	-- Standard URLs (http, https, ftp, ssh, etc.)
+	{
+		regex = [=[\b\w+://(?:[\w.-]+\.[a-z]{2,15})(?:/[^\s"'<>{}|\\^`\[\]]*)?]=],
+		format = "$0",
+	},
+	-- file:// URLs
+	{
+		regex = [=[\bfile://[^\s"'<>{}|\\^`\[\]]*]=],
+		format = "$0",
+	},
+	-- Email addresses
+	{
+		regex = [[\b[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,15}\b]],
+		format = "mailto:$0",
+	},
+	-- FW branch: TICKET-123/branch-name --> GitHub monorepo tree link
+	-- Must come before GitHub shorthand to avoid owner/repo misfire
+	{
+		regex = [=[[A-Z]+-[A-Z0-9]+/[\w/.-]+]=],
+		format = "https://github.com/flywheel-jp/monorepo/tree/$0",
+	},
+	-- GitHub shorthand: owner/repo (quoted or unquoted)
+	-- owner starts with lowercase to avoid collision with FW ticket pattern
+	{
+		regex = [=["?([a-z][\w-]{1,38})/([\w][\w.-]{0,99})"?]=],
+		format = "https://github.com/$1/$2",
+		highlight = 1,
 	},
 }
 
@@ -49,10 +86,10 @@ wezterm.on("gui-startup", function(cmd)
 			size = 0.125,
 		})
 
-		-- right = 1/10
+		-- right = 1.5/10
 		pane:split({
 			direction = "Right",
-			size = 0.10,
+			size = 0.15,
 		})
 	end)
 end)
@@ -177,12 +214,12 @@ return {
 	enable_scroll_bar = true,
 	disable_default_key_bindings = true,
 	font = wezterm.font("PlemolJP Console NF", { weight = "Medium", stretch = "Normal", style = "Normal" }),
-	font_size = 12 * 1.5,
-	window_background_opacity = 0.92,
-	text_background_opacity = 1.0,
+	font_size = 22,
+	window_background_opacity = 0.6,
+	text_background_opacity = 0.6,
 	max_fps = 120,
 	animation_fps = 1,
-	macos_window_background_blur = 10,
+	macos_window_background_blur = 5,
 	hide_tab_bar_if_only_one_tab = true,
 	hyperlink_rules = hyperlink_rules,
 	keys = keys,
