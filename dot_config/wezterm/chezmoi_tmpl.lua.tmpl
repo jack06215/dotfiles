@@ -1,0 +1,58 @@
+local M = {}
+
+--- Trim leading/trailing whitespace from a chezmoi-rendered long string.
+--- Use with [=[ ... ]=] to keep template directives out of bare Lua tokens.
+---
+--- Example:
+---   local val = M.tmpl([=[
+---   {{- if .myComputer.is_darwin -}}
+---       /bin/zsh
+---   {{- else -}}
+---       pwsh
+---   {{- end -}}
+---   ]=])
+---
+---@param s string
+---@return string
+function M.tmpl(s)
+	local result, _ = s:gsub("^%s*(.-)%s*$", "%1")
+	return result
+end
+
+--- Build a string list, appending each extra value only if it is non-empty.
+--- Useful for constructing command arrays where some arguments are platform-
+--- conditional and render to "" when not applicable.
+---
+--- Example:
+---   local prog = M.compact(shell, flag, extra)
+---   -- { "/bin/zsh", "--login" }  on darwin
+---   -- { "pwsh" }                 on windows/linux (flag and extra were "")
+---
+---@param ... string   one or more strings; empty strings are omitted
+---@return string[]
+function M.compact(...)
+	local args = table.pack(...)
+	local result = {}
+	for i = 1, args.n do
+		if args[i] ~= "" then
+			table.insert(result, args[i])
+		end
+	end
+	return result
+end
+
+--- Resolve the primary modifier key for the current platform.
+--- Returns "CMD" on macOS, "CTRL" everywhere else.
+---
+---@return string
+function M.mod()
+	return M.tmpl([=[
+        {{- if .myComputer.is_darwin -}}
+            CMD
+        {{- else -}}
+            CTRL
+        {{- end -}}
+      ]=])
+end
+
+return M

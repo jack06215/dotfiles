@@ -1,24 +1,29 @@
 local wezterm = require("wezterm")
+local tmpl = require("chezmoi_tmpl")
+
 local mux = wezterm.mux
 local act = wezterm.action
 
 -- Detect platform and set shell
 local os_name = wezterm.target_triple
-local default_prog = nil
 
-if os_name:find("windows") then
-	default_prog = { "pwsh.exe" }
-elseif os_name:find("darwin") then
-	default_prog = { "/bin/zsh", "--login" }
-elseif os_name:find("linux") then
-	if os.getenv("PREFIX") and os.getenv("PREFIX"):find("com.termux") then
-		default_prog = { "pwsh" } -- assume pwsh is installed in Termux
-	else
-		default_prog = { "pwsh" } -- regular Linux (Ubuntu, Arch, etc.)
-	end
-else
-	default_prog = { "bash" } -- fallback
-end
+local default_prog = tmpl.compact(
+	tmpl.tmpl([=[
+      {{- if .myComputer.is_windows -}}
+        pwsh.exe
+      {{- else if .myComputer.is_darwin -}}
+        /bin/zsh
+      {{- else -}}
+        pwsh
+      {{- end -}}
+	]=]),
+	tmpl.tmpl([=[
+      {{- if .myComputer.is_darwin -}}
+        --login
+      {{- else -}}
+      {{- end -}}
+	]=])
+)
 
 -- The correct order is: most specific first, most general last.
 local hyperlink_rules = {
