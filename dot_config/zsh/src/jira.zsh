@@ -1,36 +1,21 @@
-function jira_workitem() {
-  local key="$1"
-
-  if [[ -z "$key" ]]; then
-    echo "Usage: jira_view_text <ISSUE-KEY>" >&2
+function jira_workitem () {
+  local input="$1"
+  if [[ -z "$input" ]]; then
+    echo "Usage: jira_workitem <ISSUE-KEY|URL>" >&2
     return 1
   fi
 
+  # Extract key from URL if a URL is given, otherwise use as-is
+  local key
+  if [[ "$input" == https://* ]]; then
+    key="${input##*/browse/}"
+  else
+    key="$input"
+  fi
+
   acli jira workitem view "$key" --json \
-  | jq -r '
-  {
-    displayName: .fields.assignee.displayName,
-    email: .fields.assignee.emailAddress,
-    summary: .fields.summary,
-    status: .fields.status.statusCategory.name,
-    description: (
-      .fields.description.content
-      | map(
-          if .type == "paragraph" then
-            (.content // [] | map(.text // "") | join(""))
-          elif .type == "blockCard" then
-            .attrs.url
-          else
-            ""
-          end
-        )
-      | map(select(length > 0))
-      | join("\n")
-    ),
-    id,
-    key
-  }
-  ' | cat
+    --fields 'key,issuetype,summary,status,assignee,description,comment' \
+    | python "${XDG_CONFIG_HOME}"/myscripts/jira_render.py
 }
 
 function jira_project_list() {

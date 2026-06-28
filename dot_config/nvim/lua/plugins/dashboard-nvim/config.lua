@@ -1,103 +1,34 @@
 return {
   { "folke/snacks.nvim", opts = { dashboard = { enabled = false } } },
   {
-    dir = vim.fn.stdpath("config") .. "/lua/vendor/pokemon.nvim",
-    name = "pokemon.nvim",
-    lazy = true,
-  },
-  {
     "nvimdev/dashboard-nvim",
-    lazy = false,
-
-    dependencies = {
-      "nvim-tree/nvim-web-devicons",
-    },
-
+    lazy = false, -- As https://github.com/nvimdev/dashboard-nvim/pull/450, dashboard-nvim shouldn't be lazy-loaded to properly handle stdin.
     opts = function()
-      ----------------------------------------------------------------
-      -- Shared Footer Info
-      ----------------------------------------------------------------
-      local function get_footer_text()
-        local today = os.date("%Y-%m-%d (%A)")
-        local pc_name = vim.loop.os_gethostname()
-        local v = vim.version()
+      local today = os.date("%Y-%m-%d (%A)")
+      local pc_name = vim.loop.os_gethostname()
+      local v = vim.version()
+      local nvim_version = string.format("NVIM v%d.%d.%d", v.major, v.minor, v.patch)
+      local logo = [[
+      ███╗   ██╗███████╗ ██████╗ ██╗   ██╗██╗███╗   ███╗
+      ████╗  ██║██╔════╝██╔═══██╗██║   ██║██║████╗ ████║
+      ██╔██╗ ██║█████╗  ██║   ██║██║   ██║██║██╔████╔██║
+      ██║╚██╗██║██╔══╝  ██║   ██║╚██╗ ██╔╝██║██║╚██╔╝██║
+      ██║ ╚████║███████╗╚██████╔╝ ╚████╔╝ ██║██║ ╚═╝ ██║
+      ╚═╝  ╚═══╝╚══════╝ ╚═════╝   ╚═══╝  ╚═╝╚═╝     ╚═╝
+      ]]
 
-        local nvim_version = string.format("NVIM v%d.%d.%d", v.major, v.minor, v.patch)
-
-        return "[ @" .. pc_name .. " with " .. nvim_version .. " | " .. today .. " ]"
-      end
-      ----------------------------------------------------------------
-      -- Neovim Logo Header
-      ----------------------------------------------------------------
-      local function get_header(text)
-        local big_text_convert = require("utils.big_text_convert")
-
-        local lines = {}
-
-        table.insert(lines, "")
-
-        for _, line in ipairs(big_text_convert.big_text(text)) do
-          table.insert(lines, line)
-        end
-
-        table.insert(lines, "")
-        table.insert(lines, get_footer_text())
-        table.insert(lines, "")
-
-        return lines
-      end
-
-      ----------------------------------------------------------------
-      -- Pokemon Header
-      -- examples:
-      -- get_pokemon("0025")
-      -- get_pokemon("0001")
-      -- get_pokemon("random")
-      ----------------------------------------------------------------
-      local function get_pokemon(pokedex)
-        local pokemon = require("pokemon")
-        pokemon.setup({
-          number = pokedex or "random",
-          size = "auto",
-        })
-        local poke = pokemon.header()
-        --------------------------------------------------------------
-        -- pokemon.setup() already loads metadata into:
-        -- pokemon.pokemon
-        --------------------------------------------------------------
-        local pokemon_name = "Pokemon"
-        if pokemon.pokemon and pokemon.pokemon.name then
-          pokemon_name = pokemon.pokemon.name
-        end
-
-        local big_text_convert = require("utils.big_text_convert")
-        table.insert(poke, "")
-        for _, line in ipairs(big_text_convert.big_text(pokemon_name)) do
-          table.insert(poke, line)
-        end
-        table.insert(poke, "")
-        table.insert(poke, get_footer_text())
-
-        return poke
-      end
-
-      ----------------------------------------------------------------
-      -- CHANGE THIS ONLY
-      ----------------------------------------------------------------
-      local header = get_pokemon("random")
-      -- local header = get_pokemon("0025")
-      -- local header = get_header("neovim")
+      local header = logo .. "\n\n" .. "      [ @" .. pc_name .. " with " .. nvim_version .. " | " .. today .. " ]"
+      logo = string.rep("\n", 8) .. header .. "\n\n"
 
       local opts = {
         theme = "doom",
-
         hide = {
+          -- this is taken care of by lualine
+          -- enabling this messes up the actual laststatus setting after loading a file
           statusline = false,
         },
-
         config = {
-          header = header,
-
+          header = vim.split(logo, "\n"),
           center = {
             { action = 'lua LazyVim.pick("projects")()', desc = " Projects", icon = " ", key = "p" },
             { action = "lua LazyVim.pick()()", desc = " Find File", icon = " ", key = "f" },
@@ -110,21 +41,17 @@ return {
             { action = "Lazy", desc = " Lazy", icon = "󰒲 ", key = "l" },
             {
               action = function()
-                vim.cmd("qa")
+                vim.api.nvim_input("<cmd>qa<cr>")
               end,
               desc = " Quit",
               icon = " ",
               key = "q",
             },
           },
-
           footer = function()
             local stats = require("lazy").stats()
-            local ms = math.floor(stats.startuptime * 100 + 0.5) / 100
-
-            return {
-              "⚡ Loaded " .. stats.loaded .. "/" .. stats.count .. " plugins in " .. ms .. "ms",
-            }
+            local ms = (math.floor(stats.startuptime * 100 + 0.5) / 100)
+            return { "⚡ Neovim loaded " .. stats.loaded .. "/" .. stats.count .. " plugins in " .. ms .. "ms" }
           end,
         },
       }
@@ -134,15 +61,14 @@ return {
         button.key_format = "  %s"
       end
 
+      -- open dashboard after closing lazy
       if vim.o.filetype == "lazy" then
         vim.api.nvim_create_autocmd("WinClosed", {
           pattern = tostring(vim.api.nvim_get_current_win()),
           once = true,
           callback = function()
             vim.schedule(function()
-              vim.api.nvim_exec_autocmds("UIEnter", {
-                group = "dashboard",
-              })
+              vim.api.nvim_exec_autocmds("UIEnter", { group = "dashboard" })
             end)
           end,
         })

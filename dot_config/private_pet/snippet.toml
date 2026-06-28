@@ -35,30 +35,62 @@
 [[snippets]]
     # https://flywheel-jp.slack.com/archives/C074QT8EMPB/p1773141477017639
     description = "FW Monorepo: List all image tags"
-    command = """bazel build //kubernetes/clusters/<cluster=opal-staging>/image_tags:image_tags_libsonnet && jsonnet \"$(bazel info bazel-bin 2>/dev/null)/kubernetes/clusters/<cluster=opal-staging>/image_tags/generated/image_tags.libsonnet\" | jq"""
+    command = "bazel build //kubernetes/clusters/<cluster=opal-staging>/image_tags:image_tags_libsonnet && jsonnet \"$(bazel info bazel-bin 2>/dev/null)/kubernetes/clusters/<cluster=opal-staging>/image_tags/generated/image_tags.libsonnet\" | jq"
     tag = ["bazel", "k8s", "image tag", "flywheel-jp"]
 [[snippets]]
-  description = "FW Monorepo: Filter workflows by path regex"
-  command = "gh workflow list --json name,path,state --limit 300 | jq '[.[] | select(.path | test(\"<workflow_yml>\")) | . + {url: (\"https://github.com/flywheel-jp/monorepo/actions/workflows/\" + (.path | split(\"/\") | last))}]'"
-  tag = ["gh", "workflow", "flywheel-jp"]
+    description = "FW Monorepo: Filter workflows by path regex"
+    command = "gh workflow list --json name,path,state --limit 300 | jq '[.[] | select(.path | test(\"<workflow_yml>\")) | . + {url: (\"https://github.com/flywheel-jp/monorepo/actions/workflows/\" + (.path | split(\"/\") | last))}]'"
+    tag = ["gh", "workflow", "flywheel-jp"]
 [[snippets]]
-  description = "FW Monorepo: Show image tag age in days"
-  command = """bazel build //kubernetes/clusters/<cluster=opal-staging>/image_tags:image_tags_libsonnet && jsonnet "$(bazel info bazel-bin 2>/dev/null)/kubernetes/clusters/<cluster=opal-staging>/image_tags/generated/image_tags.libsonnet" | python3 -c "
+    description = "FW Monorepo: Show image tag age in days"
+    command = """bazel build //kubernetes/clusters/<cluster=opal-staging>/image_tags:image_tags_libsonnet && jsonnet "$(bazel info bazel-bin 2>/dev/null)/kubernetes/clusters/<cluster=opal-staging>/image_tags/generated/image_tags.libsonnet" | python3 -c "
 import sys, json
 from datetime import datetime, timezone, timedelta
 
+min_days = int(sys.argv[1]) if len(sys.argv) > 1 else 0
 JST = timezone(timedelta(hours=9))
 now = datetime.now(JST)
 data = json.load(sys.stdin)
+result = {}
 for repo, tags in data.items():
+    filtered = {}
     for tag_name, tag_val in tags.items():
         try:
             dt = datetime.strptime(tag_val[:15], '%Y%m%d-%H%M%S').replace(tzinfo=JST)
             days = (now - dt).days
-            tags[tag_name] = f'{tag_val} ({days}d ago)'
+            if days >= min_days:
+                filtered[tag_name] = '%s (%dd ago)' % (tag_val, days)
         except ValueError:
-            tags[tag_name] = f'{tag_val} (unable to calculate)'
-print(json.dumps(data, indent=2, ensure_ascii=False))
-"
+            if min_days == 0:
+                filtered[tag_name] = '%s (unable to calculate)' % tag_val
+    if filtered:
+        result[repo] = filtered
+print(json.dumps(result, indent=2, ensure_ascii=False))
+" <min_days=0>
 """
-  tag = ["bazel", "k8s", "image tag", "flywheel-jp"]
+    tag = ["bazel", "k8s", "image tag", "flywheel-jp"]
+[[snippets]]
+    description = "kubectl with context and namespace"
+    command = "kubectl --context <context=opal-staging> --namespace <namespace> <subcommand>"
+    tag = ["kubectl", "fw"]
+[[snippets]]
+    description = "Enable local MCP server for development."
+    command = "ACCESS_TOKEN=${AUTHZ_ACCESS_TOKEN:-} python \"${XDG_CONFIG_HOME}\"/myscripts/set_mcp_server_claude_desktop.py enable --name <mcp_server_name=my-local-server>"
+    tag= ["fw", "kddi-aipf"]
+[[snippets]]
+    description = "Disable local MCP server for development."
+    command = "python \"${XDG_CONFIG_HOME}\"/myscripts/set_mcp_server_claude_desktop.py disable --name <mcp_server_name=my-local-server>"
+    tag= ["fw", "kddi-aipf"]
+[[snippets]]
+    description = "Find image tages"
+    command = "bazel build //kubernetes/clusters/opal-staging/image_tags:image_tags_libsonnet && jsonnet \"$(bazel info bazel-bin 2>/dev/null)/kubernetes/clusters/opal-staging/image_tags/generated/image_tags.libsonnet\" | jq 'to_entries | map(select(.key | test(\"<regex>\"))) | from_entries'"
+    tag = ["fw", "image tag", "flywheel-jp"]
+[[snippets]]
+    description = "Show recent commit"
+    command = "git log --date=short --format=\"%h %ad %s\" -<top_n>"
+    tag = ["git"]
+[[snippets]]
+    description = "Show commit messages in-between within folder"
+    command = "git log --format='- %s' <from_commit>..<to_commit> -- $(git rev-parse --show-toplevel)<regex=/src/main/typescript/packages/genai-rag-demo-*/>"
+    tag = ["git"]
+

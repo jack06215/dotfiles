@@ -40,6 +40,9 @@ return {
       opts.ensure_installed = opts.ensure_installed or {}
       vim.list_extend(opts.ensure_installed, extra_packages)
 
+      -- Map zsh filetype to the bash Tree-sitter parser (no dedicated zsh grammar)
+      vim.treesitter.language.register("bash", "zsh")
+
       opts.highlight = opts.highlight or {}
       opts.highlight.disable = {
         "latex",
@@ -47,7 +50,6 @@ return {
         "markdown",
         "sh",
         "bash",
-        "zsh",
       }
 
       opts.indent = opts.indent or {}

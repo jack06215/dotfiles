@@ -19,6 +19,18 @@ return {
       }),
     }
 
+    lint.linters.zsh = {
+      name = "zsh",
+      cmd = "zsh",
+      stdin = false,
+      args = { "-n" },
+      stream = "stderr",
+      ignore_exitcode = true,
+      parser = require("lint.parser").from_errorformat("%f:%l: %m", {
+        source = "zsh",
+      }),
+    }
+
     lint.linters_by_ft = {
       javascript = { "eslint_d" },
       typescript = { "eslint_d" },
@@ -32,7 +44,7 @@ return {
       markdown = { "markdownlint" },
       yaml = { "yamllint" },
       bash = { "shellcheck" },
-      zsh = { "shellcheck" },
+      zsh = { "zsh" },
     }
 
     local lint_augroup = vim.api.nvim_create_augroup("lint", { clear = true })
