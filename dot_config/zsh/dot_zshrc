@@ -2,7 +2,6 @@
 # shellcheck disable=SC1091
 # filetype=sh
 
-export ZSH_DIR=${ZDOTDIR}/src
 export GPG_TTY=$(tty)
 FW_MONOREPO_HOME="$HOME/workspace/flywheel-jp/monorepo"
 # Flywheel specific utilities
@@ -10,4 +9,4 @@ FW_MONOREPO_HOME="$HOME/workspace/flywheel-jp/monorepo"
 [[ -f "$FW_MONOREPO_HOME/tools/shell/fzf.sh" ]] && source "$FW_MONOREPO_HOME/tools/shell/fzf.sh"
 
 # Load my utilities
-[[ -f "$ZSH_DIR/init.zsh" ]] && source "$ZSH_DIR/init.zsh"
+[[ -f "$ZDOTDIR/src/init.zsh" ]] && source "$ZDOTDIR/src/init.zsh"
