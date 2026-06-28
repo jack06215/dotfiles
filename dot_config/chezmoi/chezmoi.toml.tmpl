@@ -4,4 +4,4 @@
 [data]
     shell = {{ output "sh" "-c" "echo $SHELL" | trim | quote }}
 [data.laptops]
-    is_fw_mac = {{ output "sh" "-c" "hostname | grep -q 'A0229' && echo true || echo false" | trim }}
+    is_work = {{ output "sh" "-c" "hostname | grep -q 'A0229' && echo 1 || echo 0" | trim }}
