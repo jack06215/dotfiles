@@ -19,4 +19,4 @@
     dataHome = {{ env "XDG_DATA_HOME" | default (joinPath .chezmoi.homeDir ".local/share") | quote }}
     cacheHome = {{ env "XDG_CACHE_HOME" | default (joinPath .chezmoi.homeDir ".cache") | quote }}
 [template]
-  options = ["missingkey=error"]
+    options = ["missingkey=error"]
