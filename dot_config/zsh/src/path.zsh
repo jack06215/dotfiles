@@ -16,7 +16,6 @@ add_path_back "$XDG_DATA_HOME/npm/bin"
 add_path_back "/opt/homebrew/opt/mysql@8.0/bin"
 add_path_back "/opt/homebrew/opt/mysql-client@8.0/bin"
 
-add_path_back "$HOME/.asdf/installs/poetry/2.2.1/bin"
 add_path_back "$HOME/tools/flutter/bin"
 
 # Flywheel specific script

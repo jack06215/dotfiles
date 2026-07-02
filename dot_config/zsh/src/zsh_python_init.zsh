@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 
-source "$ZDOTDIR/src/core.zsh"
+# core.zsh (is_macos/is_wsl, used below) is already sourced by init.zsh
+# before this file loads.
 
 function zsh_python_init() {
   local zsh_python_dir="$ZDOTDIR/src/python"

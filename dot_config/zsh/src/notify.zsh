@@ -10,6 +10,11 @@ _notify_macos() {
   local sound="$4"
   local open_url="$5"
 
+  if ! command -v terminal-notifier >/dev/null 2>&1; then
+    echo "notify: terminal-notifier not found (brew install terminal-notifier)" >&2
+    return 127
+  fi
+
   command terminal-notifier \
     -message "$msg" \
     -title "$title" \
