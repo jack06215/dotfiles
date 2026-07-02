@@ -1,6 +1,6 @@
 import sys
 
-from python.common.execute import run_command
+from common.execute import run_command
 
 JQ_FILTER = r"""
 .[]

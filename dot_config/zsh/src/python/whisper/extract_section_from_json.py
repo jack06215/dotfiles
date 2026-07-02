@@ -4,7 +4,7 @@ import logging
 from collections.abc import Iterable, Sequence
 from dataclasses import asdict, dataclass
 
-from python.common.execute import run_command
+from common.execute import run_command
 
 LOGGER = logging.getLogger(__name__)
 
@@ -36,8 +36,7 @@ def build_selector(from_: int | None, to: int | None) -> str:
 def iter_sections_jsonl(
     inp: str, from_: int | None, to: int | None
 ) -> Iterable[Section]:
-    """
-    Always ask jq for JSONL objects: {section_index, abs_start, abs_end, full_text}
+    """Always ask jq for JSONL objects: {section_index, abs_start, abs_end, full_text}
     Then parse into dataclass.
     """
     sel = build_selector(from_, to)

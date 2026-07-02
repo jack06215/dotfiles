@@ -16,8 +16,8 @@ def parse_bool(value: str) -> bool:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        prog="python -m python.sleepwatcher.set_run_on_sleep",
-        description="Enable or disable running tasks on sleep event.",
+        prog="python -m sleepwatcher.set_run_on_wake",
+        description="Enable or disable running tasks on wake event.",
     )
     parser.add_argument(
         "enabled",
