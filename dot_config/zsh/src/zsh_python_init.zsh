@@ -41,10 +41,12 @@ elif is_wsl; then
 else
     _ZSH_PYTHON="/data/data/com.termux/files/usr"
 fi
-# Only wire up paths/aliases when a venv was actually found - otherwise
-# these would silently resolve to bogus "/bin/..." paths that don't exist.
-if [[ -n "$_ZSH_PYTHON" ]]; then
-  export ZSH_PYTHON_ROOT=$_ZSH_PYTHON
+# Only wire up paths/aliases when a venv was actually found *and* the
+# interpreter inside it actually exists - a non-empty _ZSH_PYTHON isn't
+# enough (e.g. a stale poetry env path, or the hardcoded Termux prefix
+# when python was never installed there).
+if [[ -n "$_ZSH_PYTHON" && -x "$_ZSH_PYTHON/bin/python" ]]; then
+  export ZSH_PYTHON_ROOT="$_ZSH_PYTHON"
   export ZSH_PYTHON_BIN="$_ZSH_PYTHON/bin/python"
   export ZSH_PIP_BIN="$_ZSH_PYTHON/bin/pip"
 
