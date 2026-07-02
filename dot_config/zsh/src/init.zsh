@@ -15,8 +15,8 @@
 # measure it; the report is printed at the very end of this file. Zero
 # overhead when unset (default).
 # =============================================================================
-if [[ -n "$ZSH_PROFILE_STARTUP" ]]; then
-  zmodload zsh/zprof
+if [[ -n "$ZSH_PROFILE_STARTUP" ]] && zmodload zsh/zprof 2>/dev/null; then
+  _ZSH_PROFILE_STARTUP_ENABLED=1
 fi
 
 # =============================================================================
@@ -35,9 +35,9 @@ fi
 # missing/renamed, define harmless fallbacks so the OS branches below never
 # hit "command not found: is_wsl" and just fall through to plain-Linux/none.
 # =============================================================================
-command -v is_wsl    >/dev/null 2>&1 || is_wsl()    { return 1; }
-command -v is_macos  >/dev/null 2>&1 || is_macos()  { return 1; }
-command -v is_termux >/dev/null 2>&1 || is_termux() { return 1; }
+(( $+functions[is_wsl] ))    || is_wsl()    { return 1; }
+(( $+functions[is_macos] ))  || is_macos()  { return 1; }
+(( $+functions[is_termux] )) || is_termux() { return 1; }
 
 # =============================================================================
 # Zsh core with OS-specific setup
@@ -144,6 +144,6 @@ fi
 # =============================================================================
 # Profiling report (opt-in, see top of file for ZSH_PROFILE_STARTUP)
 # =============================================================================
-if [[ -n "$ZSH_PROFILE_STARTUP" ]]; then
+if [[ -n "${_ZSH_PROFILE_STARTUP_ENABLED:-}" ]]; then
   zprof
 fi
