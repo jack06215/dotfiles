@@ -20,3 +20,7 @@ AppData/**
 .wezterm.lua
 {{ end }}
 
+{{ if and (.myComputer.isCompanyMachine) (eq .chezmoi.hostname "A0229") }}
+.tool-versions
+{{ end }}
+

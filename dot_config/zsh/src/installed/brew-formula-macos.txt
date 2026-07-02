@@ -99,6 +99,7 @@ k9s
 kdash
 krb5
 ktlint
+kubeconform
 kubeseal
 lame
 lazygit
