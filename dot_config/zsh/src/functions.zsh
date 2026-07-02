@@ -24,7 +24,7 @@ function mkcd() {
 }
 
 function pbpaste_dump() {
-  local filename="dump_pbpaste_$(date +%s%N | shasum -a 256 | head -c 8).txt"
+  local filename="dump_pbpaste_$(head -c 16 /dev/urandom | shasum -a 256 | head -c 8).txt"
   pbpaste | nl -s" | " -w3 -nln > "$filename"
   echo "Saved clipboard to $filename"
 }
