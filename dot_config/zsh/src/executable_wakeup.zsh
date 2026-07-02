@@ -1,8 +1,9 @@
 #!/usr/bin/env zsh
 
-echo "$(date) sleepwatcher triggered ($0)" >> "/tmp/sleepwatcher.log"
-source "$HOME/.zsh/darwin_pre_init.zsh"
-export PYTHONPATH="$HOME/.zsh"
+mkdir -p "$XDG_CACHE_HOME"
+echo "$(date) sleepwatcher triggered ($0)" >> "$XDG_CACHE_HOME/sleepwatcher.log"
+source "$ZDOTDIR/src/darwin_pre_init.zsh"
+export PYTHONPATH="$ZDOTDIR/src"
 
 # Get the day of the week (0 = Sunday, 6 = Saturday)
 day_of_week=$(date +%w)
