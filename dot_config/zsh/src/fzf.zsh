@@ -21,7 +21,3 @@ export FZF_DEFAULT_OPTS='
     fi
   "
 '
-
-# Keybindings
-source /usr/share/fzf/key-bindings.zsh 2>/dev/null || true
-source /usr/share/fzf/completion.zsh   2>/dev/null || true

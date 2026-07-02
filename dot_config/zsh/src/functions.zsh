@@ -24,7 +24,7 @@ function mkcd() {
 }
 
 function pbpaste_dump() {
-  local filename="dump_pbpaste_$(date +%s%N | sha256sum | head -c 8).txt"
+  local filename="dump_pbpaste_$(head -c 16 /dev/urandom | shasum -a 256 | head -c 8).txt"
   pbpaste | nl -s" | " -w3 -nln > "$filename"
   echo "Saved clipboard to $filename"
 }
@@ -35,6 +35,11 @@ function send_notification() {
   subtitle="$3"
   sound="$4"
   open_url="$5"
+
+  if ! command -v terminal-notifier >/dev/null 2>&1; then
+    echo "send_notification: terminal-notifier not found (brew install terminal-notifier)" >&2
+    return 127
+  fi
 
   if [[ -n "$sound" ]]; then
     terminal-notifier \

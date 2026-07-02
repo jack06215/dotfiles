@@ -7,6 +7,13 @@
 # the above line ...
 
 # Source this in your ~/.zshrc
+
+# Guard: everything below shells out to `atuin` on every prompt/command, so
+# without this the whole file breaks noisily on any machine without atuin.
+if ! command -v atuin >/dev/null 2>&1; then
+  return
+fi
+
 autoload -U add-zsh-hook
 
 zmodload zsh/datetime 2>/dev/null

@@ -6,5 +6,6 @@ alias firefox_version='/Applications/Firefox.app/Contents/MacOS/firefox --versio
 alias chrome='/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome'
 alias chrome_version='/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version'
 
-
-export PATH="$HOME/.asdf/shims:$PATH"
+# asdf.zsh (sourced earlier via asdf.sh) already manages the shims dir.
+# Re-prepending it here unconditionally would override an explicit
+# ZSH_RUBY_MANAGER=rbenv choice made earlier in init.zsh, so it's removed.

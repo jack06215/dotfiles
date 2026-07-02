@@ -1,6 +1,6 @@
 import sys
 
-from python.sleepwatcher.functions import sleepwatcher_db_client
+from sleepwatcher.functions import sleepwatcher_db_client
 
 
 def main() -> int:

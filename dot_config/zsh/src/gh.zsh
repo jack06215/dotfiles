@@ -50,11 +50,6 @@ function ghpr_view() {
   rest="$(__gh_parse_pbcopy_flag "$@")"
   rc=$?
 
-  if (( rc == 2 )); then
-    echo "Usage: ghpr_view [--pbcopy] [PR_NUMBER]" >&2
-    return 2
-  fi
-
   pr="$rest"
 
   if (( rc == 10 )); then
@@ -75,11 +70,6 @@ function ghpr_url() {
   rest="$(__gh_parse_pbcopy_flag "$@")"
   rc=$?
 
-  if (( rc == 2 )); then
-    echo "Usage: ghpr_copy [--pbcopy] [PR_NUMBER]" >&2
-    return 2
-  fi
-
   pr="$rest"
 
   if [[ -n "$pr" ]]; then
@@ -97,11 +87,6 @@ function ghpr_watch() {
 
   rest="$(__gh_parse_pbcopy_flag "$@")"
   rc=$?
-
-  if (( rc == 2 )); then
-    echo "Usage: ghpr_watch [--pbcopy] [PR_NUMBER]" >&2
-    return 2
-  fi
 
   pr="$rest"
 
@@ -169,11 +154,6 @@ function ghpr_fzf_open() {
   # parse --pbcopy (shared helper)
   rest="$(__gh_parse_pbcopy_flag "$@")"
   rc=$?
-
-  if (( rc == 2 )); then
-    echo "Usage: ghpr_fzf_open [--pbcopy] [gh pr list options]" >&2
-    return 2
-  fi
 
   pr="$(
     gh pr list ${=rest} --limit 500 \
