@@ -21,14 +21,14 @@ function cd_zsh_python() {
 function load_zsh_python_venv_macos() {
   (
     cd "$ZDOTDIR/src/python" || exit 1
-    command "$HOME/.asdf/shims/poetry" env info -p
+    command "$HOME/.asdf/shims/poetry" env info -p 2>/dev/null
   )
 }
 
 function load_zsh_python_venv_wsl() {
   (
     cd "$ZDOTDIR/src/python" || exit 1
-    command "/home/linuxbrew/.linuxbrew/bin/poetry" env info -p
+    command "/home/linuxbrew/.linuxbrew/bin/poetry" env info -p 2>/dev/null
   )
 }
 
@@ -40,21 +40,25 @@ elif is_wsl; then
 else
     _ZSH_PYTHON="/data/data/com.termux/files/usr"
 fi
-export ZSH_PYTHON_ROOT=$_ZSH_PYTHON
-export ZSH_PYTHON_BIN="$_ZSH_PYTHON/bin/python"
-export ZSH_PIP_BIN="$_ZSH_PYTHON/bin/pip"
+# Only wire up paths/aliases when a venv was actually found - otherwise
+# these would silently resolve to bogus "/bin/..." paths that don't exist.
+if [[ -n "$_ZSH_PYTHON" ]]; then
+  export ZSH_PYTHON_ROOT=$_ZSH_PYTHON
+  export ZSH_PYTHON_BIN="$_ZSH_PYTHON/bin/python"
+  export ZSH_PIP_BIN="$_ZSH_PYTHON/bin/pip"
 
-# python cli
-export ALEMBIC_BIN="$ZSH_PYTHON_ROOT/bin/alembic"
-export LLM_BIN="$ZSH_PYTHON_ROOT/bin/llm"
-export DBT_BIN="$ZSH_PYTHON_ROOT/bin/dbt"
-export GDOWN_BIN="$ZSH_PYTHON_ROOT/bin/gdown"
-export RUFF_BIN="$ZSH_PYTHON_ROOT/bin/ruff"
+  # python cli
+  export ALEMBIC_BIN="$ZSH_PYTHON_ROOT/bin/alembic"
+  export LLM_BIN="$ZSH_PYTHON_ROOT/bin/llm"
+  export DBT_BIN="$ZSH_PYTHON_ROOT/bin/dbt"
+  export GDOWN_BIN="$ZSH_PYTHON_ROOT/bin/gdown"
+  export RUFF_BIN="$ZSH_PYTHON_ROOT/bin/ruff"
 
-alias zsh_python='$ZSH_PYTHON_BIN'
-alias zsh_pip='$ZSH_PIP_BIN'
+  alias zsh_python='$ZSH_PYTHON_BIN'
+  alias zsh_pip='$ZSH_PIP_BIN'
 
-alias llm='$LLM_BIN'
-alias alembic='$ALEMBIC_BIN'
-alias ruff='$RUFF_BIN'
-alias gdown='$GDOWN_BIN'
+  alias llm='$LLM_BIN'
+  alias alembic='$ALEMBIC_BIN'
+  alias ruff='$RUFF_BIN'
+  alias gdown='$GDOWN_BIN'
+fi

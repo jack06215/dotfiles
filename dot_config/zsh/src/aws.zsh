@@ -17,8 +17,8 @@ function aws_login() {
     echo "Usage: aws_login <profile>" >&2
     return 2
   fi
-  if ! command -v aws-azure-login >/dev/null 2>&1; then
-    echo "aws-azure-login not found" >&2
+  if ! command -v aws >/dev/null 2>&1; then
+    echo "aws not found" >&2
     return 127
   fi
   aws --profile "$profile" login
