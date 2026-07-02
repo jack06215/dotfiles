@@ -1,7 +1,10 @@
 #!/usr/bin/env zsh
 
-# core.zsh (is_macos/is_wsl, used below) is already sourced by init.zsh
-# before this file loads.
+# Don't assume init.zsh already sourced core.zsh - this file is also
+# sourced standalone (e.g. meetingbar.zsh, invoked outside any shell
+# startup chain via `zsh -c` from an AppleScript), where is_macos/is_wsl
+# would otherwise be undefined.
+[[ -f "$ZDOTDIR/src/core.zsh" ]] && source "$ZDOTDIR/src/core.zsh"
 
 function zsh_python_init() {
   local zsh_python_dir="$ZDOTDIR/src/python"
