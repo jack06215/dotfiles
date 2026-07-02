@@ -108,6 +108,7 @@ libarchive
 libassuan
 libb2
 libcbor
+libdatrie
 libde265
 libdeflate
 libevent
@@ -117,7 +118,6 @@ libgcrypt
 libgit2
 libgpg-error
 libheif
-libiconv
 libidn2
 libksba
 libmagic
@@ -126,12 +126,14 @@ libnghttp3
 libngtcp2
 libomp
 libpng
+libpsl
 libsixel
 libslirp
 libsodium
 libssh
 libssh2
 libtasn1
+libthai
 libtiff
 libtool
 libunistring
@@ -260,5 +262,6 @@ yt-dlp
 z3
 zellij
 zlib
+zlib-ng-compat
 zoxide
 zstd
