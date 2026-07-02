@@ -10,15 +10,12 @@ add_path_front "$BUN_INSTALL/bin"
 
 add_path_front "$HOME/.rbenv/bin"
 add_path_back "$HOME/go/bin"
-
+add_path_back "$XDG_DATA_HOME/npm/bin"
 add_path_back "/opt/homebrew/opt/mysql@8.0/bin"
 add_path_back "/opt/homebrew/opt/mysql-client@8.0/bin"
 
 add_path_back "$HOME/.asdf/installs/poetry/2.2.1/bin"
 add_path_back "$HOME/tools/flutter/bin"
-
-# Python specific script
-add_path_back "$HOME/.zsh/myscripts"
 
 # Flywheel specific script
 add_path_back "$HOME/myscripts"

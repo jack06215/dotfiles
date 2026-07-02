@@ -6,7 +6,7 @@ export XDG_STATE_HOME="$XDG_PREFIX_HOME/state"
 export XDG_BIN_HOME="$XDG_PREFIX_HOME/bin"
 [[ "$PATH" == *"$XDG_BIN_HOME"* ]] || export PATH="$XDG_BIN_HOME:$PATH"
 
-ZDOTDIR="$XDG_CONFIG_HOME/zsh"
+export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
 
 export BUN_INSTALL="$XDG_DATA_HOME/bun"
 export CABAL_CONFIG="$XDG_CONFIG_HOME/cabal/config"

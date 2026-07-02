@@ -93,4 +93,7 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
     description = "Show commit messages in-between within folder"
     command = "git log --format='- %s' <from_commit>..<to_commit> -- $(git rev-parse --show-toplevel)<regex=/src/main/typescript/packages/genai-rag-demo-*/>"
     tag = ["git"]
-
+[[snippets]]
+    description = "Prettify a zsh file in monorepo (flywheel-jp)"
+    command = "(cd \"$HOME\" && shfmt -w -ln=zsh \"<file=${HOME}/workspace/flywheel-jp/monorepo/>\")"
+    tag = ["prettify"]
