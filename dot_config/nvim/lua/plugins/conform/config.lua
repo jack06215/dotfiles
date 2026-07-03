@@ -15,20 +15,25 @@ return {
       proto = { "buf" },
       python = { "ruff_fix", "ruff_organize_imports", "ruff_format" },
       sh = { "shfmt" },
+      zsh = { "shfmt" },
     },
-    -- tell Conform how to run
     formatters = {
       shfmt = {
         command = "shfmt",
-        args = {
-          "-ln",
-          "bash", -- closest match for zsh
-          "-i",
-          "2",
-          "-ci",
-          "-sr",
-          "-bn",
-        },
+        args = function(self, ctx)
+          local dialect = vim.bo[ctx.buf].filetype == "zsh" and "zsh" or "bash"
+          return {
+            "-ln",
+            dialect,
+            "-i",
+            "2",
+            "-ci",
+            "-sr",
+            "-bn",
+            "--filename",
+            ctx.filename,
+          }
+        end,
         stdin = true,
       },
       proto = {
