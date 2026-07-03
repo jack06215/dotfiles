@@ -21,7 +21,7 @@ function s_shfmt_pinned() {
   [[ "$current" == "$pinned" ]] && return 0
 
   if ! command -v go >/dev/null 2>&1; then
-    print -u2 -- "s_shfmt_version: go not found on PATH, cannot install shfmt ${pinned}"
+    print -u2 -- "s_shfmt_pinned: go not found on PATH, cannot install shfmt ${pinned}"
     return 1
   fi
 
@@ -29,8 +29,11 @@ function s_shfmt_pinned() {
 
   local gobin
   gobin="$(go env GOBIN)"
-  [[ -z "$gobin" ]] && gobin="$(go env GOPATH)/bin"
-
+  if [[ -z "$gobin" ]]; then
+    local gopath
+    gopath="$(go env GOPATH)"
+    gobin="${gopath%%:*}/bin"
+  fi
   mkdir -p "$HOME/.local/bin"
   ln -sf "$gobin/shfmt" "$target"
   # zsh caches each command's resolved PATH location on first use and won't

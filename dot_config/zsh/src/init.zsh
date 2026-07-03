@@ -79,8 +79,8 @@ fi
 # Version overrides for tools whose pin (company .tool-versions, etc.) can't
 # be trusted to stay current - see patch_functions.zsh for why.
 if [ -f "$ZDOTDIR/src/patch_functions.zsh" ]; then
-    source "$ZDOTDIR/src/patch_functions.zsh"
-    s_shfmt_pinned
+  source "$ZDOTDIR/src/patch_functions.zsh"
+  s_shfmt_pinned
 fi
 
 # =============================================================================
