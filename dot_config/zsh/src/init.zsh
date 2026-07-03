@@ -76,6 +76,13 @@ if [[ "${ZSH_RUBY_MANAGER:-asdf}" == "rbenv" ]]; then
 fi
 [ -f "$ZDOTDIR/src/functions.zsh" ] && source "$ZDOTDIR/src/functions.zsh"
 
+# Version overrides for tools whose pin (company .tool-versions, etc.) can't
+# be trusted to stay current - see patch_functions.zsh for why.
+if [ -f "$ZDOTDIR/src/patch_functions.zsh" ]; then
+  source "$ZDOTDIR/src/patch_functions.zsh"
+  s_shfmt_pinned
+fi
+
 # =============================================================================
 # Zinit and its plugins
 # =============================================================================
