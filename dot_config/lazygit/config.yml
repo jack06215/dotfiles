@@ -6,9 +6,16 @@ gui:
   showRandomTip: false
   showCommandLog: false
   language: "en"
-  editorCommand: "nvim --wait"
+  showDivergenceFromBaseBranch: arrowAndNumber
 
 git:
   overrideGpg: true
   parseEmoji: false
+  localBranchSortOrder: recency
+  autoForwardBranches: allBranches
+  pagers:
+    - colorArg: always
+      pager: delta --paging=never
 
+os:
+  editPreset: nvim
