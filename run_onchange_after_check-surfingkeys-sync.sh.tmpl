@@ -1,0 +1,33 @@
+#!/bin/bash
+set -euo pipefail
+
+# Surfingkeys (the browser extension) loads its config live from the raw
+# GitHub URL for this repo's master branch rather than from this machine's
+# filesystem, so a local edit does nothing in the browser until it's
+# committed and pushed to master. This script re-runs whenever
+# dot_config/surfingkeys/index.js changes (its content is embedded below,
+# which chezmoi hashes to decide whether to rerun) and warns if the local
+# copy hasn't landed on master yet — checked via git locally, no network call.
+
+source_dir={{ .chezmoi.sourceDir | quote }}
+rel_path="dot_config/surfingkeys/index.js"
+
+local_tmp=$(mktemp)
+master_tmp=$(mktemp)
+trap 'rm -f "$local_tmp" "$master_tmp"' EXIT
+
+cat > "$local_tmp" <<'SURFINGKEYS_LOCAL_EOF'
+{{ include "dot_config/surfingkeys/index.js" -}}
+SURFINGKEYS_LOCAL_EOF
+
+if ! git -C "$source_dir" show "master:${rel_path}" > "$master_tmp" 2>/dev/null; then
+  echo "surfingkeys: could not read master:${rel_path} from git, skipping" >&2
+  exit 0
+fi
+
+if diff -q "$local_tmp" "$master_tmp" > /dev/null; then
+  echo "surfingkeys: index.js matches the master branch"
+else
+  echo "surfingkeys: local index.js differs from master — commit & push so the browser extension picks it up:"
+  diff -u "$master_tmp" "$local_tmp" || true
+fi

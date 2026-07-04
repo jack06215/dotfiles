@@ -29,7 +29,7 @@ api.mapkey('p', '#0enter ephemeral PassThrough mode to temporarily suppress Surf
 
 // -- Utilities --
 const unmapKeys = (keys) => keys.forEach((key) => api.unmap(key));
-const iunmapKeys = (keys) => keys.forEach((key) => api.iunmap(key));
+const iunmapKeys = (keys) => keys.forEach((key) => api.iunmap(key)); // sjdkfljsd
 const escapeMap = {
   "&": "&amp;",
   "<": "&lt;",
