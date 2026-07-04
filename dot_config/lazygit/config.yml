@@ -74,3 +74,58 @@ customCommands:
         title: "Is the commit message correct?"
         # yamllint disable-line rule:line-length
         body: "{{ .Form.Type }}{{if .Form.Scope}}({{ .Form.Scope }}){{end}}: {{ .Form.Description }}"
+
+  - key: "U"
+    context: "files"
+    description: "amend all changes into last commit"
+    command: "git add -A && git commit --amend --no-edit"
+    prompts:
+      - type: "confirm"
+        title: "Amend all changes?"
+        body: "Stage all changes and amend them into the last commit."
+
+  - key: "T"
+    context: "files"
+    description: "WIP checkpoint commit and push"
+    command: 'git add -A && git commit -m "WIP: checkpoint" --no-verify && git push'
+    prompts:
+      - type: "confirm"
+        title: "Push WIP checkpoint?"
+        body: "Stage all changes, commit as WIP (skips hooks via skipHookPrefix), and push immediately."
+
+  - key: "D"
+    context: "localBranches"
+    description: "delete local branches merged into the default branch"
+    command: "git branch --merged $(git symbolic-ref --short refs/remotes/origin/HEAD) | grep -v '^\\*' | xargs -r git branch -d"
+    prompts:
+      - type: "confirm"
+        title: "Delete merged branches?"
+        body: "Delete every local branch already merged into the repo's default branch (origin/HEAD)."
+
+  - key: "w"
+    context: "localBranches"
+    description: "watch CI checks for this branch's PR"
+    command: "gh pr checks --watch"
+    output: terminal
+
+  - key: "B"
+    context: "localBranches"
+    description: "create PR against a chosen base branch"
+    prompts:
+      - type: "menuFromCommand"
+        title: "Select base branch"
+        key: "Base"
+        command: "git branch -r --list 'origin/*'"
+        filter: "origin/(.*)"
+        valueFormat: "{{ .group_1 }}"
+        labelFormat: "{{ .group_1 | cyan }}"
+    command: "gh pr create --web --base {{.Form.Base}}"
+    output: popup
+
+  - key: "u"
+    context: "commits"
+    description: "find PR containing this commit"
+    command: >
+      gh pr list --search "{{.SelectedCommit.Hash}}" --state all --json number,title,url
+      --jq '.[] | "#\(.number) \(.title)\n\(.url)"'
+    output: popup
