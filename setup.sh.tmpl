@@ -8,8 +8,7 @@ COREPACK_VERSION="0.33.0"
 
 function read_tool_versions() {
   sed -E 's/ *#.*$//' .tool-versions \
-    |
-    # Remove comments
+    | # Remove comments
     grep '\S' # Remove blank lines
 }
 
@@ -21,9 +20,9 @@ function foreach_tool_version() {
     read_tool_versions \
       | grep "^${plugin_name} " \
       | sed "s/${plugin_name} //"
-  )
+  ) || true
   for v in ${versions}; do
-    /bin/bash -euo pipefail -c "source ~/.asdf/asdf.sh && export ASDF_$(tr '[:lower:]' '[:upper:]' <<< "${plugin_name}")_VERSION=${v} && ${command}"
+    /bin/bash -euo pipefail -c "source ~/.asdf/asdf.sh && (asdf plugin add ${plugin_name} || true) && asdf install ${plugin_name} ${v} && export ASDF_$(tr '[:lower:]' '[:upper:]' <<< "${plugin_name}")_VERSION=${v} && ${command}"
   done
 }
 
@@ -55,6 +54,14 @@ function install_homebrew() {
   fi
   sudo echo
   NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  if [[ -x /opt/homebrew/bin/brew ]]; then
+    eval "$(/opt/homebrew/bin/brew shellenv)"
+  elif [[ -x /usr/local/bin/brew ]]; then
+    eval "$(/usr/local/bin/brew shellenv)"
+  elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
+    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  fi
 }
 
 function upgrade_homebrew_packages() {
@@ -95,17 +102,40 @@ function install_yarn_v4() {
   foreach_tool_version 'nodejs' "${cmd}"
 }
 
+function section() {
+  local msg="$1" color='' reset=''
+  if [[ -t 1 ]] && [[ -z "${NO_COLOR:-}" ]]; then
+    color=$'\033[1;34m'
+    reset=$'\033[0m'
+  fi
+  printf '\n%s==>%s %s\n' "${color}" "${reset}" "${msg}"
+}
+
 function setup_macos() {
+  section 'Installing Homebrew'
   install_homebrew
+
+  section 'Upgrading Homebrew packages'
   upgrade_homebrew_packages
+
+  section 'Installing asdf'
   install_asdf
+
+  section 'Installing Yarn v4'
   install_yarn_v4
 }
 
 function setup_debian() {
+  section 'Installing Homebrew'
   install_homebrew
+
+  section 'Upgrading Homebrew packages'
   upgrade_homebrew_packages
+
+  section 'Installing asdf'
   install_asdf
+
+  section 'Installing Yarn v4'
   install_yarn_v4
 }
 
@@ -136,19 +166,19 @@ function brew_trust_taps() {
   if (( ${#taps[@]} )); then
     local tap
     for tap in "${taps[@]}"; do
-      echo "Trusting ${tap}..."
-      if ! brew trust "${tap}"; then
+      echo "Tapping ${tap}..."
+      if ! brew tap "${tap}"; then
         failed+=("${tap}")
       fi
     done
   fi
 
   if (( ${#failed[@]} )); then
-    printf '\nFailed to trust: %s\n' "${failed[*]}" >&2
+    printf '\nFailed to tap: %s\n' "${failed[*]}" >&2
     return 1
   fi
 
-  printf '\nAll taps trusted.\n'
+  printf '\nAll taps added.\n'
 }
 
 {{ if and .myComputer.isDarwin -}}
