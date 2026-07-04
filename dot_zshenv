@@ -52,6 +52,7 @@ export SSB_HOME="$XDG_DATA_HOME/zoom"
 export STACK_ROOT="$XDG_DATA_HOME/stack"
 export SUDO_EDITOR=nvim
 export WGETRC="$XDG_CONFIG_HOME/wgetrc"
+export CHEZMOI_SOURCE_DIR="${HOME}/workspace/jack06215/dotfiles"
 # export XMODIFIERS='@im=fcitx'
 # export GTK_IM_MODULE='fcitx'
 # export QT_IM_MODULE='fcitx'

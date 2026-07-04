@@ -5,7 +5,7 @@ set -euo pipefail
 profile_dir={{ .firefox.profileDir | quote }}
 source_dir={{ joinPath .xdg.configHome "firefox/profile" | quote }}
 
-mkdir -p "$profile_dir/chrome"
-ln -sf "$source_dir/user.js" "$profile_dir/user.js"
-ln -sf "$source_dir/chrome/userChrome.css" "$profile_dir/chrome/userChrome.css"
-{{- end }}
+mkdir -p "${profile_dir}/chrome"
+ln -sf "${source_dir}/user.js" "${profile_dir}/user.js"
+ln -sf "${source_dir}/chrome/userChrome.css" "${profile_dir}/chrome/userChrome.css"
+{{- end -}}
