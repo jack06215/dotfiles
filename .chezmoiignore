@@ -12,6 +12,7 @@
 history.sqlite3
 history.txt
 **/flywheel/**
+**/docs/**
 
 {{ if ne .chezmoi.os "windows" }}
 AppData/**
