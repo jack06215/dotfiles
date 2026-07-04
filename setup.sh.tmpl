@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+set -euo pipefail -o posix
+cd "$(dirname "$0")"
+
+ASDF_VERSION="v0.12.0"
+YARN_VERSION="4.12.0"
+COREPACK_VERSION="0.33.0"
+
+function read_tool_versions() {
+  sed -E 's/ *#.*$//' .tool-versions \
+    |
+    # Remove comments
+    grep '\S' # Remove blank lines
+}
+
+function foreach_tool_version() {
+  plugin_name="$1"
+  command="$2"
+  # shellcheck disable=SC2311
+  versions=$(
+    read_tool_versions \
+      | grep "^${plugin_name} " \
+      | sed "s/${plugin_name} //"
+  )
+  for v in ${versions}; do
+    /bin/bash -euo pipefail -c "source ~/.asdf/asdf.sh && export ASDF_$(tr '[:lower:]' '[:upper:]' <<< "${plugin_name}")_VERSION=${v} && ${command}"
+  done
+}
+
+function install_asdf() {
+  if [[ -d ~/.asdf/.git ]]; then
+    (
+      cd ~/.asdf || exit 1
+      if [[ "$(git tag --list "${ASDF_VERSION}")" = '' ]]; then
+        git fetch --tags origin
+      fi
+      if [[ "$(git rev-parse HEAD)" != "$(git rev-parse "${ASDF_VERSION}")" ]]; then
+        git checkout "${ASDF_VERSION}"
+      fi
+    )
+  elif [[ -d ~/.asdf ]]; then
+    mv ~/.asdf ~/.asdf.tmp
+    git clone 'https://github.com/asdf-vm/asdf.git' ~/.asdf --branch "${ASDF_VERSION}"
+    mv ~/.asdf.tmp/* ~/.asdf
+    rmdir ~/.asdf.tmp
+    /bin/bash -euo pipefail -c 'source ~/.asdf/asdf.sh && asdf reshim'
+  else
+    git clone 'https://github.com/asdf-vm/asdf.git' ~/.asdf --branch "${ASDF_VERSION}"
+  fi
+}
+
+function install_homebrew() {
+  if command -v brew &> /dev/null; then
+    return 0
+  fi
+  sudo echo
+  NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+}
+
+function upgrade_homebrew_packages() {
+  local source_dir={{ .chezmoi.sourceDir | quote }}
+  local os_suffix={{ if .myComputer.isDarwin }}"macos"{{ else if .myComputer.isLinux }}"wsl2"{{ else }}""{{ end }}
+
+  local formula_file="${source_dir}/brew-formula-${os_suffix}.txt"
+  if [[ -s "${formula_file}" ]]; then
+    xargs -a "${formula_file}" brew install
+  fi
+
+  {{- if .myComputer.isDarwin }}
+  local cask_file="${source_dir}/brew-cask-${os_suffix}.txt"
+  if [[ -s "${cask_file}" ]]; then
+    brew_trust_taps
+    xargs -a "${cask_file}" brew install --cask
+  fi
+  {{- end }}
+
+  brew upgrade
+  brew cleanup
+}
+
+function install_yarn_v4() {
+  local cmd="
+    if yarn --version 2>/dev/null | grep -qF '${YARN_VERSION}'; then
+      echo 'Yarn ${YARN_VERSION} is already active; skipping.'
+    else
+      if ! corepack --version 2>/dev/null | grep -qF '${COREPACK_VERSION}'; then
+        npm install -g 'npm:corepack@${COREPACK_VERSION}'
+        asdf reshim nodejs
+      fi
+      corepack enable
+      corepack prepare yarn@${YARN_VERSION} --activate
+      asdf reshim nodejs
+    fi
+  "
+  foreach_tool_version 'nodejs' "${cmd}"
+}
+
+function setup_macos() {
+  install_homebrew
+  upgrade_homebrew_packages
+  install_asdf
+  install_yarn_v4
+}
+
+function setup_debian() {
+  install_homebrew
+  upgrade_homebrew_packages
+  install_asdf
+  install_yarn_v4
+}
+
+function is_wsl() {
+  [[ "$(uname -s)" == "Linux" ]] \
+    && [[ -r /proc/version ]] \
+    && grep -qi microsoft /proc/version 2>/dev/null
+}
+
+function setup_wsl2() {
+  echo 'WSL2 is not yet supported.'
+  return 1
+}
+
+function brew_trust_taps() {
+  local source_dir={{ .chezmoi.sourceDir | quote }}
+  local taps_file="${source_dir}/brew-trust-taps.txt"
+
+  local taps=()
+  if [[ -s "${taps_file}" ]]; then
+    local tap
+    while IFS= read -r tap; do
+      [[ -n "${tap}" ]] && taps+=("${tap}")
+    done < "${taps_file}"
+  fi
+
+  local failed=()
+  if (( ${#taps[@]} )); then
+    local tap
+    for tap in "${taps[@]}"; do
+      echo "Trusting ${tap}..."
+      if ! brew trust "${tap}"; then
+        failed+=("${tap}")
+      fi
+    done
+  fi
+
+  if (( ${#failed[@]} )); then
+    printf '\nFailed to trust: %s\n' "${failed[*]}" >&2
+    return 1
+  fi
+
+  printf '\nAll taps trusted.\n'
+}
+
+{{ if and .myComputer.isDarwin -}}
+{{   if .myComputer.isArm -}}
+setup_macos
+{{   else -}}
+echo 'Unsupported mac architecture. Only arm64 is supported.'
+exit 1
+{{   end -}}
+{{ else if .myComputer.isLinux -}}
+if is_wsl; then
+  setup_wsl2
+else
+{{   if and (eq .chezmoi.osRelease.id "debian") (or (eq .chezmoi.osRelease.versionId "12") (eq .chezmoi.osRelease.versionId "13")) -}}
+  setup_debian
+{{   else -}}
+  echo 'Unsupported linux distribution and version.'
+  exit 1
+{{   end -}}
+fi
+{{ else -}}
+echo 'Unsupported system'
+exit 1
+{{ end -}}
+echo
+echo 'Successfully completed! Open a new terminal session to apply the changes.'
