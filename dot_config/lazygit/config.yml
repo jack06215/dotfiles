@@ -24,7 +24,7 @@ customCommands:
   - key: "c"
     # yamllint disable-line rule:line-length
     command: >-
-      git -c core.editor="nvim" commit --edit -m "{{ .Form.Type }}{{if .Form.Scope}}({{ .Form.Scope }}){{end}}: "
+      git -c core.editor="vim" commit --edit -m "{{ .Form.Type }}{{if .Form.Scope}}({{ .Form.Scope }}){{end}}: "
     description: "conventional commit"
     context: "files"
     output: terminal
