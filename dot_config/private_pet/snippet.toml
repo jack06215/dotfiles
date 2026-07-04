@@ -97,3 +97,7 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
     description = "Prettify a zsh file in monorepo (flywheel-jp)"
     command = "(cd \"$HOME\" && shfmt -w -ln=zsh \"<file=${HOME}/workspace/flywheel-jp/monorepo/>\")"
     tag = ["prettify"]
+[[snippets]]
+    description = "Compile template file"
+    command = "chezmoi execute-template < $(chezmoi source-path)/<tmpl_file> | bat"
+    tag = ["chezmoi"]
