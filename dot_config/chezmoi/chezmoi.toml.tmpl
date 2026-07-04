@@ -35,3 +35,10 @@ sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "wo
     cacheHome = {{ env "XDG_CACHE_HOME" | default (joinPath .chezmoi.homeDir ".cache") | quote }}
 [template]
     options = ["missingkey=error"]
+
+[diff]
+    # run_onchange_ scripts embed dotfile content via `include`, so any dotfile
+    # edit changes the script's hash and chezmoi diff would otherwise dump the
+    # entire script body as a "new file". Excluding scripts keeps diff output
+    # to actual file changes only.
+    exclude = ["scripts"]
