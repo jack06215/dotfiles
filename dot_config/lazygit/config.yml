@@ -24,7 +24,7 @@ customCommands:
   - key: "c"
     # yamllint disable-line rule:line-length
     command: >-
-      git -c core.editor="vim" commit --edit -m "{{ .Form.Type }}{{if .Form.Scope}}({{ .Form.Scope }}){{end}}: "
+      bash -c 'git diff --cached | pbcopy; git -c core.editor="vi" commit --edit -F <(printf "%s\n\n# --- staged diff (reference only; stripped from the commit message) ---\n" "{{ .Form.Type }}{{if .Form.Scope}}({{ .Form.Scope }}){{end}}: "; git diff --cached | sed "s/^/# /")'
     description: "conventional commit"
     context: "files"
     output: terminal
