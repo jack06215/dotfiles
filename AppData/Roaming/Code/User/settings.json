@@ -50,7 +50,9 @@
   "[dart]": {
     "editor.formatOnSave": true,
     "editor.formatOnType": true,
-    "editor.rulers": [80],
+    "editor.rulers": [
+      80
+    ],
     "editor.selectionHighlight": false,
     "editor.suggest.snippetsPreventQuickSuggestions": false,
     "editor.suggestSelection": "first",
@@ -126,7 +128,9 @@
   "terminal.integrated.env.windows": {
     "PATH": "${env:PATH};${workspaceFolder}\\node_modules\\.bin;${env:PNPM_HOME}"
   },
-  "terminal.integrated.commandsToSkipShell": ["workbench.action.closePanel"],
+  "terminal.integrated.commandsToSkipShell": [
+    "workbench.action.closePanel"
+  ],
   "terminal.integrated.scrollback": 5000,
   "terminal.integrated.enableMultiLinePasteWarning": "never",
   "telemetry.telemetryLevel": "off",
@@ -175,15 +179,27 @@
   },
   "supermaven.enableJumpSuggestions": false,
   "tailwindCSS.experimental.classRegex": [
-    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
-    ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+    [
+      "cva\\(([^)]*)\\)",
+      "[\"'`]([^\"'`]*).*?[\"'`]"
+    ],
+    [
+      "cx\\(([^)]*)\\)",
+      "(?:'|\"|`)([^']*)(?:'|\"|`)"
+    ]
   ],
   "chat.agent.enabled": false,
   "vim.normalModeKeyBindingsNonRecursive": [
     {
-      "before": ["<Esc>"],
-      "when": ["editorFocus"],
-      "commands": [":nohl"],
+      "before": [
+        "<Esc>"
+      ],
+      "when": [
+        "editorFocus"
+      ],
+      "commands": [
+        ":nohl"
+      ],
       "silent": true
     }
   ],
