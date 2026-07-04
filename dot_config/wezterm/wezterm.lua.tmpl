@@ -111,8 +111,12 @@ wezterm.on("gui-startup", function(cmd)
 	window:gui_window():maximize()
 
 	wezterm.time.call_after(0.3, function()
-		pane:split({ direction = "Bottom", size = 0.125 })
+		local bottom = pane:split({ direction = "Bottom", size = 0.125 })
 		pane:split({ direction = "Right", size = 0.15 })
+
+		-- Split bottom into left:middle:right = 1:8:1
+		bottom:split({ direction = "Right", size = 0.1 })
+		bottom:split({ direction = "Left", size = 1 / 9 })
 	end)
 end)
 
