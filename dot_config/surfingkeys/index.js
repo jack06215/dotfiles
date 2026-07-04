@@ -54,7 +54,7 @@ const tabOpenBackground = (url) =>
 const copyTitleAndUrl = (format) => {
   const text = format
     .replace('%TITLE%', document.title)
-    .replace('%URL%',   location.href);        // FIX: original was missing %URL% replacement
+    .replace('%URL%',   location.href);
   api.Clipboard.write(text);
 };
 
@@ -62,7 +62,7 @@ const copyTitleAndUrl = (format) => {
 const copyHtmlLink = async () => {
   const title = document.title;
   const url   = location.href;
-  const html  = `<a href="${url}">${escapeForAlias(title)}</a>`;  // FIX: escape title in HTML
+  const html  = `<a href="${url}">${escapeForAlias(title)}</a>`;
   const plain = `${title} - ${url}`;
   try {
     await navigator.clipboard.write([
@@ -295,7 +295,7 @@ api.addSearchAlias(
   'https://www.google.co.jp/search?q={0}&tbs=qdr:m3,lr:lang_1ja&lr=lang_ja'
 );
 
-// MDN  (FIX: original used undefined `res` variable; fixed to use `response`)
+// MDN
 api.addSearchAlias(
   'amdn',
   'MDN',
