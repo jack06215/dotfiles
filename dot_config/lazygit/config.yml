@@ -19,3 +19,58 @@ git:
 
 os:
   editPreset: nvim
+
+customCommands:
+  - key: "c"
+    # yamllint disable-line rule:line-length
+    command: 'git commit -m "{{ .Form.Type }}{{if .Form.Scope}}({{ .Form.Scope }}){{end}}: {{ .Form.Description }}"'
+    description: "conventional commit"
+    context: "files"
+    prompts:
+      - type: "menu"
+        title: "Select the type of change you are committing."
+        key: "Type"
+        options:
+          - name: "Feature"
+            description: "A new feature"
+            value: "feat"
+          - name: "Fix"
+            description: "A bug fix"
+            value: "fix"
+          - name: "Documentation"
+            description: "Documentation only changes"
+            value: "docs"
+          - name: "Styles"
+            description: "Styling changes (white-space, formatting, etc)"
+            value: "style"
+          - name: "Code Refactoring"
+            description: "Refactoring code"
+            value: "refactor"
+          - name: "Performance Improvements"
+            description: "Performance improvements"
+            value: "perf"
+          - name: "Tests"
+            description: "Test additions or fixes"
+            value: "test"
+          - name: "Builds"
+            description: "Build system or dependency changes"
+            value: "build"
+          - name: "Continuous Integration"
+            description: "CI configuration changes"
+            value: "ci"
+          - name: "Chores"
+            description: "Other non-code changes"
+            value: "chore"
+          - name: "Reverts"
+            description: "Reverting changes"
+            value: "revert"
+      - type: "input"
+        title: "Enter a scope (optional)."
+        key: "Scope"
+      - type: "input"
+        title: "Enter the short description of the change."
+        key: "Description"
+      - type: "confirm"
+        title: "Is the commit message correct?"
+        # yamllint disable-line rule:line-length
+        body: "{{ .Form.Type }}{{if .Form.Scope}}({{ .Form.Scope }}){{end}}: {{ .Form.Description }}"
