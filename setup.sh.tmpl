@@ -174,16 +174,22 @@ function brew_trust_taps() {
       echo "Tapping ${tap}..."
       if ! brew tap "${tap}"; then
         failed+=("${tap}")
+        continue
+      fi
+
+      echo "Trusting ${tap}..."
+      if ! brew trust "${tap}"; then
+        failed+=("${tap}")
       fi
     done
   fi
 
   if (( ${#failed[@]} )); then
-    printf '\nFailed to tap: %s\n' "${failed[*]}" >&2
+    printf '\nFailed to tap/trust: %s\n' "${failed[*]}" >&2
     return 1
   fi
 
-  printf '\nAll taps added.\n'
+  printf '\nAll taps added and trusted.\n'
 }
 
 {{ if and .myComputer.isDarwin -}}
