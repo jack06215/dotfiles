@@ -1,3 +1,5 @@
+sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "workspace/jack06215/dotfiles") | quote }}
+
 [data.git]
     name = "Jack Cho"
     email = "jack06215@gmail.com"
@@ -8,12 +10,25 @@
     username = {{ .chezmoi.username | quote }}
     arch = {{ .chezmoi.arch | quote }}
     homeDir = {{ .chezmoi.homeDir | quote }}
-    isCompanyMachine  = {{ env "IS_COMPANY_MACHINE" | eq "true" | toString | trim }}
+    isCompanyMachine = {{ env "IS_COMPANY_MACHINE" | eq "true" | toString | trim }}
     isDarwin = {{ eq .chezmoi.os "darwin" | toString | trim }}
     isLinux = {{ eq .chezmoi.os "linux" | toString | trim }}
     isWindows = {{ eq .chezmoi.os "windows" | toString | trim }}
     isArm = {{ eq .chezmoi.arch "arm64" | toString | trim }}
     isX86 = {{ eq .chezmoi.arch "amd64" | toString | trim }}
+{{- $firefoxProfilesDir := "" -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir "Library/Application Support/Firefox/Profiles" -}}
+{{- else if eq .chezmoi.os "linux" -}}
+{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir ".mozilla/firefox" -}}
+{{- else if eq .chezmoi.os "windows" -}}
+{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir "AppData/Roaming/Mozilla/Firefox/Profiles" -}}
+{{- end -}}
+{{- $flywheelProfileID := "vfop1w54.default" }}
+[data.firefox]
+    profile = {{ $flywheelProfileID | quote }}
+    profileDirBase = {{ $firefoxProfilesDir | quote }}
+    profileDir = {{ joinPath $firefoxProfilesDir $flywheelProfileID | quote }}
 [data.xdg]
     configHome = {{ env "XDG_CONFIG_HOME" | default (joinPath .chezmoi.homeDir ".config") | quote }}
     dataHome = {{ env "XDG_DATA_HOME" | default (joinPath .chezmoi.homeDir ".local/share") | quote }}
