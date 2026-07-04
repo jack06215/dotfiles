@@ -396,11 +396,6 @@ user_pref("onebar.hide-navigation-buttons", false);
 
 user_pref("ui.key.menuAccessKey", 96);  // Disable Alt key to show top menu by remapping to "`"
 
-// Password, credit card management
-user_pref("signon.rememberSignons", false);
-user_pref("extensions.formautofill.addresses.enabled", false);
-user_pref("extensions.formautofill.creditCards.enabled", false);
-
 /* YouTube fixes */
 user_pref("network.http.http3.enable", false);
 user_pref("network.http.http3.receBufferSize", 157286400);
