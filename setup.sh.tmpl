@@ -76,7 +76,6 @@ function upgrade_homebrew_packages() {
   {{- if .myComputer.isDarwin }}
   local cask_file="${source_dir}/brew-cask-${os_suffix}.txt"
   if [[ -s "${cask_file}" ]]; then
-    brew_trust_taps
     xargs -a "${cask_file}" brew install --cask
   fi
   {{- end }}
@@ -114,8 +113,11 @@ function section() {
 function setup_macos() {
   section 'Installing Homebrew'
   install_homebrew
+  
+  section 'Tap trust Homebrew repositories'
+  brew_trust_taps
 
-  section 'Upgrading Homebrew packages'
+  section 'Upgrading non-official Homebrew packages'
   upgrade_homebrew_packages
 
   section 'Installing asdf'
@@ -128,6 +130,9 @@ function setup_macos() {
 function setup_debian() {
   section 'Installing Homebrew'
   install_homebrew
+
+  section 'Tap trust non-official Homebrew repositories'
+  brew_trust_taps
 
   section 'Upgrading Homebrew packages'
   upgrade_homebrew_packages
