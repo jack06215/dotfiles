@@ -9,20 +9,31 @@ COREPACK_VERSION="0.33.0"
 function read_tool_versions() {
   sed -E 's/ *#.*$//' .tool-versions \
     | # Remove comments
-    grep '\S' # Remove blank lines
+    grep -E '[^[:space:]]' # Remove blank lines
 }
 
 function foreach_tool_version() {
-  plugin_name="$1"
-  command="$2"
-  # shellcheck disable=SC2311
-  versions=$(
-    read_tool_versions \
-      | grep "^${plugin_name} " \
-      | sed "s/${plugin_name} //"
-  ) || true
-  for v in ${versions}; do
-    /bin/bash -euo pipefail -c "source ~/.asdf/asdf.sh && (asdf plugin add ${plugin_name} || true) && asdf install ${plugin_name} ${v} && export ASDF_$(tr '[:lower:]' '[:upper:]' <<< "${plugin_name}")_VERSION=${v} && ${command}"
+  local plugin_name="$1"
+  local command="$2"
+
+  local versions_line
+  versions_line="$(read_tool_versions | grep -E "^${plugin_name}[[:space:]]+" | head -n 1 || true)"
+  [[ -z "${versions_line}" ]] && return 0
+  versions_line="$(sed -E "s/^${plugin_name}[[:space:]]+//" <<< "${versions_line}")"
+
+  local -a versions_arr=()
+  read -r -a versions_arr <<< "${versions_line}"
+
+  local v
+  for v in "${versions_arr[@]}"; do
+    (
+      # shellcheck source=/dev/null
+      source "${HOME}/.asdf/asdf.sh"
+      asdf plugin add "${plugin_name}" || true
+      asdf install "${plugin_name}" "${v}"
+      export "ASDF_$(tr '[:lower:]' '[:upper:]' <<< "${plugin_name}")_VERSION=${v}"
+      bash -euo pipefail -c "${command}"
+    )
   done
 }
 
