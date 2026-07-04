@@ -13,6 +13,7 @@ sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "wo
     isCompanyMachine = {{ env "IS_COMPANY_MACHINE" | eq "true" | toString | trim }}
     isDarwin = {{ eq .chezmoi.os "darwin" | toString | trim }}
     isLinux = {{ eq .chezmoi.os "linux" | toString | trim }}
+    isWSL2 = {{ output "bash" "-c" "[[ \"$(uname -s)\" == 'Linux' ]] && [[ -r /proc/version ]] && grep -qi microsoft /proc/version 2>/dev/null && echo true || echo false" | trim }}
     isWindows = {{ eq .chezmoi.os "windows" | toString | trim }}
     isArm = {{ eq .chezmoi.arch "arm64" | toString | trim }}
     isX86 = {{ eq .chezmoi.arch "amd64" | toString | trim }}
