@@ -39,11 +39,11 @@
 
 ### Conventional commit
 
-- **Command**: prompts for a type and an optional scope, copies the staged diff (`git diff --cached`) to the clipboard via `pbcopy`, then opens the editor (via `-c core.editor="vi"`) on a generated message: the `type(scope): ` prefix followed by the staged diff with every line prefixed with `# ` (via `git commit --edit -F <(...)`).
+- **Command**: prompts for a type and an optional scope, copies the staged diff (`git diff --cached`) to the clipboard via `pbcopy`, then opens the editor (via `-c core.editor="vi"`) on a generated message: the `type(scope): ` prefix, a `:wq!`/`:cq!` helper reminder, and the staged diff with every line prefixed with `# ` (via `git commit --edit -F <(...)`).
 - **Context**: `files`
 - **Key**: `c`
 - **Why it's useful**: enforces [Conventional Commits](https://www.conventionalcommits.org/) formatting without having to remember or hand-type the syntax every time. lazygit's custom-command prompts only support single-line `input` fields — there's no multiline/textarea prompt type — so getting a real multi-line commit message (subject + wrapped body) means handing off to an actual editor, the same way lazygit's own default `commitChangesWithEditor` (`C`) binding does. The `#`-prefixed diff is visible in the editor purely for reference (e.g. to eyeball or copy specific lines while writing the message) — git's default cleanup strips any line starting with `#` before the commit is created, so none of it ends up in the actual commit message. The diff is also on the system clipboard via `pbcopy` for pasting elsewhere (a PR description, an LLM prompt, etc).
-- **To abort**: quitting the editor doesn't cancel the commit by itself (the prefix already makes the message file non-empty) — use `:cq` in vi/nvim to exit with a non-zero status, which git treats as a failed edit and aborts the commit.
+- **To abort**: quitting the editor doesn't cancel the commit by itself (the prefix already makes the message file non-empty) — use `:cq!` in vi/nvim to exit with a non-zero status, which git treats as a failed edit and aborts the commit (`:wq!` saves and commits as usual). Both are shown as a helper reminder at the top of the generated message.
 
 ### Amend all changes into last commit
 
