@@ -101,3 +101,11 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
     description = "Compile template file"
     command = "chezmoi execute-template < $(chezmoi source-path)/<tmpl_file> | bat"
     tag = ["chezmoi"]
+[[snippets]]
+    description = "List of cask packages"
+    command = "brew info --cask --json=v2 $(brew list --cask) | jq -r '.casks[] | select(.depends_on != {}) | .token'"
+    tag = ["homebrew"]
+[[snippets]]
+    description = "List of formula packages"
+    command = "brew info --json=v2 --installed | jq -r '.formulae[] | select(.installed[0].installed_on_request == true) | .name'"
+    tag = ["homebrew"]
