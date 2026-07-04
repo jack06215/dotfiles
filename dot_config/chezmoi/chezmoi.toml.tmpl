@@ -1,4 +1,4 @@
-sourceDir = {{ joinPath .chezmoi.homeDir "workspace/jack06215/dotfiles" | quote }}
+sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "workspace/jack06215/dotfiles") | quote }}
 
 [data.git]
     name = "Jack Cho"
