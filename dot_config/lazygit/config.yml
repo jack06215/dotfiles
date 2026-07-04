@@ -23,7 +23,8 @@ os:
 customCommands:
   - key: "c"
     # yamllint disable-line rule:line-length
-    command: 'git commit -m "{{ .Form.Type }}{{if .Form.Scope}}({{ .Form.Scope }}){{end}}: {{ .Form.Description }}"'
+    command: >-
+      git commit -m "{{ .Form.Type }}{{if .Form.Scope}}({{ .Form.Scope }}){{end}}: {{ .Form.Description }}"{{if .Form.Body}} -m "{{ .Form.Body }}"{{end}}
     description: "conventional commit"
     context: "files"
     prompts:
@@ -70,10 +71,21 @@ customCommands:
       - type: "input"
         title: "Enter the short description of the change."
         key: "Description"
+      - type: "input"
+        title: "Enter a longer body (optional)."
+        key: "Body"
       - type: "confirm"
         title: "Is the commit message correct?"
-        # yamllint disable-line rule:line-length
-        body: "{{ .Form.Type }}{{if .Form.Scope}}({{ .Form.Scope }}){{end}}: {{ .Form.Description }}"
+        body: |-
+          {{ $scope := "" -}}
+          {{ if .Form.Scope }}{{ $scope = printf "(%s)" .Form.Scope }}{{ end -}}
+          {{ $header := printf "%s%s: %s" .Form.Type $scope .Form.Description -}}
+          {{ $header }}
+          {{ if gt (len $header) 72 }}⚠️  {{ len $header }} chars — over the 72-char hard limit{{ else if gt (len $header) 50 }}ℹ️  {{ len $header }} chars — over the ideal 50, but under 72{{ end -}}
+          {{ if .Form.Body }}
+
+          {{ .Form.Body }}
+          {{ end -}}
 
   - key: "U"
     context: "files"
