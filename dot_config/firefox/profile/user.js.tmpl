@@ -405,11 +405,17 @@ user_pref("media.mediasource.eviction_threshold.video", 157286400);
 user_pref("browser.download.autohideButton", false);
 
 /* Enable Firefox Account sync and send tab from other device */
-user_pref("identity.fxaccounts.enabled", {{ if eq .chezmoi.hostname "A0229" }}false{{ else }}true{{ end }}); // Login & account system
-user_pref("services.sync.engine.tabs", {{ if eq .chezmoi.hostname "A0229" }}false{{ else }}true{{ end }}); // Syncing and sending tabs
-user_pref("services.sync.prefs.sync.browser.tabs.remote.autostart", {{ if eq .chezmoi.hostname "a0229" }}false{{ else }}true{{ end }});  // Consistent tab behavior across devices
-user_pref("dom.push.enabled", {{ if eq .chezmoi.hostname "a0229" }}false{{ else }}true{{ end }});  // Real-time push for instant tab delivery
-user_pref("network.connectivity-service.enabled", {{ if eq .chezmoi.hostname "A0229" }}false{{ else }}true{{ end }});  // Connectivity detection for Sync/Push
+
+// Login & account system
+user_pref("identity.fxaccounts.enabled", {{ if eq .chezmoi.hostname "A0229" }}false{{ else }}true{{ end }});
+// Syncing and sending tabs
+user_pref("services.sync.engine.tabs", {{ if eq .chezmoi.hostname "A0229" }}false{{ else }}true{{ end }});
+// Consistent tab behavior across devices
+user_pref("services.sync.prefs.sync.browser.tabs.remote.autostart", {{ if eq .chezmoi.hostname "A0229" }}false{{ else }}true{{ end }});
+// Real-time push for instant tab delivery
+user_pref("dom.push.enabled", {{ if eq .chezmoi.hostname "A0229" }}false{{ else }}true{{ end }});
+// Connectivity detection for Sync/Push
+user_pref("network.connectivity-service.enabled", {{ if eq .chezmoi.hostname "A0229" }}false{{ else }}true{{ end }});
 
 /****************************************************************************
  * END: MY OVERRIDES                                                       *
