@@ -16,12 +16,12 @@ history.txt
 
 {{ if ne .chezmoi.os "windows" }}
 AppData/**
-.glzr/**
+.glzr/zebar
 .starship/**
 .wezterm.lua
 {{ end }}
 
-{{ if and (.myComputer.isCompanyMachine) (eq .chezmoi.hostname "A0229") }}
+{{ if eq .chezmoi.hostname "A0229" }}
 .tool-versions
 {{ end }}
 
