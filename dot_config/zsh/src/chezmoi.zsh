@@ -1,4 +1,4 @@
-function chezmoi-data() {
+function chezmoi_data() {
   local tmp
   tmp=$(mktemp)
   chezmoi data > "$tmp"

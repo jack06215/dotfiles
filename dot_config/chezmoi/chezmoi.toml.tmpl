@@ -1,3 +1,28 @@
+{{- $pypoetryDir := "" -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   $pypoetryDir = joinPath .chezmoi.homeDir ".cache/pypoetry/virtualenvs" -}}
+{{- else if eq .chezmoi.os "linux" -}}
+{{-   $pypoetryDir = joinPath .chezmoi.homeDir "" -}}
+{{- else if eq .chezmoi.os "windows" -}}
+{{-   $pypoetryDir = joinPath .chezmoi.homeDir "" -}}
+{{- end -}}
+
+{{- $firefoxProfilesDir := "" -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir "Library/Application Support/Firefox/Profiles" -}}
+{{- else if eq .chezmoi.os "linux" -}}
+{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir ".mozilla/firefox" -}}
+{{- else if eq .chezmoi.os "windows" -}}
+{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir "AppData/Roaming/Mozilla/Firefox/Profiles" -}}
+{{- end -}}
+
+{{- $firefoxProfileId := "vfop1w54.default" -}}
+
+{{- $zshPythonDir := "" -}}
+{{- if and (eq .chezmoi.os "darwin") (eq .chezmoi.hostname "jack06215") (eq .chezmoi.username "nacho") -}}
+{{-   $zshPythonDir = joinPath $pypoetryDir "zsh-python-oevRg_sS-py3.13"  -}}
+{{- end -}}
+
 sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "workspace/jack06215/dotfiles") | quote }}
 
 [data.git]
@@ -17,19 +42,13 @@ sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "wo
     isWindows = {{ eq .chezmoi.os "windows" | toString | trim }}
     isArm = {{ eq .chezmoi.arch "arm64" | toString | trim }}
     isX86 = {{ eq .chezmoi.arch "amd64" | toString | trim }}
-{{- $firefoxProfilesDir := "" -}}
-{{- if eq .chezmoi.os "darwin" -}}
-{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir "Library/Application Support/Firefox/Profiles" -}}
-{{- else if eq .chezmoi.os "linux" -}}
-{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir ".mozilla/firefox" -}}
-{{- else if eq .chezmoi.os "windows" -}}
-{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir "AppData/Roaming/Mozilla/Firefox/Profiles" -}}
-{{- end -}}
-{{- $flywheelProfileID := "vfop1w54.default" }}
+[data.pypoetry]  
+    pypoetryDir = {{ $pypoetryDir | quote }}
+    zshPythonDir = {{ $zshPythonDir | quote }}
 [data.firefox]
-    profile = {{ $flywheelProfileID | quote }}
+    profile = {{ $firefoxProfileId | quote }}
     profileDirBase = {{ $firefoxProfilesDir | quote }}
-    profileDir = {{ joinPath $firefoxProfilesDir $flywheelProfileID | quote }}
+    profileDir = {{ joinPath $firefoxProfilesDir $firefoxProfileId | quote }}
 [data.xdg]
     configHome = {{ env "XDG_CONFIG_HOME" | default (joinPath .chezmoi.homeDir ".config") | quote }}
     dataHome = {{ env "XDG_DATA_HOME" | default (joinPath .chezmoi.homeDir ".local/share") | quote }}

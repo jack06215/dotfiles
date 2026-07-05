@@ -1,0 +1,12 @@
+{{- $pinentryDir := "" -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   $pinentryDir = "/opt/homebrew/bin/pinentry-mac" -}}
+{{- else if eq .chezmoi.os "linux" -}}
+{{-   $pinentryDir = "/usr/bin/pinentry-curses" -}}
+{{- else if eq .chezmoi.os "windows" -}}
+{{-   $pinentryDir = "" -}}
+{{- end -}}
+
+pinentry-program {{ $pinentryDir }}
+default-cache-ttl 604800
+max-cache-ttl 604800
