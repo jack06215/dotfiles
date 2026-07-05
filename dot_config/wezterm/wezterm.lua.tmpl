@@ -107,15 +107,25 @@ end
 local is_maximized = false
 
 wezterm.on("gui-startup", function(cmd)
-  local _, pane, window = mux.spawn_window(cmd or {})
-  window:gui_window():maximize()
+  local tab1, pane1, window1 = mux.spawn_window(cmd or {})
+  tab1:set_title("opal")
+  window1:gui_window():maximize()
 
   wezterm.time.call_after(0.3, function()
-    local bottom = pane:split({ direction = "Bottom", size = 0.1 })
-    local right = pane:split({ direction = "Right", size = 0.15 })
-    right:split({ direction = "Bottom", size = 0.5 })
-    bottom:split({ direction = "Right", size = 0.15 })
-    bottom:split({ direction = "Left", size = 0.15 })
+    local pane1_bottom = pane1:split({ direction = "Bottom", size = 0.1 })
+    local pane1_right = pane1:split({ direction = "Right", size = 0.15 })
+    pane1_right:split({ direction = "Bottom", size = 0.5 })
+    pane1_bottom:split({ direction = "Right", size = 0.15 })
+    pane1_bottom:split({ direction = "Left", size = 0.15 })
+
+    local tab2, pane2, window2 = window1:spawn_tab({})
+    tab2:set_title("ruby")
+    pane2:split({ direction = "Bottom", size = 0.3 })
+
+    local tab3, pane3, window3 = window1:spawn_tab({})
+    tab3:set_title("diamond")
+
+    tab1:activate()
   end)
 end)
 
