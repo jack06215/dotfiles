@@ -1,5 +1,5 @@
 {
   "theme": "dark",
-  "editorMode": "vim"
-
+  "editorMode": "vim",
+  "effortLevel": "high"
 }
