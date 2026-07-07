@@ -35,10 +35,17 @@ user_pref("browser.sessionhistory.max_total_viewers", 8);
 user_pref("browser.sessionstore.max_tabs_undo", 10);
 
 /** MEDIA CACHE ***/
-user_pref("media.memory_cache_max_size", 262144);
-user_pref("media.memory_caches_combined_limit_kb", 1048576);
+{{- if eq (env "FF_HIGH_PERF") "1" }}
+user_pref("media.memory_cache_max_size", 524288); // 512MB
+user_pref("media.memory_caches_combined_limit_kb", 2097152); // 2GB combined
+user_pref("media.cache_readahead_limit", 3600);
+user_pref("media.cache_resume_threshold", 1800);
+{{- else }}
+user_pref("media.memory_cache_max_size", 65536); // 64MB
+user_pref("media.memory_caches_combined_limit_kb", 1048576); // 1GB combined
 user_pref("media.cache_readahead_limit", 600);
 user_pref("media.cache_resume_threshold", 300);
+{{- end }}
 
 /** IMAGE CACHE ***/
 user_pref("image.cache.size", 10485760);
