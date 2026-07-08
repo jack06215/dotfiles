@@ -14,6 +14,9 @@ history.txt
 **/flywheel/**
 **/docs/**
 
+**/*flywheel*
+**/*flywheel*/**
+
 {{ if ne .chezmoi.os "windows" }}
 AppData/**
 .glzr/zebar

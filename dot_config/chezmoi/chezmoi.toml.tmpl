@@ -19,8 +19,12 @@
 {{- $firefoxProfileId := "vfop1w54.default" -}}
 
 {{- $zshPythonDir := "" -}}
-{{- if and (eq .chezmoi.os "darwin") (eq .chezmoi.hostname "jack06215") (eq .chezmoi.username "nacho") -}}
-{{-   $zshPythonDir = joinPath $pypoetryDir "zsh-python-oevRg_sS-py3.13"  -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   if and (eq .chezmoi.hostname "jack06215") (eq .chezmoi.username "nacho") -}}
+{{-     $zshPythonDir = joinPath $pypoetryDir "zsh-python-oevRg_sS-py3.13" -}}
+{{-   else if and (eq .chezmoi.hostname "A0229") (eq .chezmoi.username "jack.cho") -}}
+{{-     $zshPythonDir = joinPath .chezmoi.homeDir "Library/Caches/pypoetry/virtualenvs" "zsh-python-VlgDDfmw-py3.13" -}}
+{{-   end -}}
 {{- end -}}
 
 sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "workspace/jack06215/dotfiles") | quote }}
