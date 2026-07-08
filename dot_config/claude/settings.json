@@ -1,5 +1,10 @@
 {
   "theme": "dark",
   "editorMode": "vim",
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "statusLine": {
+    "type": "command",
+    "command": "${XDG_CONFIG_HOME}/claude/statusline_command.sh",
+    "padding": 2
+  }
 }
