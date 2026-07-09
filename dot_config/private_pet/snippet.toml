@@ -95,7 +95,7 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
     tag = ["git"]
 [[snippets]]
     description = "Prettify a zsh file in monorepo (flywheel-jp)"
-    command = "(cd \"$HOME\" && shfmt -w -ln=zsh \"<file=${HOME}/workspace/flywheel-jp/monorepo/>\")"
+    command = "(cd \"$HOME\" && shfmt -w -ln=<language=zsh> \"<file=${HOME}/workspace/flywheel-jp/monorepo/>\")"
     tag = ["prettify"]
 [[snippets]]
     description = "Compile template file"
