@@ -1,5 +1,5 @@
 #!/usr/bin/env zsh
-# vim: filetype=bash
+# vim: filetype=zsh
 
 function fman() {
   local cmd
@@ -36,7 +36,7 @@ function send_notification() {
   sound="$4"
   open_url="$5"
 
-  if ! command -v terminal-notifier >/dev/null 2>&1; then
+  if ! command -v terminal-notifier > /dev/null 2>&1; then
     echo "send_notification: terminal-notifier not found (brew install terminal-notifier)" >&2
     return 127
   fi
@@ -64,14 +64,14 @@ function preview_sound() {
 }
 
 function notify_action_required() { send_notification "$1" "Action required" "" "Funk"; }
-function notify_news()            { send_notification "$1" "Take a look" "" "Glass"; }
-function notify_error()           { send_notification "$1" "Attention!" "" "Basso"; }
-function notify_youve_got_mail()  { send_notification "$1" "You've got mail" "" "YouveGotMail"; }
+function notify_news() { send_notification "$1" "Take a look" "" "Glass"; }
+function notify_error() { send_notification "$1" "Attention!" "" "Basso"; }
+function notify_youve_got_mail() { send_notification "$1" "You've got mail" "" "YouveGotMail"; }
 
 function activate_poetry_env() {
   local venv_path
-  venv_path="$(poetry env info --path 2>/dev/null)"
-  
+  venv_path="$(poetry env info --path 2> /dev/null)"
+
   if [[ -z "$venv_path" ]]; then
     echo "No Poetry environment found."
     return 1
@@ -97,33 +97,33 @@ function deactivate_poetry_env() {
   export PATH="$(echo "$PATH" | sed "s#$venv_path/bin:##")"
   unset VIRTUAL_ENV
 
-  if type deactivate &>/dev/null; then
-    deactivate 2>/dev/null
+  if type deactivate &> /dev/null; then
+    deactivate 2> /dev/null
   fi
 
   echo "Deactivated Poetry venv ← $venv_path"
 }
 
 function ls_stats() {
-    (
-        echo "permissions,size,user,date,name"
-        eza -l \
-        --no-symlinks \
-        --time-style=iso \
-        --color=never \
-        --total-size \
-        | sed -E '
+  (
+    echo "permissions,size,user,date,name"
+    eza -l \
+      --no-symlinks \
+      --time-style=iso \
+      --color=never \
+      --total-size \
+      | sed -E '
             s/[+@]/ /g;
             s/^[[:space:]]+//;
             s/[[:space:]]+/,/g
         '
-    )
+  )
 }
 
 function csv2json() {
   if [[ "$1" == "--no-header" ]]; then
     shift
-    if [[ "$#" -eq 0 ]]; then
+    if [[ "$" -eq 0 ]]; then
       echo "csv2json --no-header requires column names" >&2
       return 1
     fi
@@ -142,4 +142,25 @@ function csv2json() {
       | to json
     "
   fi
+}
+
+function jsonl2yml() {
+  nu --stdin -c '
+      from json --objects
+      | to yaml
+    '
+}
+
+function export_secret {
+  local var_name="$1"
+  local secret=""
+
+  echo -n "Enter ${var_name}: " >&2
+  read -rs secret
+  echo >&2
+
+  printf -v "${var_name}" '%s' "${secret}"
+  export "${var_name}"
+
+  echo "Exported: ${var_name}=***" >&2
 }
