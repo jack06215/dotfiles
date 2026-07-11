@@ -25,7 +25,7 @@ AppData/**
 .wezterm.lua
 {{ end }}
 
-{{ if eq and .chezmoi.os "darwin" .chezmoi.hostname "A0229" }}
+{{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.hostname "A0229") }}
 .tool-versions
 {{ end }}
 
