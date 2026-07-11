@@ -5,7 +5,7 @@
 _BAZEL_QUERY_FLAGS=(
   --output=label
   --noshow_progress
-  --keep_going          # continue past errors in broken targets
+  --keep_going # continue past errors in broken targets
   --color=yes
 )
 
@@ -59,10 +59,10 @@ function _bazel_buffer_and_pick() {
     bazel query \
       "${query}" \
       "${_BAZEL_QUERY_FLAGS[@]}" \
-      >"${tmp}" 2>/dev/tty
+      > "${tmp}" 2> /dev/tty
 
     local selection
-    selection="$(_bazel_fzf_pick "${prompt}" "${multi}" <"${tmp}")"
+    selection="$(_bazel_fzf_pick "${prompt}" "${multi}" < "${tmp}")"
 
     [[ -n "${selection}" ]] || exit 1
     printf '%s\n' "${selection}"

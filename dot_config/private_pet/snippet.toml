@@ -95,7 +95,7 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
     tag = ["git"]
 [[snippets]]
     description = "Prettify a bash/zsh file"
-    command = "(d=\"$(pwd)\"; cd \"$HOME\" && shfmt -w -ln=<language=zsh> \"$d/<file_name>\")"
+    command = "(d=\"$(pwd)\"; cd \"$HOME\" && shfmt -w -ln=<language=zsh> -i 2 -ci -sr -bn \"$d/<file_name>\")"
     tag = ["prettify", "zsh", "bash"]
 [[snippets]]
     description = "Compile template file"
