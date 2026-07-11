@@ -73,26 +73,38 @@ function _bazel_buffer_and_pick() {
 # Public helpers
 # ---------------------------------------------------------------------------
 
-# Select a single runnable target (binary).
+# Select a single runnable target (binary) and queue `bazel run <target>`
+# as the next command line for editing/execution.
 function bazel_find_runnable_target() {
-  _bazel_buffer_and_pick \
+  local target
+  target="$(_bazel_buffer_and_pick \
     "Select a runnable target > " \
-    'kind(".*_binary", ...)'
+    'kind(".*_binary", ...)')" || return
+
+  print -z "bazel run ${target}"
 }
 
-# Select one or more testable targets (supports multi-select with TAB / ctrl-a).
+# Select one or more testable targets (supports multi-select with TAB /
+# ctrl-a) and queue `bazel test <target...>` as the next command line.
 function bazel_find_testable_target() {
-  _bazel_buffer_and_pick \
+  local targets
+  targets="$(_bazel_buffer_and_pick \
     "Select testable target(s) > " \
     'kind("(test|test_suite) rule", ...)' \
-    "multi"
+    "multi")" || return
+
+  print -z "bazel test ${targets//$'\n'/ }"
 }
 
-# Select any single target.
+# Select any single target and queue `bazel build <target>` as the next
+# command line.
 function bazel_find_any_target() {
-  _bazel_buffer_and_pick \
+  local target
+  target="$(_bazel_buffer_and_pick \
     "Select a target > " \
-    '...'
+    '...')" || return
+
+  print -z "bazel build ${target}"
 }
 
 # bazel_find_target_by_kind <kind-pattern>
