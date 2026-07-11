@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Convert a JSONL file with \\uXXXX-escaped (ensure_ascii=True) content
-into human-readable UTF-8 JSONL, written to stdout.
+"""Convert a JSONL file with into human-readable UTF-8 JSONL, written to stdout.
 
 Usage:
     python jsonl_unescape.py input.jsonl | pbcopy
