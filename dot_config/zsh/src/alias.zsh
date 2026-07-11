@@ -11,7 +11,6 @@ alias nlof="$ZDOTDIR/src/myscripts/fzf-listoldfiles"
 alias nzo="$ZDOTDIR/src/myscripts/zoxide-openfiles-nvim"
 alias gr='cd "$(git rev-parse --show-toplevel 2>/dev/null)"'
 
-
 alias -s json=bat
 alias -s md=bat
 alias -s txt=bat
@@ -23,3 +22,6 @@ alias -g NUL='>/dev/null 2>&1'
 alias -g J='| jq'
 alias -g C='| pbcopy'
 alias -g P='| pbpaste'
+
+# myscripts
+alias jsonl_unescape="python ${XDG_CONFIG_HOME}/myscripts/jsonl_unescape.py"
