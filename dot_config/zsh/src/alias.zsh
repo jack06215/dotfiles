@@ -23,5 +23,9 @@ alias -g J='| jq'
 alias -g C='| pbcopy'
 alias -g P='| pbpaste'
 
+# zinit aliases `zi` to itself; drop that so zoxide's `zi` (interactive
+# search) function isn't shadowed by it.
+unalias zi 2> /dev/null
+
 # myscripts
 alias jsonl_unescape="python ${XDG_CONFIG_HOME}/myscripts/jsonl_unescape.py"
