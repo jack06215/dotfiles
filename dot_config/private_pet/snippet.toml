@@ -94,9 +94,9 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
     command = "git log --format='- %s' <from_commit>..<to_commit> -- $(git rev-parse --show-toplevel)<regex=/src/main/typescript/packages/genai-rag-demo-*/>"
     tag = ["git"]
 [[snippets]]
-    description = "Prettify a zsh file in monorepo (flywheel-jp)"
-    command = "(cd \"$HOME\" && shfmt -w -ln=<language=zsh> \"<file=${HOME}/workspace/flywheel-jp/monorepo/>\")"
-    tag = ["prettify"]
+    description = "Prettify a bash/zsh file"
+    command = "(d=\"$(pwd)\"; cd \"$HOME\" && shfmt -w -ln=<language=zsh> \"$d/<file_name>\")"
+    tag = ["prettify", "zsh", "bash"]
 [[snippets]]
     description = "Compile template file"
     command = "chezmoi execute-template < $(chezmoi source-path)/<tmpl_file> | bat"
