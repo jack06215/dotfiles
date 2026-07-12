@@ -29,3 +29,4 @@ unalias zi 2> /dev/null
 
 # myscripts
 alias jsonl_unescape="python ${XDG_CONFIG_HOME}/myscripts/jsonl_unescape.py"
+alias bzclean='bazel clean --expunge_async'
