@@ -1,10 +1,14 @@
 {
-  "theme": "dark",
-  "editorMode": "vim",
-  "effortLevel": "high",
   "statusLine": {
     "type": "command",
     "command": "${XDG_CONFIG_HOME}/claude/statusline_command.sh",
     "padding": 2
-  }
+  },
+  "enabledPlugins": {
+    "pyright-lsp@claude-plugins-official": true,
+    "clangd-lsp@claude-plugins-official": true
+  },
+  "effortLevel": "high",
+  "theme": "dark",
+  "editorMode": "vim"
 }

@@ -80,7 +80,6 @@ function bazel_find_runnable_target() {
   target="$(_bazel_buffer_and_pick \
     "Select a runnable target > " \
     'kind(".*_binary", ...)')" || return
-
   print -z "bazel run ${target}"
 }
 
@@ -103,7 +102,6 @@ function bazel_find_any_target() {
   target="$(_bazel_buffer_and_pick \
     "Select a target > " \
     '...')" || return
-
   print -z "bazel build ${target}"
 }
 
@@ -118,4 +116,14 @@ function bazel_find_target_by_kind() {
   _bazel_buffer_and_pick \
     "Select a ${kind} target > " \
     "kind(\"${kind}\", ...)"
+}
+
+# Select a buildifier target (check/fix) and queue `bazel run <target>`
+# as the next command line.
+function bazel_find_buildifier_target() {
+  local target
+  target="$(_bazel_buffer_and_pick \
+    "Select a buildifier target > " \
+    'kind("buildifier", ...)')" || return
+  print -z "bazel run ${target}"
 }
