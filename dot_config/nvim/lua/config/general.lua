@@ -172,6 +172,7 @@ vim.api.nvim_create_autocmd("VimResized", {
   pattern = "*",
   command = "wincmd =",
 })
+
 vim.api.nvim_create_autocmd("BufWritePre", {
   desc = "Auto Format Japanese Punctuation in Latex Files",
   group = aug,
@@ -190,6 +191,7 @@ vim.api.nvim_create_autocmd("TextYankPost", {
     vim.highlight.on_yank({ timeout = 200 })
   end,
 })
+
 vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
   pattern = { "*.zsh" },
   command = "set filetype=zsh",
@@ -206,17 +208,24 @@ vim.filetype.add({
   },
 })
 
+-- Chezmoi
 vim.filetype.add({
+  -- chezmoi source files with no extension are named after their target dotfile
+  filename = {
+    ["dot_zshrc"] = "zsh",
+    ["dot_zshenv"] = "zsh",
+    ["dot_zprofile"] = "zsh",
+    ["dot_bashrc"] = "bash",
+    ["dot_bash_profile"] = "bash",
+  },
   pattern = {
-    -- match any file ending in `.lua.tmpl`
-    [".*%.lua%.tmpl"] = "lua",
-    [".*%.json%.tmpl"] = "json",
-    [".*%.toml%.tmpl"] = "toml",
-    [".*%.yaml%.tmpl"] = "yaml",
-    [".*%.yml%.tmpl"] = "yaml",
-    [".*%.sh%.tmpl"] = "sh",
-    [".*%.ps1%.tmpl"] = "ps1",
-    [".*%.zsh%.tmpl"] = "zsh",
+    -- any chezmoi template: strip `.tmpl` and re-detect off the inner name,
+    -- so it falls through to the filename map above or normal extension matching
+    [".*%.tmpl"] = function(path, bufnr)
+      local inner = path:gsub("%.tmpl$", "")
+      vim.b[bufnr].is_chezmoi_tmpl = true
+      return vim.filetype.match({ filename = inner })
+    end,
   },
 })
 

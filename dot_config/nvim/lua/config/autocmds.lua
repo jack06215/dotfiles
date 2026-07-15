@@ -6,13 +6,4 @@
 --
 -- Or remove existing autocmds by their group name (which is prefixed with `lazyvim_` for the defaults)
 -- e.g. vim.api.nvim_del_augroup_by_name("lazyvim_wrap_spell")
-vim.api.nvim_create_autocmd({ "BufRead", "BufNewFile" }, {
-  pattern = "*.tmpl",
-  callback = function(ev)
-    local ext = ev.file:match("%.([^.]+)%.tmpl$")
-    if ext then
-      vim.bo.filetype = ext
-      vim.b.is_chezmoi_tmpl = true
-    end
-  end,
-})
+-- `.tmpl` filetype detection lives in config/general.lua via vim.filetype.add

@@ -1,12 +1,13 @@
-# shellcheck shell=bash
-# shellcheck disable=SC1091
-# filetype=sh
+# vim: set ft=zsh
+# shellcheck source=/dev/null
 
-export GPG_TTY=$(tty)
-FW_MONOREPO_HOME="$HOME/workspace/flywheel-jp/monorepo"
-# Flywheel specific utilities
-[[ -f "$HOME/.zshrc.flywheel" ]] && source "$HOME/.zshrc.flywheel"
-[[ -f "$FW_MONOREPO_HOME/tools/shell/fzf.sh" ]] && source "$FW_MONOREPO_HOME/tools/shell/fzf.sh"
-
-# Load my utilities
+# =============================================================================
+# My personal setup script
+# =============================================================================
 [[ -f "$ZDOTDIR/src/init.zsh" ]] && source "$ZDOTDIR/src/init.zsh"
+
+# =============================================================================
+# FLYWHEEL setup script
+# =============================================================================
+[[ -f "$HOME/.zshrc.flywheel" ]] && source "$HOME/.zshrc.flywheel"
+[[ -f "$HOME/workspace/flywheel-jp/monorepo/tools/shell/fzf.sh" ]] && source "$HOME/workspace/flywheel-jp/monorepo/tools/shell/fzf.sh"

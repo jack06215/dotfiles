@@ -13,6 +13,9 @@ _py_version="3.13"
 export BUILTIN_PYTHON_BIN_DIR="/opt/homebrew/opt/python@${_py_version}/bin/python${_py_version}"
 export BUILTIN_PIP_BIN_DIR="/opt/homebrew/opt/python@${_py_version}/bin/pip${_py_version}"
 
+GPG_TTY=$(tty)
+export GPG_TTY
+
 export BUN_INSTALL="$XDG_DATA_HOME/bun"
 export CABAL_CONFIG="$XDG_CONFIG_HOME/cabal/config"
 export GLAZEWM_CONFIG_PATH="$XDG_CONFIG_HOME/glazewm/config.yaml"

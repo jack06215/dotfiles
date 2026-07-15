@@ -1,0 +1,17 @@
+# vim: set ft=zsh
+
+GPG_TTY=$(tty)
+export GPG_TTY
+
+# Load my utilities
+# shellcheck source=/dev/null
+[[ -f "$ZDOTDIR/src/init.zsh" ]] && source "$ZDOTDIR/src/init.zsh"
+
+# =============================================================================
+# FLYWHEEL setup script
+# =============================================================================
+FW_MONOREPO_HOME="$HOME/workspace/flywheel-jp/monorepo"
+# shellcheck source=/dev/null
+[[ -f "$HOME/.zshrc.flywheel" ]] && source "$HOME/.zshrc.flywheel"
+# shellcheck source=/dev/null
+[[ -f "$FW_MONOREPO_HOME/tools/shell/fzf.sh" ]] && source "$FW_MONOREPO_HOME/tools/shell/fzf.sh"

@@ -8,7 +8,6 @@ return {
     "nvim-tree/nvim-web-devicons",
   },
   cmd = { "Octo" },
-  keys = require("plugins.octo.keymaps"),
   config = function()
     require("octo").setup()
   end,

@@ -1,6 +1,8 @@
 -- Keymaps are automatically loaded on the VeryLazy event
 -- Default keymaps that are always set: https://github.com/LazyVim/LazyVim/blob/main/lua/lazyvim/config/keymaps.lua
 -- Add any additional keymaps here
+
+-- Window resize
 vim.keymap.set("n", "<leader>w>", function()
   local win = vim.api.nvim_get_current_win()
   local width = vim.api.nvim_win_get_width(win)
@@ -30,6 +32,7 @@ require("config.keymaps.typescript").create_keymaps()
 -- Plugins
 require("config.keymaps.lazyvim").create_keymaps()
 require("config.keymaps.neogit").create_keymaps()
+require("config.keymaps.octo").create_keymaps()
 -- require("config.keymaps.codecompanion").create_keymaps()
 require("config.keymaps.package-info").create_keymaps()
 require("config.keymaps.nvim-lint").create_keymaps()
