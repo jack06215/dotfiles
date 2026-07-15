@@ -72,7 +72,7 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
 [[snippets]]
     description = "kubectl with context and namespace"
     command = "kubectl --context <context=opal-staging> --namespace <namespace> <subcommand>"
-    tag = ["kubectl", "fw"]
+    tag = ["kubectl", "flywheel-jp"]
 [[snippets]]
     description = "Enable local MCP server for development."
     command = "ACCESS_TOKEN=${AUTHZ_ACCESS_TOKEN:-} python \"${XDG_CONFIG_HOME}\"/myscripts/set_mcp_server_claude_desktop.py enable --name <mcp_server_name=my-local-server>"
@@ -109,3 +109,7 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
     description = "List of formula packages"
     command = "brew info --json=v2 --installed | jq -r '.formulae[] | select(.installed[0].installed_on_request == true) | .name'"
     tag = ["homebrew"]
+[[snippets]]
+    description = "Extract highlight title and body"
+    command = "pbpaste | kibana_json_stringify | jq '[.hits.hits[] | {title: (._source.title // \"\"), body: (.highlight.body // [] | join(\" \"))}]'"
+    tag = ["elasticsearch", "kibana", "debug", "flywheel-jp"]

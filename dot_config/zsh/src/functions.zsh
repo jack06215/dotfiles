@@ -120,27 +120,34 @@ function ls_stats() {
   )
 }
 
+function csv2yml() {
+  (($# >= 1)) || {
+    print -u2 'usage: csv2yaml <file.csv> [col1,col2,...]'
+    return 2
+  }
+  local file=$1
+  local pipeline="open \"$file\""
+  if [[ -n $2 ]]; then
+    local -a cols=("${(@s:,:)2}") # split $2 on commas
+    local c quoted=()
+    for c in "${cols[@]}"; do quoted+=("\"$c\""); done
+    pipeline+=" | select ${quoted[*]}"
+  fi
+  nu -c "$pipeline | to yaml"
+}
+
 function csv2json() {
   if [[ "$1" == "--no-header" ]]; then
-    shift
-    if [[ "$" -eq 0 ]]; then
-      echo "csv2json --no-header requires column names" >&2
+    (($# >= 2)) || {
+      print -u2 'csv2json --no-header requires column names'
       return 1
-    fi
-
-    local cols
-    cols=$(printf "%s " "$@")
-
-    nu --stdin -c "
-      from csv --noheaders
-      | rename $cols
-      | to json
-    "
+    }
+    local -a cols=("${(@s:,:)2}")
+    local c quoted=()
+    for c in "${cols[@]}"; do quoted+=("\"$c\""); done
+    nu --stdin -c "from csv --noheaders | rename ${quoted[*]} | to json"
   else
-    nu --stdin -c "
-      from csv
-      | to json
-    "
+    nu --stdin -c "from csv | to json"
   fi
 }
 
