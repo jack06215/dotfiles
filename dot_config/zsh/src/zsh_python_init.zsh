@@ -7,10 +7,10 @@
 [[ -f "$ZDOTDIR/src/core.zsh" ]] && source "$ZDOTDIR/src/core.zsh"
 
 function zsh_python_init() {
-  local zsh_python_dir="$ZDOTDIR/src/python"
+  local zsh_python_dir="$ZDOTDIR/python"
 
   cd "$zsh_python_dir" || return 1
-  export PYTHONPATH="$ZDOTDIR/src/python"
+  export PYTHONPATH="$ZDOTDIR/python"
 
   local venv_path
   venv_path="$(poetry env info -p 2>/dev/null)" || return 1
@@ -19,19 +19,19 @@ function zsh_python_init() {
 }
 
 function cd_zsh_python() {
-  echo "$ZDOTDIR/src/python"
+  echo "$ZDOTDIR/python"
 }
 
 function load_zsh_python_venv_macos() {
   (
-    cd "$ZDOTDIR/src/python" || exit 1
+    cd "$ZDOTDIR/python" || exit 1
     command "$HOME/.asdf/shims/poetry" env info -p 2>/dev/null
   )
 }
 
 function load_zsh_python_venv_wsl() {
   (
-    cd "$ZDOTDIR/src/python" || exit 1
+    cd "$ZDOTDIR/python" || exit 1
     command "/home/linuxbrew/.linuxbrew/bin/poetry" env info -p 2>/dev/null
   )
 }

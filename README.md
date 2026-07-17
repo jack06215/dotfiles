@@ -82,13 +82,13 @@ Highlights under `src/`:
 | `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |
 | `search.zsh` | fzf-based search helpers |
 | `aws.zsh`, `bazel.zsh`, `k8s.zsh`, `mysql.zsh`, `dart.zsh` | domain-specific shortcuts |
-| `zsh_python_init.zsh` | resolves the Poetry-managed venv under `src/python` per OS and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN`, `DBT_BIN`, `GDOWN_BIN` + aliases |
+| `zsh_python_init.zsh` | resolves the Poetry-managed venv under `python` per OS and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN`, `DBT_BIN`, `GDOWN_BIN` + aliases |
 | `executable_sleep.zsh` / `executable_wakeup.zsh` | sleepwatcher hooks (macOS); skip weekends, gate on `sleepwatcher.should_run`, drive a Teamspirit clock-in/out script |
 | `myscripts/` | standalone executables: `fzf-listprojects`, `fetch-blob`, `whisper-mic`, `transcribe-yt`, `convert-mp3-to-aiff`, AWS role listing, sleepwatcher enable/disable, etc. |
 | `installed/` | Homebrew bundle manifests (`brew-formula-macos.txt`, `brew-cask-macos.txt`, `brew-wsl2-formula.txt`) and Termux setup |
 | `prompt_repository/`, `template/` | reusable prompt/PR templates |
 
-### Python workspace (`src/python`)
+### Python workspace (`python`)
 
 A single Poetry project (`pyproject.toml` + `dot_tool-versions`) backs
 all Python tooling invoked from zsh:
