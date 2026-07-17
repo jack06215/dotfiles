@@ -2,15 +2,15 @@ function ls_fzf_open() {
   local target
 
   target="$(
-    fd . --hidden --follow --exclude .git |
-    fzf --preview '
+    fd . --hidden --follow --exclude .git \
+      | fzf --preview '
       if [ -d {} ]; then
         eza --tree --level=2 --icons --color=always {}
       else
         eza -l --icons --color=always {}
       fi
     ' \
-    --preview-window=right:60%:wrap
+        --preview-window=right:60%:wrap
   )" || return
 
   if [[ -d "$target" ]]; then
@@ -18,4 +18,8 @@ function ls_fzf_open() {
   else
     ${EDITOR:-vi} "$target"
   fi
+}
+
+function ls_count_ext() {
+  nu -c 'ls **/* | where type == file | get name | path parse | get extension | uniq -c | sort-by count -r'
 }
