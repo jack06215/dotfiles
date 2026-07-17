@@ -6,7 +6,7 @@
 mkdir -p "$XDG_CACHE_HOME"
 echo "$(date) sleepwatcher triggered ($0)" >> "$XDG_CACHE_HOME/sleepwatcher.log"
 source "$ZDOTDIR/src/darwin_pre_init.zsh"
-export PYTHONPATH="$ZDOTDIR/python"
+export PYTHONPATH="$HOME/workspace/jack06215/monorepo/python"
 
 # Get the day of the week (0 = Sunday, 6 = Saturday)
 day_of_week=$(date +%w)
