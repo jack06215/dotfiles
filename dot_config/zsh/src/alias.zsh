@@ -30,4 +30,11 @@ unalias zi 2> /dev/null
 # myscripts
 alias jsonl_unescape="python ${XDG_CONFIG_HOME}/myscripts/jsonl_unescape.py"
 alias kibana_json_stringify="python ${XDG_CONFIG_HOME}/myscripts/kibana_json_stringify.py"
-alias bzclean='bazel clean --expunge_async'
+
+# bazel
+alias bzlclean='bazel clean --expunge_async'
+alias bzlrun='bazel_find_runnable_target'
+alias bzltest='bazel_find_testable_target'
+alias bzlbuild='bazel_find_any_target'
+alias bzlkind='bazel_find_target_by_kind'
+alias bzlifier='bazel_find_buildifier_target'
