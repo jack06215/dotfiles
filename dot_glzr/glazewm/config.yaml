@@ -75,6 +75,8 @@ window_rules:
       # Lively Wallpaper render surfaces.
       - window_process: { equals: "Lively" }
         window_class: { regex: "HwndWrapper*" }
+      # WezTerm (leave unmanaged/floating).
+      - window_process: { equals: "wezterm-gui" }
 
 binding_modes:
   # alt+r → resize with h/j/k/l or arrows; enter/escape exits.
