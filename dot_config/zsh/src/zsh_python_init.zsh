@@ -7,42 +7,42 @@
 [[ -f "$ZDOTDIR/src/core.zsh" ]] && source "$ZDOTDIR/src/core.zsh"
 
 function zsh_python_init() {
-  local zsh_python_dir="$HOME/workspace/jack06215/monorepo/python"
+  local zsh_python_dir="$HOME/workspace/jack06215/monorepo/packages"
 
   cd "$zsh_python_dir" || return 1
-  export PYTHONPATH="$HOME/workspace/jack06215/monorepo/python"
+  export PYTHONPATH="$HOME/workspace/jack06215/monorepo/packages"
 
   local venv_path
-  venv_path="$(poetry env info -p 2>/dev/null)" || return 1
+  venv_path="$(poetry env info -p 2> /dev/null)" || return 1
 
   echo "$venv_path/bin/python"
 }
 
 function cd_zsh_python() {
-  echo "$HOME/workspace/jack06215/monorepo/python"
+  echo "$HOME/workspace/jack06215/monorepo/packages"
 }
 
 function load_zsh_python_venv_macos() {
   (
-    cd "$HOME/workspace/jack06215/monorepo/python" || exit 1
-    command "$HOME/.asdf/shims/poetry" env info -p 2>/dev/null
+    cd "$HOME/workspace/jack06215/monorepo/packages" || exit 1
+    command "$HOME/.asdf/shims/poetry" env info -p 2> /dev/null
   )
 }
 
 function load_zsh_python_venv_wsl() {
   (
-    cd "$HOME/workspace/jack06215/monorepo/python" || exit 1
-    command "/home/linuxbrew/.linuxbrew/bin/poetry" env info -p 2>/dev/null
+    cd "$HOME/workspace/jack06215/monorepo/packages" || exit 1
+    command "/home/linuxbrew/.linuxbrew/bin/poetry" env info -p 2> /dev/null
   )
 }
 
 # python
 if is_macos; then
-    _ZSH_PYTHON="$(load_zsh_python_venv_macos)"
+  _ZSH_PYTHON="$(load_zsh_python_venv_macos)"
 elif is_wsl; then
-    _ZSH_PYTHON="$(load_zsh_python_venv_wsl)"
+  _ZSH_PYTHON="$(load_zsh_python_venv_wsl)"
 else
-    _ZSH_PYTHON="/data/data/com.termux/files/usr"
+  _ZSH_PYTHON="/data/data/com.termux/files/usr"
 fi
 # Only wire up paths/aliases when a venv was actually found *and* the
 # interpreter inside it actually exists - a non-empty _ZSH_PYTHON isn't
