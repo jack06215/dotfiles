@@ -158,8 +158,15 @@ keybindings:
   # ---------------------------------------------------------------------------
   # Layout & window state
   # ---------------------------------------------------------------------------
-  - commands: ["toggle-tiling-direction"]   # where the next tiled window lands
+  # macOS only: chains a synthesized Cmd+N with the direction change so a
+  # single key both opens a new window and sets where it lands (see
+  # new-window.sh). shell-exec runs first because set-tiling-direction can
+  # detach the subject container (GlazeWM silently drops any commands
+  # chained after it in that case).
+  - commands: ["set-tiling-direction vertical"]
     bindings: ["alt+v"]
+  - commands: ["set-tiling-direction horizontal"]
+    bindings: ["alt+shift+v"]
   - commands: ["toggle-floating --centered"]
     bindings: ["alt+shift+space"]
   - commands: ["toggle-tiling"]
