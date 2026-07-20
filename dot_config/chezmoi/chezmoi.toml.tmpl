@@ -1,6 +1,8 @@
 {{- $pypoetryDir := "" -}}
-{{- if eq .chezmoi.os "darwin" -}}
+{{- if and (eq .chezmoi.os "darwin") (eq .chezmoi.hostname "jack06215") -}}
 {{-   $pypoetryDir = joinPath .chezmoi.homeDir ".cache/pypoetry/virtualenvs" -}}
+{{- else if and (eq .chezmoi.os "darwin") (eq .chezmoi.hostname "A0229") -}}
+{{-   $pypoetryDir = joinPath .chezmoi.homeDir "Library/Caches/pypoetry/virtualenvs" -}}
 {{- else if eq .chezmoi.os "linux" -}}
 {{-   $pypoetryDir = joinPath .chezmoi.homeDir "" -}}
 {{- else if eq .chezmoi.os "windows" -}}
@@ -23,7 +25,7 @@
 {{-   if and (eq .chezmoi.hostname "jack06215") (eq .chezmoi.username "nacho") -}}
 {{-     $zshPythonDir = joinPath $pypoetryDir "monorepo-e2o0ZM2H-py3.13" -}}
 {{-   else if and (eq .chezmoi.hostname "A0229") (eq .chezmoi.username "jack.cho") -}}
-{{-     $zshPythonDir = joinPath .chezmoi.homeDir "Library/Caches/pypoetry/virtualenvs" "zsh-python-VlgDDfmw-py3.13" -}}
+{{-     $zshPythonDir = joinPath $pypoetryDir "monorepo-kcQbGqAg-py3.13" -}}
 {{-   end -}}
 {{- end -}}
 
