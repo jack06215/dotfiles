@@ -9,6 +9,8 @@ return {
     },
     opt = { log_level = "warn" },
     config = function()
+      local events = require("neo-tree.events")
+
       require("neo-tree").setup({
         sources = { "filesystem" },
         filesystem = {
@@ -22,6 +24,18 @@ return {
         },
         git_status = {
           enabled = false, -- 🔥 biggest speedup
+        },
+        -- neo-tree forces nonumber/norelativenumber on its own window on
+        -- every buffer enter; re-enable them right after so the tree gets
+        -- the same hybrid number/relativenumber style as the main editor
+        event_handlers = {
+          {
+            event = events.NEO_TREE_BUFFER_ENTER,
+            handler = function()
+              vim.wo.number = true
+              vim.wo.relativenumber = true
+            end,
+          },
         },
       })
     end,
