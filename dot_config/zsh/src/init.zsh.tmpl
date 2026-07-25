@@ -30,35 +30,29 @@ fi
 [ -f "$ZDOTDIR/src/core.zsh" ] && source "$ZDOTDIR/src/core.zsh"
 
 # =============================================================================
-# Safety net for OS predicates
-# is_wsl/is_macos/is_termux are defined in core.zsh. If core.zsh is ever
-# missing/renamed, define harmless fallbacks so the OS branches below never
-# hit "command not found: is_wsl" and just fall through to plain-Linux/none.
-# =============================================================================
-(( $+functions[is_wsl] ))    || is_wsl()    { return 1; }
-(( $+functions[is_macos] ))  || is_macos()  { return 1; }
-(( $+functions[is_termux] )) || is_termux() { return 1; }
-
-# =============================================================================
 # Zsh core with OS-specific setup
 # =============================================================================
-if is_wsl; then
-  [ -f "$ZDOTDIR/src/wsl_pre_init.zsh" ] && source "$ZDOTDIR/src/wsl_pre_init.zsh"
-  [ -f "$ZDOTDIR/src/wsl.zsh" ] && source "$ZDOTDIR/src/wsl.zsh"
-elif is_macos; then
-  [ -f "$ZDOTDIR/src/darwin_pre_init.zsh" ] && source "$ZDOTDIR/src/darwin_pre_init.zsh"
-  [ -f "$ZDOTDIR/src/darwin.zsh" ] && source "$ZDOTDIR/src/darwin.zsh"
-# Termux should be at the lowest priority since it's a special case of linux.
-elif is_termux; then
-  [ -f "$ZDOTDIR/src/termux_pre_init.zsh" ] && source "$ZDOTDIR/src/termux_pre_init.zsh"
-  [ -f "$ZDOTDIR/src/termux.zsh" ] && source "$ZDOTDIR/src/termux.zsh"
-else
-  # Plain Linux (not WSL, not Termux): intentionally no dedicated pre-init
-  # file exists yet. This is a deliberate no-op, not an oversight - add a
-  # linux_pre_init.zsh here (mirroring wsl_pre_init.zsh) if/when
-  # Linux-specific setup is needed. Set ZSH_DEBUG_INIT=1 to trace this.
-  [[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] plain Linux detected; no OS-specific pre-init defined, skipping"
-fi
+{{- if eq .chezmoi.os "darwin" }}
+[ -f "$ZDOTDIR/src/darwin_pre_init.zsh" ] && source "$ZDOTDIR/src/darwin_pre_init.zsh"
+[ -f "$ZDOTDIR/src/darwin.zsh" ] && source "$ZDOTDIR/src/darwin.zsh"
+{{- else if eq .chezmoi.os "linux" }}
+{{-   if contains "microsoft" (.chezmoi.kernel.osrelease | lower) }}
+[ -f "$ZDOTDIR/src/wsl_pre_init.zsh" ] && source "$ZDOTDIR/src/wsl_pre_init.zsh"
+[ -f "$ZDOTDIR/src/wsl.zsh" ] && source "$ZDOTDIR/src/wsl.zsh"
+{{-   else if env "TERMUX_VERSION" }}
+[ -f "$ZDOTDIR/src/termux_pre_init.zsh" ] && source "$ZDOTDIR/src/termux_pre_init.zsh"
+[ -f "$ZDOTDIR/src/termux.zsh" ] && source "$ZDOTDIR/src/termux.zsh"
+{{-   else }}
+# Plain Linux (not WSL, not Termux): intentionally no dedicated pre-init
+# file exists yet. This is a deliberate no-op, not an oversight - add a
+# linux_pre_init.zsh here (mirroring wsl_pre_init.zsh) if/when
+# Linux-specific setup is needed. Set ZSH_DEBUG_INIT=1 to trace this.
+[[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] plain Linux detected; no OS-specific pre-init defined, skipping"
+{{-   end }}
+{{- else }}
+# Other OS (e.g. windows): no OS-specific pre-init defined. Intentional no-op.
+[[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] non-darwin/linux OS detected; no OS-specific pre-init defined, skipping"
+{{- end }}
 [ -f "$ZDOTDIR/src/zsh_python_init.zsh" ] && source "$ZDOTDIR/src/zsh_python_init.zsh"
 
 # =============================================================================
@@ -136,17 +130,22 @@ fi
 # =============================================================================
 # OS-specific post init (must be last)
 # =============================================================================
-if is_wsl; then
-  [ -f "$ZDOTDIR/src/wsl_post_init.zsh" ] && source "$ZDOTDIR/src/wsl_post_init.zsh"
-elif is_macos; then
-  [ -f "$ZDOTDIR/src/darwin_post_init.zsh" ] && source "$ZDOTDIR/src/darwin_post_init.zsh"
-elif is_termux; then
-  [ -f "$ZDOTDIR/src/termux_post_init.zsh" ] && source "$ZDOTDIR/src/termux_post_init.zsh"
-else
-  # Plain Linux: no dedicated post-init file yet either; see the pre-init
-  # branch above for rationale. Intentional no-op.
-  [[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] plain Linux detected; no OS-specific post-init defined, skipping"
-fi
+{{- if eq .chezmoi.os "darwin" }}
+[ -f "$ZDOTDIR/src/darwin_post_init.zsh" ] && source "$ZDOTDIR/src/darwin_post_init.zsh"
+{{- else if eq .chezmoi.os "linux" }}
+{{-   if contains "microsoft" (.chezmoi.kernel.osrelease | lower) }}
+[ -f "$ZDOTDIR/src/wsl_post_init.zsh" ] && source "$ZDOTDIR/src/wsl_post_init.zsh"
+{{-   else if env "TERMUX_VERSION" }}
+[ -f "$ZDOTDIR/src/termux_post_init.zsh" ] && source "$ZDOTDIR/src/termux_post_init.zsh"
+{{-   else }}
+# Plain Linux: no dedicated post-init file yet either; see the pre-init
+# branch above for rationale. Intentional no-op.
+[[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] plain Linux detected; no OS-specific post-init defined, skipping"
+{{-   end }}
+{{- else }}
+# Other OS (e.g. windows): no OS-specific post-init defined. Intentional no-op.
+[[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] non-darwin/linux OS detected; no OS-specific post-init defined, skipping"
+{{- end }}
 
 # =============================================================================
 # Profiling report (opt-in, see top of file for ZSH_PROFILE_STARTUP)
