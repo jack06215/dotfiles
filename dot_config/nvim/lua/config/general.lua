@@ -208,6 +208,16 @@ vim.filetype.add({
   },
 })
 
+-- Treat PDFs as plain text so they open as a normal buffer instead of being
+-- rendered as an image by snacks.nvim (rendering needs ghostscript/`gs`, which
+-- isn't installed). Paired with the `formats` override in
+-- lua/plugins/snacks/config.lua that drops "pdf" from the image handler.
+vim.filetype.add({
+  extension = {
+    pdf = "text",
+  },
+})
+
 -- Chezmoi
 vim.filetype.add({
   -- chezmoi source files with no extension are named after their target dotfile

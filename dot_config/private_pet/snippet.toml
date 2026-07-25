@@ -113,3 +113,8 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
     description = "Extract highlight title and body"
     command = "pbpaste | kibana_json_stringify | jq '[.hits.hits[] | {title: (._source.title // \"\"), body: (.highlight.body // [] | join(\" \"))}]'"
     tag = ["elasticsearch", "kibana", "debug", "flywheel-jp"]
+[[snippets]]
+
+    description = "Count file types by extension of the current directory."
+    command = "find . -type f -name \"*.*\" | sed 's/.*\\.//' | sort | uniq -c | sort -rn"
+    tag = ["file properties"]
