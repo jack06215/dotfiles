@@ -21,5 +21,6 @@ function ls_fzf_open() {
 }
 
 function ls_count_ext() {
-  nu -c 'ls **/* | where type == file | get name | path parse | get extension | uniq -c | sort-by count -r'
+  local nu_functions="${XDG_CONFIG_HOME:-$HOME}/nushell/function.nu"
+  nu -c "source '$nu_functions'; ls_count_ext"
 }

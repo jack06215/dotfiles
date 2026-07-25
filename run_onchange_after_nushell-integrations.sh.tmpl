@@ -1,0 +1,44 @@
+#!/bin/bash
+set -euo pipefail
+
+# Nushell equivalent of src/fzf.zsh + src/atuin.zsh.
+#
+# In zsh those files `eval "$(fzf --zsh)"` / inline the atuin init at every
+# startup. Nushell can only `source` a constant path, so the generated
+# integration scripts are written to the vendor autoload directory instead,
+# which nushell sources automatically - and, importantly, *after* config.nu,
+# so the keybindings they append survive the wholesale `$env.config = { ... }`
+# assignment in dot_config/nushell/config.nu.
+#
+# Tool versions are embedded below (chezmoi hashes this rendered file to
+# decide whether to rerun), so the scripts are regenerated after an upgrade:
+#   fzf:   {{ output "sh" "-c" "fzf --version 2>/dev/null || echo not-installed" | trim }}
+#   atuin: {{ output "sh" "-c" "atuin --version 2>/dev/null || echo not-installed" | trim }}
+
+autoload_dir="${XDG_DATA_HOME:-$HOME/.local/share}/nushell/vendor/autoload"
+mkdir -p "$autoload_dir"
+
+tmp=$(mktemp)
+trap 'rm -f "$tmp"' EXIT
+
+# ctrl-t / ctrl-r / alt-c, plus the `**` completion trigger wired in as an
+# external completer (it chains onto the carapace completer from config.nu).
+# FZF_DEFAULT_COMMAND and friends are set in dot_config/nushell/env.nu.
+if command -v fzf > /dev/null 2>&1; then
+  fzf --nushell > "$tmp"
+  mv "$tmp" "$autoload_dir/fzf.nu"
+  echo "nushell: wrote $autoload_dir/fzf.nu"
+else
+  echo "nushell: fzf not installed, skipping fzf.nu" >&2
+fi
+
+# --disable-ctrl-r leaves ctrl-r to fzf and keeps atuin on the up arrow, which
+# is the split src/atuin.zsh uses (its `bindkey ... '^r' atuin-search` lines
+# are commented out). Drop the flag to give atuin ctrl-r in nushell too.
+if command -v atuin > /dev/null 2>&1; then
+  atuin init nu --disable-ctrl-r > "$tmp"
+  mv "$tmp" "$autoload_dir/atuin.nu"
+  echo "nushell: wrote $autoload_dir/atuin.nu"
+else
+  echo "nushell: atuin not installed, skipping atuin.nu" >&2
+fi

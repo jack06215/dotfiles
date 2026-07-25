@@ -724,3 +724,5 @@ $env.config = {
 
 const CONFIG_DIR = (["~", ".config"] | path join)
 
+source function.nu
+
