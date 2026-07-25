@@ -1,0 +1,19 @@
+# Nushell snippets, added with `pet new` from nushell.
+#
+# Managed like snippet.toml, so `chezmoi re-add` after adding one keeps it in
+# the repo. pet 1.0.1 refuses to start when SnippetFile is missing, which is
+# why this file exists even while empty.
+#
+# Multiline commands are fine: pet escapes the newlines to a literal \n when it
+# feeds fzf (one row per snippet) and restores them in the selection, so the
+# whole pipeline lands in the nushell buffer.
+[[snippets]]
+    command = """
+open <file=data.csv>
+| where status == "<status=active>"
+| where score >= <min_score=80>
+| select name email score
+| sort-by score --reverse
+| to yaml"""
+    description = "nu: filter CSV rows and write them out as YAML"
+    tag = ["nu", "csv", "yaml", "filter"]
