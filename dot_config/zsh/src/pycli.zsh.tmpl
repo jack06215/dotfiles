@@ -1,0 +1,28 @@
+function _pycli() {
+  local repo="$HOME/workspace/jack06215/monorepo"
+  local venv="{{ .pypoetry.zshPythonDir }}"
+
+  if [[ ! -d "$repo" ]]; then
+    print -u2 "_cli: repo not found: $repo"
+    return 1
+  fi
+  if [[ ! -f "$venv/bin/activate" ]]; then
+    print -u2 "_cli: venv activate script not found: $venv/bin/activate"
+    print -u2 "_cli: run 'poetry install' or check .pypoetry.zshPythonDir in chezmoi"
+    return 1
+  fi
+
+  (
+    cd "$repo" \
+      && source "$venv/bin/activate" \
+      && python -m packages.cli "$@"
+  )
+}
+
+function hello_pycli() { _pycli hello_world "$@"; }
+function docx2md() { _pycli docx2md "$@"; }
+function aws_list_assumable_role() { _pycli list_assumable_role "$@"; }
+function aws_list_role_policy() { _pycli list_role_policy "$@"; }
+function jira_ticket() { _pycli jira_ticket "$@"; }
+function jsonl_unescape() { _pycli jsonl_unescape "$@"; }
+function kibana_response_stringify() { _pycli kibana_response_stringify "$@"; }
