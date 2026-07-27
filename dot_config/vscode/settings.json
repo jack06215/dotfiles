@@ -147,6 +147,8 @@
   "gitlens.defaultGravatarsStyle": "retro",
   "gitlens.plusFeatures.enabled": false,
   "gitlens.codeLens.enabled": false,
+  "gitlens.ai.model": "vscode",
+  "gitlens.ai.vscode.model": "copilot:claude-opus-4.6",
   "extensions.autoCheckUpdates": false,
   "extensions.ignoreRecommendations": true,
   "extensions.experimental.affinity": {
@@ -188,6 +190,11 @@
       "(?:'|\"|`)([^']*)(?:'|\"|`)"
     ]
   ],
+  "github.copilot.enable": {
+    "*": true,
+    "terraform-vars": false,
+    "properties": false
+  },
   "chat.agent.enabled": false,
   "vim.normalModeKeyBindingsNonRecursive": [
     {

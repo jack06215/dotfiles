@@ -1,0 +1,38 @@
+{{- if and (eq .chezmoi.os "windows") (hasKey . "vscode") -}}
+#!/usr/bin/env pwsh
+# Windows counterpart of run_onchange_after_link-vscode-config.sh.tmpl.
+#
+# Symlinks on Windows need admin rights or Developer Mode, so the two config
+# files are copied into %APPDATA%\Code\User instead of linked. A copy is a
+# snapshot, so unlike the darwin symlinks this script must rerun whenever the
+# sources change - their hashes are embedded below, and chezmoi hashes this
+# rendered script to decide whether to rerun:
+#   settings.json:    {{ include "dot_config/vscode/settings.json" | sha256sum }}
+#   keybindings.json: {{ include "dot_config/vscode/keybindings.json" | sha256sum }}
+
+$ErrorActionPreference = 'Stop'
+
+$userDir = {{ .vscode.userDir | squote }}
+$sourceDir = {{ joinPath .xdg.configHome "vscode" | squote }}
+
+New-Item -ItemType Directory -Force -Path $userDir | Out-Null
+
+foreach ($name in 'settings.json', 'keybindings.json') {
+    $dest = Join-Path $userDir $name
+
+    # Whatever VS Code wrote before chezmoi took this over is worth keeping, but
+    # a copy is indistinguishable from one this script made - so back up only
+    # when no backup exists yet, otherwise every content change litters the
+    # directory with a new .bak on each rerun.
+    if ((Test-Path -LiteralPath $dest -PathType Leaf) -and
+        -not (Get-ChildItem -LiteralPath $userDir -Filter "$name.bak-*" -File -ErrorAction SilentlyContinue)) {
+        $backup = "$dest.bak-$(Get-Date -Format 'yyyyMMddHHmmss')"
+        Move-Item -LiteralPath $dest -Destination $backup
+        Write-Warning "vscode: backed up pre-existing $name to $(Split-Path -Leaf $backup)"
+    }
+
+    Copy-Item -Force -LiteralPath (Join-Path $sourceDir $name) -Destination $dest
+}
+
+Write-Host "vscode: copied settings.json + keybindings.json into $userDir"
+{{- end -}}
