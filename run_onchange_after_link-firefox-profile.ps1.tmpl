@@ -1,0 +1,32 @@
+{{- if and (eq .chezmoi.os "windows") (hasKey . "firefox") -}}
+#!/usr/bin/env pwsh
+# Windows counterpart of run_onchange_after_link-firefox-profile.sh.tmpl.
+#
+# Symlinks on Windows need admin rights or Developer Mode, so the profile
+# files are copied into the real profile instead of linked. A copy is a
+# snapshot, so unlike the darwin symlinks this script must rerun whenever the
+# sources change - their hashes are embedded below, and chezmoi hashes this
+# rendered script to decide whether to rerun:
+#   user.js:        {{ include "dot_config/firefox/profile/user.js.tmpl" | sha256sum }}
+#   userChrome.css: {{ include "dot_config/firefox/profile/chrome/userChrome.css" | sha256sum }}
+
+$ErrorActionPreference = 'Stop'
+
+$profileDir = {{ .firefox.profileDir | squote }}
+$sourceDir = {{ joinPath .xdg.configHome "firefox/profile" | squote }}
+
+# Firefox creates the profile directory on first run; on a fresh machine it
+# may not exist yet, and that shouldn't fail the whole `chezmoi apply`.
+if (-not (Test-Path -LiteralPath $profileDir -PathType Container)) {
+    Write-Warning "firefox: profile directory not found, skipping: $profileDir"
+    exit 0
+}
+
+$chromeDir = Join-Path $profileDir 'chrome'
+New-Item -ItemType Directory -Force -Path $chromeDir | Out-Null
+
+Copy-Item -Force -LiteralPath (Join-Path $sourceDir 'user.js') -Destination (Join-Path $profileDir 'user.js')
+Copy-Item -Force -LiteralPath (Join-Path $sourceDir 'chrome' 'userChrome.css') -Destination (Join-Path $chromeDir 'userChrome.css')
+
+Write-Host "firefox: copied user.js + chrome/userChrome.css into $profileDir"
+{{- end -}}

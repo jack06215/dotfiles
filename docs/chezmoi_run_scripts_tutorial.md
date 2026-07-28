@@ -268,3 +268,43 @@ Net result: edit `dot_config/firefox/profile/user.js`, run `chezmoi apply`,
 and the real Firefox profile picks up the change through the symlink —
 without chezmoi ever needing to know the profile ID as part of a path it
 manages directly.
+
+### Windows: copy instead of symlink
+
+Windows can't create symlinks without admin rights or Developer Mode, so
+`run_onchange_after_link-firefox-profile.ps1.tmpl` copies the same two files
+into `%APPDATA%\Mozilla\Firefox\Profiles\<profile>` instead. Three things
+differ from the darwin script:
+
+1. **The script has to rerun when the *sources* change.** A symlink is live;
+   a copy is a snapshot. `run_onchange_` only reruns when the *rendered
+   script* changes, so the source hashes are embedded in a comment:
+
+   ```
+   #   user.js:        {{ include "dot_config/firefox/profile/user.js.tmpl" | sha256sum }}
+   #   userChrome.css: {{ include "dot_config/firefox/profile/chrome/userChrome.css" | sha256sum }}
+   ```
+
+   Editing either file changes a hash, which changes the script, which makes
+   chezmoi rerun it. (Same trick as the surfingkeys script, which embeds the
+   whole file rather than a hash.)
+
+2. **`squote`, not `quote`.** `quote` is Go's `%q`, which escapes `\` as
+   `\\`. Bash double quotes collapse that back; PowerShell double quotes do
+   not, so a path would come out with doubled separators. PowerShell single
+   quotes are literal, so `{{ .firefox.profileDir | squote }}` is the
+   correct pairing.
+
+3. **PowerShell 7 must be requested explicitly.** chezmoi's built-in
+   interpreter for `.ps1` is Windows PowerShell 5.1 (`powershell.exe
+   -NoLogo`). `chezmoi.toml.tmpl` overrides it on Windows:
+
+   ```toml
+   [interpreters.ps1]
+       command = "pwsh"
+       args = ["-NoLogo", "-NoProfile"]
+   ```
+
+Both scripts put their `{{ if ... }}` guard *above* the shebang so the
+rendered script is completely empty on the other OS — chezmoi skips empty
+scripts, whereas a lone `#!/bin/bash` would still be executed.

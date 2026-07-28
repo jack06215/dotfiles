@@ -1,5 +1,5 @@
 [[snippets]]
-    command = "python ~/.config/pet/scripts/gh_pr_reviews.py <org=flywheel-jp> <repo=monorepo> <author=jack06215> <after=2026-01-01> <until=2026-05-31>"
+    command = "gh_pr_review --org <org=flywheel-jp> --repo <repo=monorepo> --author  <author=jack06215> --after <after=2026-01-01> --until <until=2026-05-31>"
     description = "GitHub: List PRs with reviews in a date range"
     tag = ["gh", "pr", "review"]
 [[snippets]]

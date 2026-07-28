@@ -1,0 +1,31 @@
+{{- if and (eq .chezmoi.os "darwin") (hasKey . "vscode") -}}
+#!/bin/bash
+set -euo pipefail
+
+# VS Code ignores XDG on macOS - it only reads settings.json/keybindings.json
+# from ~/Library/Application Support/Code/User. Those two are symlinked back to
+# the chezmoi-managed copies in ~/.config/vscode, which stay the single source
+# of truth. Symlinks follow content, so unlike the Windows Firefox script this
+# one needs no source hashes to decide when to rerun.
+
+user_dir={{ .vscode.userDir | quote }}
+source_dir={{ joinPath .xdg.configHome "vscode" | quote }}
+
+mkdir -p "${user_dir}"
+
+for f in settings.json keybindings.json; do
+  dest="${user_dir}/${f}"
+
+  # A regular file here is VS Code's own copy - the first apply on a machine
+  # would silently discard it, so keep a timestamped copy alongside.
+  if [ -e "${dest}" ] && [ ! -L "${dest}" ]; then
+    backup="${dest}.bak-$(date +%Y%m%d%H%M%S)"
+    mv "${dest}" "${backup}"
+    echo "vscode: backed up pre-existing ${f} to $(basename "${backup}")" >&2
+  fi
+
+  ln -sf "${source_dir}/${f}" "${dest}"
+done
+
+echo "vscode: linked settings.json + keybindings.json into ${user_dir}"
+{{- end -}}

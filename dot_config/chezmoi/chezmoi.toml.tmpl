@@ -19,6 +19,18 @@
 {{- end -}}
 
 {{- $firefoxProfileId := "vfop1w54.default" -}}
+{{- if eq .chezmoi.os "windows" -}}
+{{-   $firefoxProfileId = "au24w27m.MinimalistDark" -}}
+{{- end -}}
+
+{{- $vscodeUserDir := "" -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   $vscodeUserDir = joinPath .chezmoi.homeDir "Library/Application Support/Code/User" -}}
+{{- else if eq .chezmoi.os "linux" -}}
+{{-   $vscodeUserDir = joinPath .chezmoi.homeDir ".config/Code/User" -}}
+{{- else if eq .chezmoi.os "windows" -}}
+{{-   $vscodeUserDir = joinPath .chezmoi.homeDir "AppData/Roaming/Code/User" -}}
+{{- end -}}
 
 {{- $zshPythonDir := "" -}}
 {{- if eq .chezmoi.os "darwin" -}}
@@ -55,12 +67,22 @@ sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "wo
     profile = {{ $firefoxProfileId | quote }}
     profileDirBase = {{ $firefoxProfilesDir | quote }}
     profileDir = {{ joinPath $firefoxProfilesDir $firefoxProfileId | quote }}
+[data.vscode]
+    userDir = {{ $vscodeUserDir | quote }}
 [data.xdg]
     configHome = {{ env "XDG_CONFIG_HOME" | default (joinPath .chezmoi.homeDir ".config") | quote }}
     dataHome = {{ env "XDG_DATA_HOME" | default (joinPath .chezmoi.homeDir ".local/share") | quote }}
     cacheHome = {{ env "XDG_CACHE_HOME" | default (joinPath .chezmoi.homeDir ".cache") | quote }}
 [template]
     options = ["missingkey=error"]
+{{ if eq .chezmoi.os "windows" }}
+[interpreters.ps1]
+    # chezmoi's built-in default for .ps1 is Windows PowerShell 5.1
+    # (powershell.exe -NoLogo); point it at PowerShell 7 instead. -NoProfile
+    # keeps run_ scripts independent of $PROFILE.
+    command = "pwsh"
+    args = ["-NoLogo", "-NoProfile"]
+{{ end }}
 
 [diff]
     # run_onchange_ scripts embed dotfile content via `include`, so any dotfile
