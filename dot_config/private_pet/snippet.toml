@@ -29,6 +29,22 @@
     description = "quor: Read consumer_project associated to project_id"
     tag = ["grpc", "quor", "authorization"]
 [[snippets]]
+    command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_list_pjt_engs.py <idp_id=auth0-> <project_id>"
+    description = "List project engineers"
+    tag = ["grpc", "quor", "authorization"]
+[[snippets]]
+    command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_add_pjt_eng.py <idp_id=auth0-> <project_id> <email>"
+    description = "Add a project engineer by email"
+    tag = ["grpc", "quor", "authorization"]
+[[snippets]]
+    command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_org_users.py <idp_id=auth0->"
+    description = "Get FLYWHEEL user members"
+    tag = ["grpc", "quor", "authorization"]
+[[snippets]]
+    command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_system_admins.py <idp_id=auth0->"
+    description = "Get system admins"
+    tag = ["grpc", "quor", "authorization"]
+[[snippets]]
     description = "FW Monorepo: Find image tags"
     command = """bazel build //kubernetes/clusters/<cluster=opal-staging>/image_tags:image_tags_libsonnet && jsonnet \"$(bazel info bazel-bin 2>/dev/null)/kubernetes/clusters/<cluster=opal-staging>/image_tags/generated/image_tags.libsonnet\" | jq 'with_entries(select(.key | contains("<regex>")))'"""
     tag = ["bazel", "k8s", "image tag", "flywheel-jp"]
@@ -114,7 +130,6 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
     command = "pbpaste | kibana_json_stringify | jq '[.hits.hits[] | {title: (._source.title // \"\"), body: (.highlight.body // [] | join(\" \"))}]'"
     tag = ["elasticsearch", "kibana", "debug", "flywheel-jp"]
 [[snippets]]
-
     description = "Count file types by extension of the current directory."
     command = "find . -type f -name \"*.*\" | sed 's/.*\\.//' | sort | uniq -c | sort -rn"
     tag = ["file properties"]
