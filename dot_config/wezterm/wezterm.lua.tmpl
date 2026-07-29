@@ -144,7 +144,12 @@ end)
 local config = {
   -- Shell & env
   default_prog = default_prog,
-  set_environment_variables = { TERM = "wezterm" },
+  -- NOTE: no `set_environment_variables = { TERM = "wezterm" }` here. It was a
+  -- no-op (WezTerm's own `term` option, default "xterm-256color", is applied
+  -- after it and wins), and a live hazard: there is no `wezterm` terminfo entry
+  -- installed, so the moment it took effect tmux would refuse to start with
+  -- "missing or unsuitable terminal". Run `wezterm show-keys`/`infocmp wezterm`
+  -- and install the terminfo first if you ever want TERM=wezterm.
 
   -- Appearance
   color_scheme = "Catppuccin Mocha",
@@ -187,6 +192,14 @@ local config = {
 -- macOS-only settings
 if tmpl.is_true("myComputer.isDarwin") then
   config.macos_window_background_blur = 5
+
+  -- Both Option keys must send ESC-prefixed sequences, not composed glyphs.
+  -- tmux.conf drives nearly everything off M-* bindings, and by default one
+  -- Option key composes (M-j -> "∆", M-l -> "¬"), which both loses the binding
+  -- and inserts junk. Pinning both sides makes it deterministic. Trade-off:
+  -- Option can no longer type accented/special characters in the terminal.
+  config.send_composed_key_when_left_alt_is_pressed = false
+  config.send_composed_key_when_right_alt_is_pressed = false
 end
 
 return config
