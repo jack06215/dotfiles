@@ -133,3 +133,30 @@ print(json.dumps(result, indent=2, ensure_ascii=False))
     description = "Count file types by extension of the current directory."
     command = "find . -type f -name \"*.*\" | sed 's/.*\\.//' | sort | uniq -c | sort -rn"
     tag = ["file properties"]
+[[snippets]]
+    description = "Convert zh_CN -> zh_TW from clipboard"
+    command = " pbpaste | opencc -c <config=s2twp.json> | pbcopy"
+    tag = ["opencc", "zh", "macos"]
+[[snippets]]
+  description = "Convert zh_CN -> zh_TW from file"
+  command = """
+ f="<file>" && opencc -c <config=s2twp.json> -i "$f" | sponge "$f"\
+"""
+  tag = ["prettify", "zh"]
+[[snippets]]
+  description = "Convert zh_CN -> zh_TW"
+  command = " echo \"<text>\" | opencc -c <config=s2twp.json>"
+  tag = ["opencc", "zh", "i18n"]
+[[snippets]]
+  description = "Convert zh_Hant -> 日本新字体"
+  command = " echo \"<text>\" | opencc -c t2jp.json"
+  tag = ["opencc", "ja"]
+[[snippets]]
+  description = "Convert 日本新字体 -> zh_Hant"
+  command = " echo \"<text>\" | opencc -c jp2t.json"
+  tag = ["opencc", "ja"]
+[[snippets]]
+  description = "Prettify JSON from clipboard."
+  command = " pbpaste | jq | pbcopy"
+  tag = ["prettify", "jq"]
+
