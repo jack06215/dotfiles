@@ -725,4 +725,5 @@ $env.config = {
 const CONFIG_DIR = (["~", ".config"] | path join)
 
 source function.nu
+source compare_dir_diff.nu
 

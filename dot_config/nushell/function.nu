@@ -22,7 +22,7 @@ def --wrapped pet [...args] {
 $env.config.keybindings = ($env.config.keybindings | append {
   name: pet_select
   modifier: control
-  keycode: char_s
+  keycode: char_o
   mode: [emacs, vi_normal, vi_insert]
   event: {
     send: executehostcommand

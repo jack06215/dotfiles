@@ -1,0 +1,51 @@
+#!/usr/bin/env zsh
+# zshfn - run a zsh function from $ZDOTDIR/src as if it were a real command.
+#
+# Shell functions only exist in interactive shells. Anything that shells out
+# non-interactively - neovim's `!cmd` filter, xargs, Makefiles, git aliases -
+# runs `$SHELL -c cmd`, which reads only .zshenv and never sources init.zsh, so
+# the function is reported as "command not found".
+#
+# To export a function, symlink its name at this script and add it to the map
+# below:
+#
+#   ln -s zshfn ~/.local/bin/jqc     # chezmoi: dot_local/bin/symlink_jqc
+#
+# The symlink name is looked up in $funcs to find the library to source, then
+# the function of the same name is called with the original arguments.
+
+# No `set -euo pipefail` here: those options would leak into the sourced
+# library functions, which are written for an interactive shell. Every failure
+# mode below is checked explicitly instead.
+
+typeset -A funcs=(
+  jqc jq.zsh
+  jqf jq.zsh
+)
+
+local name=${0:t}
+local src=${ZDOTDIR:-$HOME/.config/zsh}/src
+
+if [[ $name == zshfn ]]; then
+  print -ru2 -- "zshfn: invoke via one of its symlinks (${(kj:, :)funcs}), not directly"
+  exit 64
+fi
+
+if [[ -z ${funcs[$name]:-} ]]; then
+  print -ru2 -- "zshfn: no library registered for '$name'"
+  exit 64
+fi
+
+if [[ ! -r $src/${funcs[$name]} ]]; then
+  print -ru2 -- "zshfn: cannot read $src/${funcs[$name]}"
+  exit 69
+fi
+
+source "$src/${funcs[$name]}"
+
+if ((!${+functions[$name]})); then
+  print -ru2 -- "zshfn: ${funcs[$name]} does not define '$name'"
+  exit 69
+fi
+
+"$name" "$@"
