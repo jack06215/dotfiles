@@ -110,7 +110,7 @@ function gcm() {
   git diff --cached --stat
   git diff --cached | pbcopy
 
-  local type scope summary description rest
+  local type scope tmpdir msgfile editor message rest
   type=$(printf '%s\n' "${_GIT_COMMIT_TYPES[@]}" |
     gum choose --label-delimiter="|" \
                --height=12 \
@@ -122,30 +122,49 @@ function gcm() {
   # Since the scope is optional, wrap it in parentheses only if it has a value.
   [[ -n "$scope" ]] && scope="($scope)"
 
-  # Pre-populate "type(scope): " so only the summary itself has to be typed.
-  summary=$(gum input --header="Summary of this change" \
-                      --value="${type}${scope}: ") || return
+  # Summary and body are written in one editor buffer, exactly as the lazygit
+  # `<c>` command does. gum's own `write` is not used for this: as of gum 0.17
+  # its textarea submits on enter and needs ctrl+j for a newline, which fights
+  # with writing a wrapped commit body.
+  tmpdir=$(mktemp -d) || return 1
+  # Named COMMIT_EDITMSG so editors apply their gitcommit filetype rules.
+  msgfile="$tmpdir/COMMIT_EDITMSG"
+  # zsh runs a function's EXIT trap on return, but locals are already out of
+  # scope by then, so the path is baked into the trap body rather than left as
+  # a `$tmpdir` reference that would expand to nothing.
+  trap "rm -rf ${(q)tmpdir}" EXIT
 
-  # Reject a summary left as the bare pre-filled prefix. The pattern is quoted
-  # so that a scope's parentheses are matched literally, not as a glob group.
-  rest="${summary#"${type}${scope}:"}"
-  if [[ -z "${rest//[[:space:]]/}" ]]; then
-    echo "❌ Aborted: empty commit summary." >&2
+  {
+    printf '%s\n\n# :wq! to commit\n# :cq! to discard commit\n#\n# --- staged diff (reference only; stripped from the commit message) ---\n' \
+      "${type}${scope}: "
+    git diff --cached | sed 's/^/# /'
+  } > "$msgfile"
+
+  # Resolve the editor the way git itself does: $GIT_EDITOR, then core.editor,
+  # then $VISUAL/$EDITOR, then git's built-in default.
+  editor=$(git var GIT_EDITOR) || return 1
+
+  # A non-zero exit from the editor (vi's `:cq!`) discards the commit.
+  if ! eval "${editor} ${(q)msgfile}"; then
+    echo "Aborted." >&2
     return 1
   fi
 
-  description=$(gum write --header="Details of this change (optional, ctrl+d to finish)" \
-                          --placeholder="Details of this change") || return
+  # Drop the reference block. git's own --cleanup would do this too, but the
+  # message has to be stripped here to tell an empty one from a real one.
+  message=$(grep -v '^#' "$msgfile")
+
+  # Reject a message left as the bare pre-filled prefix. The pattern is quoted
+  # so that a scope's parentheses are matched literally, not as a glob group.
+  rest="${message#"${type}${scope}:"}"
+  if [[ -z "${rest//[[:space:]]/}" ]]; then
+    echo "❌ Aborted: empty commit message." >&2
+    return 1
+  fi
 
   gum confirm "Commit changes?" || return 1
 
-  # Pass a body only when one was written, so an empty -m doesn't leave a
-  # trailing blank paragraph in the message.
-  if [[ -n "${description//[[:space:]]/}" ]]; then
-    git commit -m "$summary" -m "$description"
-  else
-    git commit -m "$summary"
-  fi
+  print -r -- "$message" | git commit --cleanup=strip -F -
 }
 
 function check_pushed_to_remote() {
