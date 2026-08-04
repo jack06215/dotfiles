@@ -16,8 +16,8 @@ function gbs() {
   # git switch branch
   local branch
   branch=$(git branch --color=never \
-            | sed 's/^..//' \
-            | fzf --prompt="Git branches > ") || return
+    | sed 's/^..//' \
+    | fzf --prompt="Git branches > ") || return
   git switch "$branch"
 }
 
@@ -44,29 +44,23 @@ function gcg() {
   echo "$branches" | xargs -I {} git branch -D {}
 }
 
-
 function glog() {
-  git log --oneline |
-  fzf --preview 'git show --color=always {1}' |
-  awk '{print $1}'
+  git log --oneline \
+    | fzf --preview 'git show --color=always {1}' \
+    | awk '{print $1}'
 }
-
 
 function gdiff() {
   local sha
   sha=$(
-    git log --oneline |
-    fzf --preview 'git show --color=always {1}' |
-    awk '{print $1}'
+    git log --oneline \
+      | fzf --preview 'git show --color=always {1}' \
+      | awk '{print $1}'
   ) || return
 
   git show --color=always --first-parent "$sha"
 }
 
-# Conventional commit types offered by `gcm`, mirroring the menu of the
-# lazygit `<c>` custom command. Each entry is "<picker label>|<value>";
-# `gum choose --label-delimiter` prints only the part after the pipe, so the
-# descriptions never leak into the commit message.
 _GIT_COMMIT_TYPES=(
   "feat      A new feature|feat"
   "fix       A bug fix|fix"
@@ -82,19 +76,12 @@ _GIT_COMMIT_TYPES=(
 )
 
 function gcm() {
-  # git conventional commit, driven by gum
-  command -v gum >/dev/null 2>&1 || {
-    echo "❌ gum is not installed (brew install gum)." >&2
+  git rev-parse --is-inside-work-tree > /dev/null 2>&1 || {
+    echo "Not a git repository." >&2
     return 1
   }
 
-  git rev-parse --is-inside-work-tree >/dev/null 2>&1 || {
-    echo "❌ Not a git repository." >&2
-    return 1
-  }
-
-  # Nothing staged yet: show what is outstanding and offer to stage all of it.
-  if git diff --cached --quiet 2>/dev/null; then
+  if git diff --cached --quiet 2> /dev/null; then
     if [[ -z "$(git status --porcelain)" ]]; then
       echo "Nothing to commit."
       return 1
@@ -111,27 +98,19 @@ function gcm() {
   git diff --cached | pbcopy
 
   local type scope tmpdir msgfile editor message rest
-  type=$(printf '%s\n' "${_GIT_COMMIT_TYPES[@]}" |
-    gum choose --label-delimiter="|" \
-               --height=12 \
-               --header="Select the type of change you are committing.") || return
+  type=$(printf '%s\n' "${_GIT_COMMIT_TYPES[@]}" \
+    | gum choose --label-delimiter="|" \
+      --height=12 \
+      --header="Select the type of change you are committing.") || return
 
   scope=$(gum input --header="Enter a scope (optional)." \
-                    --placeholder="scope") || return
+    --placeholder="scope") || return
 
   # Since the scope is optional, wrap it in parentheses only if it has a value.
   [[ -n "$scope" ]] && scope="($scope)"
 
-  # Summary and body are written in one editor buffer, exactly as the lazygit
-  # `<c>` command does. gum's own `write` is not used for this: as of gum 0.17
-  # its textarea submits on enter and needs ctrl+j for a newline, which fights
-  # with writing a wrapped commit body.
   tmpdir=$(mktemp -d) || return 1
-  # Named COMMIT_EDITMSG so editors apply their gitcommit filetype rules.
   msgfile="$tmpdir/COMMIT_EDITMSG"
-  # zsh runs a function's EXIT trap on return, but locals are already out of
-  # scope by then, so the path is baked into the trap body rather than left as
-  # a `$tmpdir` reference that would expand to nothing.
   trap "rm -rf ${(q)tmpdir}" EXIT
 
   {
@@ -140,11 +119,8 @@ function gcm() {
     git diff --cached | sed 's/^/# /'
   } > "$msgfile"
 
-  # Resolve the editor the way git itself does: $GIT_EDITOR, then core.editor,
-  # then $VISUAL/$EDITOR, then git's built-in default.
   editor=$(git var GIT_EDITOR) || return 1
 
-  # A non-zero exit from the editor (vi's `:cq!`) discards the commit.
   if ! eval "${editor} ${(q)msgfile}"; then
     echo "Aborted." >&2
     return 1
@@ -169,12 +145,12 @@ function gcm() {
 
 function check_pushed_to_remote() {
   local branch
-  branch="$(git symbolic-ref --short HEAD 2>/dev/null)" || {
+  branch="$(git symbolic-ref --short HEAD 2> /dev/null)" || {
     echo "❌ Not on a branch." >&2
     return 1
   }
 
-  if ! git rev-parse --abbrev-ref --symbolic-full-name "@{u}" >/dev/null 2>&1; then
+  if ! git rev-parse --abbrev-ref --symbolic-full-name "@{u}" > /dev/null 2>&1; then
     echo "❌ Branch '$branch' has no upstream." >&2
     return 1
   fi
