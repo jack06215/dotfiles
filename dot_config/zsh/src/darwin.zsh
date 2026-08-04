@@ -27,7 +27,7 @@ function brew_trust_taps() {
     fi
   done
 
-  if (( ${#failed[@]} )); then
+  if ((${#failed[@]})); then
     echo "\nFailed to trust: ${failed[*]}" >&2
     return 1
   fi
@@ -35,3 +35,9 @@ function brew_trust_taps() {
   echo "\nAll taps trusted."
 }
 
+function open() {
+  case "$1" in
+    *.md) command open -a "Firefox" "$@" ;;
+    *) command open "$@" ;;
+  esac
+}
