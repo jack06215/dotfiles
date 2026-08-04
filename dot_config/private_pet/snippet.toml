@@ -14,19 +14,19 @@
     tag = ["aws", "ecr", "repository"]
 [[snippets]]
     command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_user_groups.py <idp_id=auth0-> <project_id>"
-    description = "quor: Read user groups"
+    description = "Get user groups"
     tag = ["grpc", "quor", "authorization"]
 [[snippets]]
     command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_modes.py <idp_id=auth0-> <project_id>"
-    description = "quor: Read user modes"
+    description = "Get user modes"
     tag = ["grpc", "quor", "authorization"]
 [[snippets]]
     command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_datasets.py <idp_id=auth0-> <project_id>"
-    description = "quor: Read user datasets"
+    description = "Get user datasets"
     tag = ["grpc", "quor", "authorization"]
 [[snippets]]
     command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_consumer_project_modes.py <idp_id=auth0-> <project_id> <mode_id>"
-    description = "quor: Read consumer_project associated to project_id"
+    description = "Get consumer_project associated to project_id"
     tag = ["grpc", "quor", "authorization"]
 [[snippets]]
     command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_list_pjt_engs.py <idp_id=auth0-> <project_id>"
@@ -37,9 +37,9 @@
     description = "Add a project engineer by email"
     tag = ["grpc", "quor", "authorization"]
 [[snippets]]
-    command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_org_users.py <idp_id=auth0->"
-    description = "Get FLYWHEEL user members"
-    tag = ["grpc", "quor", "authorization"]
+    command = """AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_org_users.py <idp_id=auth0-> | jq -r --arg email "<email>" '.relationships[] | select((.user.idp_user_info.email_address // "") | ascii_downcase | contains($email | ascii_downcase))'"""
+    description = "Get FLYWHEEL user authz_user_id by partial email"
+    tag = ["grpc", "quor", "authorization", "jq"]
 [[snippets]]
     command = "AUTHZ_ACCESS_TOKEN=$AUTHZ_ACCESS_TOKEN python ~/.config/pet/flywheel/quor_get_system_admins.py <idp_id=auth0->"
     description = "Get system admins"
