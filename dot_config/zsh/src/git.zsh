@@ -134,7 +134,7 @@ function gcm() {
   # so that a scope's parentheses are matched literally, not as a glob group.
   rest="${message#"${type}${scope}:"}"
   if [[ -z "${rest//[[:space:]]/}" ]]; then
-    echo "❌ Aborted: empty commit message." >&2
+    echo "Aborted: empty commit message." >&2
     return 1
   fi
 
@@ -146,17 +146,17 @@ function gcm() {
 function check_pushed_to_remote() {
   local branch
   branch="$(git symbolic-ref --short HEAD 2> /dev/null)" || {
-    echo "❌ Not on a branch." >&2
+    echo "Not on a branch." >&2
     return 1
   }
 
   if ! git rev-parse --abbrev-ref --symbolic-full-name "@{u}" > /dev/null 2>&1; then
-    echo "❌ Branch '$branch' has no upstream." >&2
+    echo "Branch '$branch' has no upstream." >&2
     return 1
   fi
 
   if [[ "$(git rev-parse "@")" != "$(git rev-parse "@{u}")" ]]; then
-    echo "❌ Branch '$branch' is not pushed to remote." >&2
+    echo "Branch '$branch' is not pushed to remote." >&2
     return 1
   fi
 
