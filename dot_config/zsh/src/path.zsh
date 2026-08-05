@@ -1,7 +1,7 @@
 # Use zsh's $path array for dedupe and easy manipulation
 typeset -gU path
-add_path_front() { [[ -d "$1" ]] && path=("$1" $path) }
-add_path_back()  { [[ -d "$1" ]] && path+=("$1") }
+add_path_front() { [[ -d "$1" ]] && path=("$1" $path); }
+add_path_back() { [[ -d "$1" ]] && path+=("$1"); }
 
 add_path_front "$HOME/.local/bin"
 
@@ -17,6 +17,8 @@ add_path_back "/opt/homebrew/opt/mysql@8.0/bin"
 add_path_back "/opt/homebrew/opt/mysql-client@8.0/bin"
 
 add_path_back "$HOME/tools/flutter/bin"
+
+add_path_back "$ZDOTDIR/src/myscripts"
 
 # Flywheel specific script
 add_path_back "$HOME/myscripts"
