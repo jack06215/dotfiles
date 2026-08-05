@@ -1,6 +1,14 @@
 #!/usr/bin/env zsh
 # vim: filetype=zsh
 
+function _check_gum_cmd() {
+  command -v gum > /dev/null 2>&1 || {
+    # funcstack[2] is the calling function, so the message names it.
+    echo "${funcstack[2]:-gum} requires 'gum' to be installed." >&2
+    return 1
+  }
+}
+
 function fman() {
   local cmd
   cmd=$(print -rl -- ${(k)commands} | fzf) || return

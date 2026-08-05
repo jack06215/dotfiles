@@ -1,12 +1,6 @@
 # Callers must use `_check_gum_cmd || return 1`: on its own the call reports
 # the problem but does not stop the caller from running on without gum.
-function _check_gum_cmd() {
-  command -v gum > /dev/null 2>&1 || {
-    # funcstack[2] is the calling function, so the message names it.
-    echo "${funcstack[2]:-gum} requires 'gum' to be installed." >&2
-    return 1
-  }
-}
+source "$ZDOTDIR/src/functions.zsh"
 
 function gcb() {
   # git checkout branch
@@ -71,18 +65,20 @@ function gdiff() {
   git show --color=always --first-parent "$sha"
 }
 
+# The type is the first field of each line, so the picker can hand the line
+# straight to awk instead of carrying a separate label/value delimiter.
 _GIT_COMMIT_TYPES=(
-  "feat      A new feature|feat"
-  "fix       A bug fix|fix"
-  "docs      Documentation only changes|docs"
-  "style     Styling changes (white-space, formatting, etc)|style"
-  "refactor  Refactoring code|refactor"
-  "perf      Performance improvements|perf"
-  "test      Test additions or fixes|test"
-  "build     Build system or dependency changes|build"
-  "ci        CI configuration changes|ci"
-  "chore     Other non-code changes|chore"
-  "revert    Reverting changes|revert"
+  "feat      A new feature"
+  "fix       A bug fix"
+  "docs      Documentation only changes"
+  "style     Styling changes (white-space, formatting, etc)"
+  "refactor  Refactoring code"
+  "perf      Performance improvements"
+  "test      Test additions or fixes"
+  "build     Build system or dependency changes"
+  "ci        CI configuration changes"
+  "chore     Other non-code changes"
+  "revert    Reverting changes"
 )
 
 function gcm() {
@@ -111,9 +107,15 @@ function gcm() {
 
   local type scope tmpdir msgfile editor message rest
   type=$(printf '%s\n' "${_GIT_COMMIT_TYPES[@]}" \
-    | gum choose --label-delimiter="|" \
+    | gum filter --limit=1 \
       --height=12 \
-      --header="Select the type of change you are committing.") || return
+      --header="Select the type of change you are committing." \
+      --placeholder="" \
+    | awk '{print $1}')
+
+  # Cancelling out of gum leaves this empty, and so does the awk on the end,
+  # which exits 0 either way.
+  [[ -n "$type" ]] || return 1
 
   scope=$(gum input --header="Enter a scope (optional)." \
     --placeholder="scope") || return
