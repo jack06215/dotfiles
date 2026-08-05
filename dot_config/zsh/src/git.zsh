@@ -25,6 +25,50 @@ function gbs() {
   git switch "$branch"
 }
 
+function gbr() {
+  _check_gum_cmd || return 1
+
+  git rev-parse --is-inside-work-tree > /dev/null 2>&1 || {
+    echo "Not a git repository." >&2
+    return 1
+  }
+
+  local ticket description branch
+  local -a words
+
+  ticket=$(gum input --header="Ticket number (optional)." \
+    --placeholder="PR") || return
+
+  ticket=${${ticket:-PR}:u}
+
+  description=$(gum input --header="Describe the branch in English." \
+    --placeholder="add login button") || return
+
+  words=(${=description:l})
+  if ((${#words} == 0)); then
+    echo "Aborted: empty description." >&2
+    return 1
+  fi
+
+  branch="${ticket}/${(j:-:)words}"
+
+  # The description is only lowercased and dashed, so anything else git refuses
+  # in a ref name is reported rather than silently rewritten.
+  git check-ref-format --branch "$branch" > /dev/null 2>&1 || {
+    echo "'$branch' is not a valid branch name." >&2
+    return 1
+  }
+
+  if git show-ref --verify --quiet "refs/heads/$branch"; then
+    echo "Branch '$branch' already exists - run gbs to switch to it." >&2
+    return 1
+  fi
+
+  gum confirm "Create branch '$branch'?" || return 1
+
+  git checkout -b "$branch"
+}
+
 function gcg() {
   # git clean gone
   local branches
