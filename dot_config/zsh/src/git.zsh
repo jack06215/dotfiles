@@ -109,6 +109,131 @@ function gdiff() {
   git show --color=always --first-parent "$sha"
 }
 
+# Print one line per path that can still be staged - worktree changes not yet in
+# the index, plus untracked files - as "<status>  <path>". -z keeps the paths
+# unquoted, so the status strips back off with ${line#*  } even when a path
+# contains spaces, which is what gum filter's plain-text output needs (unlike
+# gum choose, it has no --label-delimiter to carry a separate value).
+function _git_stage_candidates() {
+  local st f
+  while IFS= read -r -d '' st && IFS= read -r -d '' f; do
+    print -r -- "$st  $f"
+  done < <(git diff --name-status --no-renames -z)
+
+  while IFS= read -r -d '' f; do
+    print -r -- "?  $f"
+  done < <(git ls-files --others --exclude-standard -z)
+}
+
+# Stage what the commit should contain. With --all that is everything; otherwise
+# the worktree is offered as a multi-select. Anything staged beforehand is left
+# alone either way, so a hand-built index survives.
+function _git_stage_for_commit() {
+  local all=$1 out
+  local -a candidates picked paths
+
+  if ((all)); then
+    git add -A
+    return
+  fi
+
+  candidates=(${(f)"$(_git_stage_candidates)"})
+  ((${#candidates})) || return 0
+
+  out=$(printf '%s\n' "${candidates[@]}" \
+    | gum filter --no-limit \
+      --height=15 \
+      --header="Select files to stage (tab to mark, enter to confirm)." \
+      --placeholder="") || {
+    # Escaping the picker is only an abort when it would leave nothing to
+    # commit; otherwise it means "just commit what is already staged".
+    git diff --cached --quiet 2> /dev/null && return 1
+    gum confirm "Stage nothing more and commit the current index?" || return 1
+    return 0
+  }
+
+  picked=(${(f)out})
+  ((${#picked})) || return 0
+
+  # add -A rather than a plain add, so a picked path that was deleted in the
+  # worktree stages as a deletion instead of erroring.
+  paths=(${picked#*  })
+  git add -A -- "${paths[@]}"
+}
+
+# Run the repository's pre-commit checks once. The pre-commit framework's config
+# wins over .git/hooks/pre-commit, because when both are present the hook is only
+# a shim that runs the framework anyway. No config and no hook is a silent no-op.
+function _git_run_pre_commit() {
+  local root hook
+  root=$(git rev-parse --show-toplevel) || return 1
+
+  if [[ -f "$root/.pre-commit-config.yaml" ]]; then
+    if ! command -v pre-commit > /dev/null 2>&1; then
+      echo "Skipping checks: .pre-commit-config.yaml found but 'pre-commit' is not installed." >&2
+      return 0
+    fi
+    # No paths: pre-commit run defaults to the staged files.
+    (cd "$root" && pre-commit run)
+    return
+  fi
+
+  # --git-path honours core.hooksPath, and :A makes it absolute so it survives
+  # the cd to the work tree root that hooks are run from.
+  hook=$(git rev-parse --git-path hooks/pre-commit) || return 1
+  hook=${hook:A}
+  [[ -x "$hook" ]] || return 0
+
+  (cd "$root" && "$hook")
+}
+
+# Run the checks before the editor opens, so a failure costs nothing more than
+# the pickers rather than a written message. Formatters exit non-zero having
+# already written their fixes to the worktree, so a failed run is often just
+# "fold these in and go again" - hence the retry rather than a flat rejection.
+#
+# git runs the hooks again at commit time. That second pass is cheap once they
+# pass, and leaving it in place keeps commit-msg hooks working, which the
+# --no-verify needed to skip it would also disable.
+function _git_pre_commit_flow() {
+  local before after
+  local -i pass=0
+  local -a staged dirty
+
+  while true; do
+    ((pass++))
+    staged=(${(f)"$(git diff --cached --name-only)"})
+    ((${#staged})) || return 0
+
+    # Hashed rather than diffed against a file list: a formatter rewriting a
+    # file that was already partially staged changes the diff without changing
+    # which files appear in it.
+    before=$(git diff -- "${staged[@]}" | git hash-object --stdin)
+
+    _git_run_pre_commit && return 0
+
+    after=$(git diff -- "${staged[@]}" | git hash-object --stdin)
+
+    # The retry stops being offered after a few passes, so a hook that rewrites
+    # the same files on every run cannot loop here forever.
+    if [[ "$before" != "$after" ]] && ((pass < 3)); then
+      dirty=(${(f)"$(git diff --name-only -- "${staged[@]}")"})
+      echo
+      echo "Checks failed after rewriting:"
+      printf '  %s\n' "${dirty[@]}"
+      # Staging by path takes the whole file, so say so: anything deliberately
+      # left out of the index with git add -p comes along too.
+      if gum confirm "Stage these files in full and run again?"; then
+        git add -A -- "${dirty[@]}" || return 1
+        continue
+      fi
+    fi
+
+    gum confirm "Pre-commit checks failed. Commit anyway?" || return 1
+    return 0
+  done
+}
+
 # The type is the first field of each line, so the picker can hand the line
 # straight to awk instead of carrying a separate label/value delimiter.
 _GIT_COMMIT_TYPES=(
@@ -133,15 +258,36 @@ function gcm() {
     return 1
   }
 
-  if git diff --cached --quiet 2> /dev/null; then
-    if [[ -z "$(git status --porcelain)" ]]; then
-      echo "Nothing to commit."
-      return 1
-    fi
-    git status --short
-    gum confirm "Nothing staged. Stage everything?" || return 1
-    git add -A
+  local -i all=0
+  while (($#)); do
+    case "$1" in
+      -a | --all) all=1 ;;
+      -h | --help)
+        echo "usage: gcm [-a|--all]"
+        echo "  -a, --all  stage every change instead of picking files"
+        return 0
+        ;;
+      *)
+        echo "gcm: unknown option '$1'" >&2
+        return 1
+        ;;
+    esac
+    shift
+  done
+
+  if [[ -z "$(git status --porcelain)" ]]; then
+    echo "Nothing to commit."
+    return 1
   fi
+
+  _git_stage_for_commit "$all" || return 1
+
+  if git diff --cached --quiet 2> /dev/null; then
+    echo "Nothing staged."
+    return 1
+  fi
+
+  _git_pre_commit_flow || return 1
 
   # Reference only, so the summary can be written with the diff at hand: a
   # summary on screen, and the full diff on the clipboard (as the lazygit `<c>`
