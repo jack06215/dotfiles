@@ -153,8 +153,8 @@ nnoremap <leader>Y "+y$
 " Conflict markers. This vim has no built-in `]n` motion (that one is a
 " neovim/unimpaired thing), and `git rebase` conflict edits are a main reason
 " this config exists, so the motion is defined here.
-nnoremap <silent> ]x /^\(<\{7\}\\|=\{7\}\\|>\{7\}\)/<CR>
-nnoremap <silent> [x ?^\(<\{7\}\\|=\{7\}\\|>\{7\}\)?<CR>
+nnoremap <silent> ]x /^\(<\{7\}\|=\{7\}\|>\{7\}\)/<CR>
+nnoremap <silent> [x ?^\(<\{7\}\|=\{7\}\|>\{7\}\)?<CR>
 
 " Mouse stays off so terminal select-and-copy keeps working. Uncomment for
 " scroll and click-to-position:
