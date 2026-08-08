@@ -1,7 +1,6 @@
 # alias ls='ls --color'
 alias ls='eza --group-directories-first --icons'
 alias tree='eza --tree'
-alias vim='nvim'
 alias cls='clear'
 alias lg='lazygit'
 alias zshrc_edit='vim "$ZDOTDIR/.zshrc"'
