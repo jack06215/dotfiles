@@ -20,7 +20,7 @@ set nocompatible
 " `//` on swap/backup makes vim encode the full path into the file name, so
 " two files with the same basename can't collide.
 let s:state = expand(empty($XDG_STATE_HOME) ? '~/.local/state/vim' : $XDG_STATE_HOME . '/vim')
-for s:dir in ['undo', 'swap', 'backup']
+for s:dir in ['undo', 'swap', 'backup', 'spell']
   if !isdirectory(s:state . '/' . s:dir)
     call mkdir(s:state . '/' . s:dir, 'p', 0700)
   endif
@@ -29,6 +29,10 @@ let &undodir    = s:state . '/undo'
 let &directory  = s:state . '/swap//'
 let &backupdir  = s:state . '/backup//'
 let &viminfofile = s:state . '/viminfo'
+" `zg` fails with E764 unless 'spellfile' has a value. Vim only fills it in
+" automatically when a `spell` directory already exists inside 'runtimepath',
+" which it doesn't here, so it is pointed at the state dir explicitly.
+let &spellfile  = s:state . '/spell/en.utf-8.add'
 set undofile
 
 " --- Behaviour --------------------------------------------------------------
