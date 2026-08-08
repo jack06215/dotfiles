@@ -1,39 +1,171 @@
 " vim: set ft=vim :
 " =============================================================================
-" Minimal vim - the fast path next to nvim.
+" vim - a capable second editor, managed with vim-plug.
 "
-" nvim stays the IDE: vimfind, vimrecent and fzf-listprojects still call it
-" directly. vim is what $EDITOR points at, so it handles the short-lived
-" edits - `gcm` commit messages, rebase conflict resolution, sudoedit, and
-" ls_fzf_open. Everything here has to be worth its cost on a 10-second edit.
+" nvim is still the IDE. This is what $EDITOR points at, so it has to open fast
+" for a `gcm` commit message, and it has to be good enough to actually work in
+" when nvim is overkill or unavailable.
 "
-" Lives at $XDG_CONFIG_HOME/vim/vimrc, which vim >= 9.1.0327 finds by itself
-" (no ~/.vimrc needed). Picking this file up also puts $MYVIMDIR at the head
-" of 'runtimepath' and $MYVIMDIR/after at the tail, so after/ftplugin/ loads
-" with no rtp fiddling - and ~/.vim drops out of the path entirely.
+" Lives at $XDG_CONFIG_HOME/vim/vimrc, which vim >= 9.1.0327 finds by itself.
+" Picking it up also puts $MYVIMDIR at the head of 'runtimepath' and
+" $MYVIMDIR/after at the tail - which is how autoload/plug.vim and
+" after/ftplugin/ are found with no rtp fiddling.
+"
+" Layout of this file is load-bearing; see the two ORDER notes below.
 " =============================================================================
 
 set nocompatible
+
+" ORDER: the leader must be set before plug#end() loads plugins, or any
+" <leader> mapping a plugin defines binds to the wrong key.
+let mapleader = ' '
+let maplocalleader = ' '
 
 " --- State ------------------------------------------------------------------
 " $HOME stays clean, same as everything else in dot_zshenv.tmpl. The trailing
 " `//` on swap/backup makes vim encode the full path into the file name, so
 " two files with the same basename can't collide.
 let s:state = expand(empty($XDG_STATE_HOME) ? '~/.local/state/vim' : $XDG_STATE_HOME . '/vim')
+let s:data  = expand(empty($XDG_DATA_HOME)  ? '~/.local/share'     : $XDG_DATA_HOME)
 for s:dir in ['undo', 'swap', 'backup', 'spell']
   if !isdirectory(s:state . '/' . s:dir)
     call mkdir(s:state . '/' . s:dir, 'p', 0700)
   endif
 endfor
-let &undodir    = s:state . '/undo'
-let &directory  = s:state . '/swap//'
-let &backupdir  = s:state . '/backup//'
+let &undodir     = s:state . '/undo'
+let &directory   = s:state . '/swap//'
+let &backupdir   = s:state . '/backup//'
 let &viminfofile = s:state . '/viminfo'
 " `zg` fails with E764 unless 'spellfile' has a value. Vim only fills it in
 " automatically when a `spell` directory already exists inside 'runtimepath',
 " which it doesn't here, so it is pointed at the state dir explicitly.
-let &spellfile  = s:state . '/spell/en.utf-8.add'
+let &spellfile   = s:state . '/spell/en.utf-8.add'
 set undofile
+
+" --- Filetypes for this repo ------------------------------------------------
+" ORDER: this block must be registered BEFORE plug#end(), which calls
+" `filetype plugin indent on`. Autocmds fire in registration order, and vim's
+" own rule types every *.tmpl as `template`, after which did_filetype() makes
+" any re-detect a silent no-op. Move this below plug#end() and chezmoi
+" template detection breaks with no error.
+augroup vimrc_chezmoi
+  autocmd!
+  " Re-run detection against the name minus `.tmpl`, so init.zsh.tmpl,
+  " setup.sh.tmpl, wezterm.lua.tmpl and chezmoi.toml.tmpl land on the
+  " filetype of what they actually generate.
+  autocmd BufRead,BufNewFile *.tmpl
+        \ execute 'silent! doautocmd filetypedetect BufRead'
+        \         fnameescape(expand('<afile>:r'))
+  " The leftovers, where stripping `.tmpl` still leaves a name vim can't
+  " place - `dot_zshenv` and chezmoi's `dot_config/git/config`.
+  autocmd BufRead,BufNewFile dot_zshenv*,dot_zshrc*,dot_zprofile*
+        \ setfiletype zsh
+  autocmd BufRead,BufNewFile */git/config,*/git/config.tmpl
+        \ setfiletype gitconfig
+augroup END
+
+" --- Plugin settings read at load time --------------------------------------
+" These have to precede plug#end(); the plugins read them as they load.
+
+" vim-matchup - mirrors the nvim config.
+let g:matchup_matchparen_offscreen = {'method': 'popup'}
+let g:matchup_matchparen_deferred = 1
+let g:matchup_matchparen_timeout = 300
+let g:matchup_surround_enabled = 1
+
+" vim-sneak. Label mode is deliberately OFF: with it on, s{char}{char} stops
+" and waits for a label keypress whenever more than one match is visible,
+" which reads as "s does nothing". Without it, s{char}{char} jumps straight to
+" the nearest match and ; / , walk the rest.
+let g:sneak#label = 0
+" Follow 'ignorecase'/'smartcase', so szq matches ZQ the way / does.
+let g:sneak#use_ic_scs = 1
+
+" goyo - same dimensions as the nvim setup.
+let g:goyo_width = 100
+let g:goyo_height = '80%'
+
+" fzf.vim - :Files honours $FZF_DEFAULT_COMMAND, which fzf.zsh exports for
+" interactive shells. It is set here too so sudoedit and other non-shell
+" launches get the same fd-based listing instead of fzf's slow builtin walk.
+if empty($FZF_DEFAULT_COMMAND)
+  let $FZF_DEFAULT_COMMAND = 'fd --type f --hidden --follow --exclude .git'
+endif
+let g:fzf_action = {
+      \ 'ctrl-t': 'tab split',
+      \ 'ctrl-x': 'split',
+      \ 'ctrl-v': 'vsplit' }
+let g:fzf_preview_window = ['right:55%', 'ctrl-/']
+
+" vim-lsp - quiet by default; the noisy bits get in the way more than they
+" help in a second editor.
+let g:lsp_diagnostics_enabled = 1
+let g:lsp_diagnostics_echo_cursor = 1
+let g:lsp_diagnostics_virtual_text_enabled = 0
+let g:lsp_diagnostics_signs_error   = {'text': 'E'}
+let g:lsp_diagnostics_signs_warning = {'text': 'W'}
+let g:lsp_document_code_action_signs_enabled = 0
+let g:lsp_fold_enabled = 0
+let g:lsp_log_file = ''
+" Servers installed by vim-lsp-settings land here rather than in $HOME.
+let g:lsp_settings_servers_dir = s:data . '/vim-lsp-settings/servers'
+
+" asyncomplete
+let g:asyncomplete_auto_popup = 1
+let g:asyncomplete_popup_delay = 100
+
+" --- Plugins ----------------------------------------------------------------
+" plug.vim is vendored at $MYVIMDIR/autoload/plug.vim and tracked in the
+" dotfiles repo, so a fresh machine needs no network and no bootstrap step.
+" Update it with :PlugUpgrade and commit the diff.
+"
+" The plugin directory must NOT be inside 'runtimepath' - vim-plug manages
+" rtp itself, and overlapping the two breaks it.
+if filereadable(expand('<sfile>:p:h') . '/autoload/plug.vim')
+  call plug#begin(s:data . '/vim/plugged')
+
+  " Editing. surround is declared before sneak so its visual-mode `S` claims
+  " that key first; sneak checks mapcheck() and steps aside.
+  Plug 'tpope/vim-surround'
+  Plug 'tpope/vim-repeat'
+  Plug 'tpope/vim-commentary'
+  Plug 'justinmk/vim-sneak'
+  Plug 'andymass/vim-matchup'
+  Plug 'editorconfig/editorconfig-vim'
+
+  " fzf. The binary is already installed by brew, so the local path is added
+  " to rtp directly instead of cloning a second copy of the repo.
+  if isdirectory('/opt/homebrew/opt/fzf')
+    Plug '/opt/homebrew/opt/fzf'
+  elseif isdirectory('/home/linuxbrew/.linuxbrew/opt/fzf')
+    Plug '/home/linuxbrew/.linuxbrew/opt/fzf'
+  else
+    Plug 'junegunn/fzf', { 'do': { -> fzf#install() } }
+  endif
+  Plug 'junegunn/fzf.vim'
+
+  " Git. The shell already has gum-driven wrappers and lazygit; fugitive is
+  " here for the things that want to happen inside the buffer - blame, diff,
+  " and staging hunks while editing.
+  Plug 'tpope/vim-fugitive'
+
+  " Writing.
+  Plug 'junegunn/goyo.vim'
+
+  " LSP. Pure vimscript over +job/+channel - this vim is -python3 -lua, so
+  " anything with an embedded interpreter is not an option.
+  Plug 'prabirshrestha/vim-lsp'
+  Plug 'prabirshrestha/asyncomplete.vim'
+  Plug 'prabirshrestha/asyncomplete-lsp.vim'
+  Plug 'mattn/vim-lsp-settings'
+
+  " plug#end() runs `filetype plugin indent on` and `syntax enable`.
+  call plug#end()
+else
+  " No plug.vim - still a usable editor, just without any of the above.
+  filetype plugin indent on
+  syntax enable
+endif
 
 " --- Behaviour --------------------------------------------------------------
 set encoding=utf-8
@@ -53,6 +185,8 @@ set ttimeoutlen=10
 " The `# vim: filetype=zsh` headers on myscripts/* and functions.zsh depend
 " on this. It is on by default, but it is load-bearing here, so it is stated.
 set modeline modelines=5
+set completeopt=menuone,noinsert,noselect
+set shortmess+=c
 
 " --- Search -----------------------------------------------------------------
 set ignorecase smartcase
@@ -62,31 +196,7 @@ if executable('rg')
   set grepformat=%f:%l:%c:%m
 endif
 
-" --- Filetypes for this repo ------------------------------------------------
-" chezmoi source names are not something vim can type on its own. This block
-" has to be registered BEFORE `filetype on`: autocmds fire in registration
-" order, and vim's own rule types every *.tmpl as `template`, after which
-" did_filetype() makes any re-detect a silent no-op.
-augroup vimrc_chezmoi
-  autocmd!
-  " Re-run detection against the name minus `.tmpl`, so init.zsh.tmpl,
-  " setup.sh.tmpl, wezterm.lua.tmpl and chezmoi.toml.tmpl land on the
-  " filetype of what they actually generate.
-  autocmd BufRead,BufNewFile *.tmpl
-        \ execute 'silent! doautocmd filetypedetect BufRead'
-        \         fnameescape(expand('<afile>:r'))
-  " The leftovers, where stripping `.tmpl` still leaves a name vim can't
-  " place - `dot_zshenv` and chezmoi's `dot_config/git/config`.
-  autocmd BufRead,BufNewFile dot_zshenv*,dot_zshrc*,dot_zprofile*
-        \ setfiletype zsh
-  autocmd BufRead,BufNewFile */git/config,*/git/config.tmpl
-        \ setfiletype gitconfig
-augroup END
-
 " --- UI ---------------------------------------------------------------------
-syntax enable
-filetype plugin indent on
-
 " retrobox is vim's bundled gruvbox port, so this matches the nvim theme
 " without pulling in a colorscheme plugin.
 if has('termguicolors') && ($COLORTERM ==# 'truecolor' || $COLORTERM ==# '24bit')
@@ -110,9 +220,13 @@ set wildmenu
 set wildmode=longest:full,full
 set wildignorecase
 set wildignore+=*/.git/*,*/node_modules/*,*/__pycache__/*,*.pyc
+" Off by default so a commit message isn't 2 columns narrower for nothing;
+" LSP buffers turn it on themselves below.
+set signcolumn=no
 
 " --- Indentation ------------------------------------------------------------
-" Mirrors .editorconfig: 2 spaces everywhere, 4 for python.
+" editorconfig-vim reads .editorconfig and overrides these per project; these
+" are the defaults for everything outside one.
 set expandtab
 set tabstop=2 shiftwidth=2 softtabstop=2
 set shiftround
@@ -135,8 +249,6 @@ augroup vimrc_lastpos
 augroup END
 
 " --- Keymaps ----------------------------------------------------------------
-let mapleader = ' '
-let maplocalleader = ' '
 nnoremap <Space> <Nop>
 
 " <C-l> already redraws; clearing the search highlight on the way is free.
@@ -156,74 +268,71 @@ nnoremap <leader>Y "+y$
 
 " Conflict markers. This vim has no built-in `]n` motion (that one is a
 " neovim/unimpaired thing), and `git rebase` conflict edits are a main reason
-" this config exists, so the motion is defined here.
+" this config exists.
 nnoremap <silent> ]x /^\(<\{7\}\\|=\{7\}\\|>\{7\}\)/<CR>
 nnoremap <silent> [x ?^\(<\{7\}\\|=\{7\}\\|>\{7\}\)?<CR>
 
-" Mouse stays off so terminal select-and-copy keeps working. Uncomment for
-" scroll and click-to-position:
+" Mouse stays off so terminal select-and-copy keeps working, matching the
+" disable_mouse setting in the nvim hardtime config. Uncomment to enable:
 " set mouse=a
 
-" --- fzf --------------------------------------------------------------------
-" Reuses the plugin file that ships inside the fzf package - no plugin
-" manager, nothing to keep updated. It provides fzf#run/fzf#wrap and :FZF;
-" :Files/:Rg below are the small wrappers, matching the fd/rg/bat pipeline
-" the shell functions already use.
-for s:fzf in ['/opt/homebrew/opt/fzf/plugin/fzf.vim',
-      \       '/home/linuxbrew/.linuxbrew/opt/fzf/plugin/fzf.vim',
-      \       '/usr/share/doc/fzf/examples/fzf.vim',
-      \       '/data/data/com.termux/files/usr/share/fzf/fzf.vim',
-      \       expand('~/.fzf/plugin/fzf.vim')]
-  if filereadable(s:fzf)
-    execute 'source' fnameescape(s:fzf)
-    break
-  endif
-endfor
+" Plugin mappings are defined unconditionally on purpose. Guarding them with
+" exists(':Files') does not work: vim sources plugin/ files only after the
+" vimrc has finished, so at this point no plugin command exists yet and every
+" mapping would be silently skipped. Worst case without the plugin installed
+" is E492 on keypress, which says exactly what is wrong.
 
-if exists('*fzf#run')
-  let s:preview = 'bat --style=numbers --color=always --line-range :300 -- {}'
+" fzf.vim
+nnoremap <leader>f :Files<CR>
+nnoremap <leader>F :GFiles<CR>
+nnoremap <leader>b :Buffers<CR>
+nnoremap <leader>r :Rg<CR>
+nnoremap <leader>/ :BLines<CR>
+nnoremap <leader>: :History:<CR>
 
-  " $FZF_DEFAULT_OPTS carries a preview that assumes {} is a bare path, so
-  " every command below passes its own --preview to win on the command line.
-  command! -bang -nargs=? -complete=dir Files
-        \ call fzf#run(fzf#wrap('files', {
-        \   'source': 'fd --type f --hidden --follow --exclude .git' .
-        \             (empty(<q-args>) ? '' : ' . ' . shellescape(<q-args>)),
-        \   'options': ['--multi', '--prompt', 'files> ', '--preview', s:preview],
-        \ }, <bang>0))
+" fugitive
+nnoremap <leader>gs :Git<CR>
+nnoremap <leader>gb :Git blame<CR>
+nnoremap <leader>gd :Gdiffsplit<CR>
+nnoremap <leader>gl :Git log --oneline --decorate --graph<CR>
 
-  command! -bang Buffers
-        \ call fzf#run(fzf#wrap('buffers', {
-        \   'source': map(filter(range(1, bufnr('$')),
-        \                 'buflisted(v:val)'), 'bufname(v:val)'),
-        \   'options': ['--prompt', 'buffers> ', '--preview', s:preview],
-        \ }, <bang>0))
+" goyo
+nnoremap <leader>z :Goyo<CR>
 
-  " Custom sink, so fzf#wrap's file-opening sink is deliberately not used -
-  " results are file:line:col and need parsing before the jump.
-  function! s:rg_sink(line) abort
-    let l:parts = matchlist(a:line, '\v^([^:]+):(\d+):(\d+):')
-    if empty(l:parts)
-      return
-    endif
-    execute 'edit' fnameescape(l:parts[1])
-    call cursor(str2nr(l:parts[2]), str2nr(l:parts[3]))
-    normal! zz
-  endfunction
+" --- LSP --------------------------------------------------------------------
+" Mappings are buffer-local, applied only once a server actually attaches, so
+" `K` stays keywordprg and `gd` stays goto-local-definition everywhere else -
+" including in a commit message, where no server ever attaches.
+function! s:on_lsp_buffer_enabled() abort
+  setlocal omnifunc=lsp#complete
+  setlocal signcolumn=yes
+  nmap <buffer> gd <plug>(lsp-definition)
+  nmap <buffer> gr <plug>(lsp-references)
+  nmap <buffer> gi <plug>(lsp-implementation)
+  nmap <buffer> gt <plug>(lsp-type-definition)
+  nmap <buffer> K  <plug>(lsp-hover)
+  " Grouped under <leader>c, not <leader>rn: <leader>r is :Rg, and vim waits
+  " out 'timeoutlen' on any mapping that is a strict prefix of another.
+  nmap <buffer> <leader>cr <plug>(lsp-rename)
+  nmap <buffer> <leader>ca <plug>(lsp-code-action)
+  nmap <buffer> <leader>cf <plug>(lsp-document-format)
+  nmap <buffer> [d <plug>(lsp-previous-diagnostic)
+  nmap <buffer> ]d <plug>(lsp-next-diagnostic)
+endfunction
 
-  command! -nargs=+ Rg
-        \ call fzf#run({
-        \   'source': 'rg --column --line-number --no-heading --color=never'
-        \             . ' --smart-case --hidden --glob=!.git/ -- '
-        \             . shellescape(<q-args>),
-        \   'sink': function('s:rg_sink'),
-        \   'options': ['--prompt', 'rg> ', '--delimiter', ':',
-        \               '--preview', 'bat --style=numbers --color=always'
-        \               . ' --highlight-line {2} --line-range :300 -- {1}',
-        \               '--preview-window', '+{2}-/2'],
-        \ })
+augroup vimrc_lsp
+  autocmd!
+  autocmd User lsp_buffer_enabled call s:on_lsp_buffer_enabled()
+augroup END
 
-  nnoremap <leader>f :Files<CR>
-  nnoremap <leader>b :Buffers<CR>
-  nnoremap <leader>g :Rg<Space>
-endif
+" Completion popup: <Tab> walks it, <CR> accepts it. All three fall through to
+" their normal meaning when no popup is open, so <CR> still just breaks a line
+" while writing a commit message.
+"
+" These are plain built-in keys rather than asyncomplete#close_popup(), which
+" would need an exists('*...') guard that can never be true here - autoload
+" functions are not defined until something first calls them. <C-y> accepts
+" the selected match and works with or without the plugin installed.
+inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
+inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
+inoremap <expr> <CR>    pumvisible() ? "\<C-y>" : "\<CR>"

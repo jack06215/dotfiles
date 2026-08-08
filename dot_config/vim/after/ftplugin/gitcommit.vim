@@ -13,6 +13,11 @@ setlocal spell spelllang=en_us
 setlocal nolist
 " Throwaway buffers in a mktemp dir - no reason to accrue undo history.
 setlocal noundofile
+" No completion popup while writing prose. This is the buffer variable that
+" asyncomplete#disable_for_buffer() sets; assigning it directly avoids an
+" exists('*...') guard on an autoload function, which can never be true until
+" something has already called into that autoload file.
+let b:asyncomplete_enable = 0
 
 " Land at the end of gcm's prefix and start typing. Guarded on the trailing
 " colon so a plain `git commit` (empty line 1) still opens in normal mode at
