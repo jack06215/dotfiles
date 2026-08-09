@@ -74,7 +74,7 @@ Highlights under `src/`:
 | `zinit.zsh` | plugin manager bootstrap; `fzf-tab`, `fast-syntax-highlighting`, `zsh-autosuggestions`, `zsh-completions` |
 | `functions.zsh` | `fman`, `mkcd`, `topcmds`, `csv2json`, `ls_stats`, Poetry venv activate/deactivate, `send_notification` |
 | `notify.zsh` | cross-platform `notify()` (terminal-notifier on macOS, BurntToast over `pwsh` on WSL) |
-| `gh.zsh` | `gh`-based PR helpers: fzf pickers (`ghpr_fzf_view`, `ghpr_fzf_open`), CI watchers (`ghpr_checks_watch`), draft PR creation |
+| `gh.zsh` | `gh`-based PR helpers: `ghpr` (fzf picker + gum action menu), CI watchers (`ghpr_watch`, `ghpr_checks_watch`), draft PR creation |
 | `git.zsh` | git helper functions |
 | `jira.zsh` | `jira_workitem` (via `acli`, rendered through `myscripts/jira_render.py`), `jira_project_list` |
 | `chezmoi.zsh` | `chezmoi-data`: fzf browser over `chezmoi data` output |
