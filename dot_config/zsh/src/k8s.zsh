@@ -74,7 +74,7 @@ function kns() {
   out=$(gum spin --spinner=minidot --show-error \
     --title="Listing namespaces${ctx:+ on $ctx}..." -- \
     kubectl "${ctx_args[@]}" get namespace \
-      -o custom-columns=NAME:.metadata.name --no-headers) || return 1
+    -o custom-columns=NAME:.metadata.name --no-headers) || return 1
 
   ns=$(printf '%s\n' "$out" \
     | gum filter --header="Which namespace?" --placeholder="namespace") || return

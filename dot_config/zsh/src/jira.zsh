@@ -5,7 +5,7 @@
 # the problem but does not stop the caller from running on without gum.
 source "$ZDOTDIR/src/functions.zsh"
 
-function jira_workitem () {
+function jira_workitem() {
   local input="$1"
   if [[ -z "$input" ]]; then
     echo "Usage: jira_workitem <ISSUE-KEY|URL>" >&2
