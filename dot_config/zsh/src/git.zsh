@@ -70,26 +70,67 @@ function gbr() {
 }
 
 function gcg() {
-  # git clean gone
-  local branches
-  branches=$(git branch -vv | grep ': gone]' | awk '{print $1}')
+  # git clean gone: delete local branches whose upstream has been deleted.
+  _check_gum_cmd || return 1
 
-  if [[ -z "$branches" ]]; then
-    echo "No gone branches found."
-    return 0
-  fi
-
-  echo "Deleting the following branches:"
-  echo "$branches"
-  echo
-
-  read "confirm?Are you sure? (y/N): "
-  if [[ "$confirm" != "y" ]]; then
-    echo "Cancelled."
+  git rev-parse --is-inside-work-tree > /dev/null 2>&1 || {
+    echo "Not a git repository." >&2
     return 1
-  fi
+  }
 
-  echo "$branches" | xargs -I {} git branch -D {}
+  local current out b
+  local -a gone picked unmerged
+
+  # for-each-ref rather than `git branch -vv | awk '{print $1}'`: that pipeline
+  # returns "*" for the checked-out branch, so `git branch -D '*'` is what runs
+  # and fails, making the branch most likely to matter the one it silently
+  # skips.
+  gone=(${(f)"$(git for-each-ref --format='%(refname:short) %(upstream:track)' refs/heads \
+    | awk '$2 == "[gone]" { print $1 }')"})
+
+  ((${#gone})) || {
+    echo "No gone branches found. (git fetch --prune first if that seems wrong.)"
+    return 0
+  }
+
+  # A checked-out branch cannot be deleted, so keep it out of the menu rather
+  # than letting the pick fail later at the git call.
+  current=$(git symbolic-ref --short HEAD 2> /dev/null)
+  [[ -n "$current" ]] && gone=(${gone:#$current})
+
+  ((${#gone})) || {
+    echo "Only '$current' is gone, and it is checked out - switch away first."
+    return 0
+  }
+
+  # --selected='*' starts with everything ticked, so clearing the list is still
+  # one keystroke, but sparing a branch no longer means aborting the whole run.
+  out=$(printf '%s\n' "${gone[@]}" \
+    | gum choose --no-limit \
+      --height=15 \
+      --selected='*' \
+      --header="Delete which gone branches? (tab to toggle, enter to confirm)") || return 1
+
+  picked=(${(f)out})
+  ((${#picked})) || return 0
+
+  # -d refuses anything not merged into HEAD. Collect the refusals rather than
+  # reaching for -D up front, so the force becomes a separate informed decision
+  # instead of the default.
+  for b in "${picked[@]}"; do
+    git branch -d "$b" 2> /dev/null || unmerged+=("$b")
+  done
+
+  ((${#unmerged})) || return 0
+
+  echo "Not fully merged into ${current:-HEAD}:"
+  printf '  %s\n' "${unmerged[@]}"
+
+  # --default=false makes "No" the resting position; gum confirm otherwise
+  # defaults to Yes, which is the wrong way round for an unrecoverable delete.
+  gum confirm "Force-delete these ${#unmerged} branch(es)?" --default=false || return 1
+
+  git branch -D -- "${unmerged[@]}"
 }
 
 function glog() {
