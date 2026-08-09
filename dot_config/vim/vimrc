@@ -208,6 +208,11 @@ set background=dark
 silent! colorscheme retrobox
 
 set number relativenumber
+" netrw stamps g:netrw_bufsettings onto its listing buffers after drawing them,
+" so the window-local settings above get clobbered in the directory browser.
+" This is netrw's default string (noma nomod nonu nobl nowrap ro nornu) with
+" the two number flags flipped, to match the hybrid numbering everywhere else.
+let g:netrw_bufsettings = 'noma nomod nu rnu nobl nowrap ro'
 set cursorline
 set ruler showcmd
 set laststatus=2
