@@ -204,6 +204,13 @@ function ghpr_checks_watch() {
       return 1
     fi
 
+    # An empty array satisfies the `all(...)` settled test below, which would
+    # otherwise announce "all checks passed" for a PR that has no checks at all.
+    if jq -e 'length == 0' <<< "$checks" > /dev/null; then
+      echo "No checks reported for this pull request." >&2
+      return 1
+    fi
+
     # Redrawn in place of the old `clear`, which wiped whatever was on screen
     # before the watch started along with the previous pass.
     jq -r '["STATE","CHECK"], (.[] | [.state, .name]) | @csv' <<< "$checks" \

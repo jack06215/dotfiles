@@ -37,20 +37,27 @@ yBtb3ZlIGRvd253YXJkCiAgICBlY2hvICIiCgpkb25lCgo=
 EOF
 )"
 
-# Print the decoded code
-printf '%s\n' "$CODE"
+# Show the decoded code, then ask before running it. This is a standalone
+# script rather than a shell function, so it can be run on a machine without
+# gum - hence the plain fallback on both halves.
+if command -v gum > /dev/null 2>&1; then
+  printf '%s\n' "$CODE" | gum format -t code -l bash
+  gum confirm 'Execute this code?' || {
+    echo 'Aborted.'
+    exit 0
+  }
+else
+  printf '%s\n' "$CODE"
+  printf "\nDo you want to execute the code? [y/n]: "
+  read -r answer
+  case "$answer" in
+    y | Y) ;;
+    *)
+      echo 'Aborted.'
+      exit 0
+      ;;
+  esac
+fi
 
-# Ask for confirmation
-printf "\nDo you want to execute the code? [y/n]: "
-read answer
-
-case "$answer" in
-  y|Y)
-    echo "Executing…"
-    # 3️⃣ Execute
-    bash -c "$CODE"
-    ;;
-  *)
-    echo "Aborted."
-    ;;
-esac
+echo "Executing…"
+bash -c "$CODE"
