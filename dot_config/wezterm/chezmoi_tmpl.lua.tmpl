@@ -1,3 +1,39 @@
+{{/*
+  Appearance values that the `wezterm_config` zsh function tunes at runtime.
+
+  They live in a machine-local state file rather than in the chezmoi source, so
+  nudging the opacity neither dirties the repo nor follows you to a machine with
+  a different screen. The dict below is the fallback for when that file does not
+  exist, which is every machine that has never run `wezterm_config` - keep it in
+  step with the defaults in dot_config/zsh/src/wezterm.zsh.
+
+  XDG_STATE_HOME is resolved the same way dot_zshenv sets it, rather than read
+  from chezmoi data, so this renders correctly without a `chezmoi init` to pick
+  up a new config key.
+
+  Each key is pulled across with an explicit hasKey test rather than through
+  `merge`. sprig's merge treats 0 as an empty value and refuses to let it
+  override a default, which would silently turn a fully transparent
+  "opacity 0" back into 50. Do not collapse these blocks back into a merge.
+*/ -}}
+{{- $stateHome := env "XDG_STATE_HOME" | default (joinPath .chezmoi.homeDir ".local/state") -}}
+{{- $stateFile := joinPath $stateHome "wezterm/appearance.json" -}}
+{{- $saved := dict -}}
+{{- if stat $stateFile -}}
+{{-   $saved = output "cat" $stateFile | fromJson -}}
+{{- end -}}
+{{- $windowBackgroundOpacity := 50 -}}
+{{- if hasKey $saved "windowBackgroundOpacity" -}}
+{{-   $windowBackgroundOpacity = $saved.windowBackgroundOpacity -}}
+{{- end -}}
+{{- $textBackgroundOpacity := 50 -}}
+{{- if hasKey $saved "textBackgroundOpacity" -}}
+{{-   $textBackgroundOpacity = $saved.textBackgroundOpacity -}}
+{{- end -}}
+{{- $macosWindowBackgroundBlur := 5 -}}
+{{- if hasKey $saved "macosWindowBackgroundBlur" -}}
+{{-   $macosWindowBackgroundBlur = $saved.macosWindowBackgroundBlur -}}
+{{- end -}}
 local M = {}
 
 --- Trim leading/trailing whitespace from a chezmoi-rendered long string.
@@ -41,6 +77,33 @@ M._data = {
 ---@return boolean
 function M.is_true(key)
 	return M._data[key] == true
+end
+
+--- Appearance numbers, as authored: a 0-100 percentage for the two opacities
+--- and a point radius for the blur. Change them with `wezterm_config` (zsh)
+--- rather than by editing this file, which chezmoi regenerates.
+M._numbers = {
+	windowBackgroundOpacity = tonumber(M.tmpl([=[{{ $windowBackgroundOpacity }}]=])),
+	textBackgroundOpacity = tonumber(M.tmpl([=[{{ $textBackgroundOpacity }}]=])),
+	macosWindowBackgroundBlur = tonumber(M.tmpl([=[{{ $macosWindowBackgroundBlur }}]=])),
+}
+
+--- Raw value for an appearance key, in the units it is authored in.
+---
+---@param key string
+---@return number
+function M.num(key)
+	return M._numbers[key]
+end
+
+--- An appearance percentage as the 0.0-1.0 fraction WezTerm's opacity options
+--- expect. Keeping the conversion here means the 0-100 scale that
+--- `wezterm_config` presents is mapped in exactly one place.
+---
+---@param key string
+---@return number
+function M.pct(key)
+	return M._numbers[key] / 100
 end
 
 --- Build a string list, appending each extra value only if it is non-empty.
