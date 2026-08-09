@@ -67,9 +67,18 @@ function install_xcode_clt() {
   echo 'Xcode Command Line Tools not found. Triggering installation (accept the GUI prompt to continue)...'
   xcode-select --install
 
-  until xcode-select -p &> /dev/null; do
-    sleep 5
-  done
+  # On a genuinely fresh machine this runs before Homebrew, so gum will not
+  # exist yet and the plain loop is what actually executes. The spinner is for
+  # reruns, where the wait is otherwise indistinguishable from a hang.
+  if command -v gum &> /dev/null; then
+    gum spin --spinner=moon \
+      --title='Waiting for Xcode Command Line Tools (accept the GUI prompt)...' -- \
+      bash -c 'until xcode-select -p &> /dev/null; do sleep 5; done'
+  else
+    until xcode-select -p &> /dev/null; do
+      sleep 5
+    done
+  fi
 }
 
 function install_homebrew() {
@@ -125,13 +134,42 @@ function install_yarn_v4() {
   foreach_tool_version 'nodejs' "${cmd}"
 }
 
+# gum when it is available, the hand-rolled ANSI path when it is not. The
+# fallback is not optional here: this script is what installs gum, so the
+# earliest sections necessarily run before it exists.
 function section() {
-  local msg="$1" color='' reset=''
+  local msg="$1"
+
+  if command -v gum &> /dev/null && [[ -t 1 ]] && [[ -z "${NO_COLOR:-}" ]]; then
+    gum style --foreground=39 --bold --border=rounded --padding='0 2' --margin='1 0' "${msg}"
+    return 0
+  fi
+
+  local color='' reset=''
   if [[ -t 1 ]] && [[ -z "${NO_COLOR:-}" ]]; then
     color=$'\033[1;34m'
     reset=$'\033[0m'
   fi
   printf '\n%s==>%s %s\n' "${color}" "${reset}" "${msg}"
+}
+
+# Run a command under a spinner when gum is available, announcing it and
+# running it plainly when it is not. Returns the command's own exit status
+# either way, so callers can keep testing it directly.
+#
+# --show-error is what makes the spinner safe to wrap slow network commands in:
+# silent while they succeed, full output the moment one fails.
+function run_step() {
+  local label="$1"
+  shift
+
+  if command -v gum &> /dev/null; then
+    gum spin --spinner=dot --show-error --title="${label}" -- "$@"
+    return $?
+  fi
+
+  echo "${label}"
+  "$@"
 }
 
 function setup_macos() {
@@ -194,29 +232,38 @@ function brew_trust_taps() {
     done < "${taps_file}"
   fi
 
+  # This runs before upgrade_homebrew_packages, which is what installs gum, so
+  # on a first run run_step takes its plain fallback path. The spinner is for
+  # reruns and for machines where gum is already present.
   local failed=()
   if (( ${#taps[@]} )); then
     local tap
     for tap in "${taps[@]}"; do
-      echo "Tapping ${tap}..."
-      if ! brew tap "${tap}"; then
+      if ! run_step "Tapping ${tap}..." brew tap "${tap}"; then
         failed+=("${tap}")
         continue
       fi
 
-      echo "Trusting ${tap}..."
-      if ! brew trust "${tap}"; then
+      if ! run_step "Trusting ${tap}..." brew trust "${tap}"; then
         failed+=("${tap}")
       fi
     done
   fi
 
   if (( ${#failed[@]} )); then
-    printf '\nFailed to tap/trust: %s\n' "${failed[*]}" >&2
+    if command -v gum &> /dev/null; then
+      gum style --foreground=196 --bold "Failed to tap/trust: ${failed[*]}" >&2
+    else
+      printf '\nFailed to tap/trust: %s\n' "${failed[*]}" >&2
+    fi
     return 1
   fi
 
-  printf '\nAll taps added and trusted.\n'
+  if command -v gum &> /dev/null; then
+    gum style --foreground=42 'All taps added and trusted.'
+  else
+    printf '\nAll taps added and trusted.\n'
+  fi
 }
 
 {{ if and .myComputer.isDarwin -}}
