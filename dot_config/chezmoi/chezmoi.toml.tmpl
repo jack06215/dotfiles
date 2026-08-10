@@ -37,7 +37,14 @@
 {{-   if and (eq .chezmoi.hostname "jack06215") (eq .chezmoi.username "nacho") -}}
 {{-     $zshPythonDir = joinPath $pypoetryDir "monorepo-e2o0ZM2H-py3.14" -}}
 {{-   else if and (eq .chezmoi.hostname "A0229") (eq .chezmoi.username "jack.cho") -}}
-{{-     $zshPythonDir = joinPath $pypoetryDir "monorepo-kcQbGqAg-py3.13" -}}
+{{-     $zshPythonDir = joinPath $pypoetryDir "monorepo-kcQbGqAg-py3.14" -}}
+{{-   end -}}
+{{- end -}}
+
+{{- $fwMonorepoPythonDir := "" -}}
+{{- if eq .chezmoi.os "darwin" -}}
+{{-   if and (eq .chezmoi.hostname "A0229") (eq .chezmoi.username "jack.cho") -}}
+{{-     $fwMonorepoPythonDir = joinPath $pypoetryDir "monorepo-XYqwb38J-py3.13" -}}
 {{-   end -}}
 {{- end -}}
 
@@ -63,6 +70,7 @@ sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "wo
 [data.pypoetry]  
     pypoetryDir = {{ $pypoetryDir | quote }}
     zshPythonDir = {{ $zshPythonDir | quote }}
+    fwMonorepoPythonDir = {{ $fwMonorepoPythonDir | quote }}
 [data.firefox]
     profile = {{ $firefoxProfileId | quote }}
     profileDirBase = {{ $firefoxProfilesDir | quote }}
