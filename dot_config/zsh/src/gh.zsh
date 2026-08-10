@@ -86,7 +86,15 @@ function ghpr() {
       url)
         # tr rather than a bare pipe: gh terminates the field with a newline,
         # which would otherwise be pasted along with the URL.
-        gh pr view "$pr" --json url --jq .url | tr -d '\n' | pbcopy
+        local url
+        url=$(gh pr view "$pr" --json url --jq .url) || {
+          gum log --level error "Could not read the PR URL"
+          continue
+        }
+        print -rn -- "$url" | pbcopy || {
+          gum log --level error "Could not copy the PR URL"
+          continue
+        }
         gum log --level info "PR URL copied to the clipboard"
         ;;
       branch)
