@@ -101,11 +101,23 @@ function _wezterm_apply() {
 }
 
 function _wezterm_set_and_apply() {
-  _wezterm_set "$1" "$2" || return 1
+  local key="$1" value="$2" previous
+  previous=$(_wezterm_get "$key")
+
+  _wezterm_set "$key" "$value" || return 1
 
   # WezTerm watches its config file and reloads on change, so the apply is the
   # whole preview mechanism - there is nothing to signal or restart.
-  _wezterm_apply
+  _wezterm_apply && return 0
+
+  # The write landed but the render did not, so the state file now holds a value
+  # the user never got to see, let alone keep - and the next unrelated `chezmoi
+  # apply` would commit it. Put the old value back and re-render. When the key
+  # was absent, `previous` is the template's own default, so the file gains a
+  # key but renders exactly as it did before.
+  _wezterm_set "$key" "$previous" && _wezterm_apply > /dev/null 2>&1
+  echo "wezterm_config: apply failed, restored $key=$previous" >&2
+  return 1
 }
 
 function _wezterm_valid() {
@@ -173,7 +185,13 @@ function _wezterm_tune() {
     # Only when it actually moved: hitting up at the ceiling should not cost a
     # chezmoi apply.
     if [[ "$current" != "$applied" ]]; then
-      _wezterm_set_and_apply "$key" "$current" || return 1
+      if ! _wezterm_set_and_apply "$key" "$current"; then
+        # The failed step already undid itself, but earlier previews from this
+        # session are still on disk. Bail out the way escaping does, so a broken
+        # apply cannot leave a value behind that was never kept.
+        [[ "$applied" == "$original" ]] || _wezterm_set_and_apply "$key" "$original"
+        return 1
+      fi
       applied="$current"
     fi
   done

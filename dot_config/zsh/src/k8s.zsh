@@ -44,12 +44,14 @@ function kctx() {
 
   export KUBE_CONTEXT="$ctx"
 
-  # k() reads CONTEXT first, so a leftover CONTEXT would make this pick look
-  # like it did nothing. Say so rather than letting it silently take no effect.
+  # k() reads CONTEXT first, so leaving a stale CONTEXT behind would point every
+  # later command at the old cluster while this picker reported success. CONTEXT
+  # names the same thing, so move it onto the pick rather than let the pick be
+  # decorative - but say so, because something outside this function set it.
   if [[ -n "${CONTEXT:-}" && "$CONTEXT" != "$ctx" ]]; then
-    gum log --level warn "CONTEXT is set and takes precedence" \
-      CONTEXT "$CONTEXT" KUBE_CONTEXT "$ctx"
-    return 0
+    gum log --level warn "CONTEXT took precedence and was moved too" \
+      from "$CONTEXT" to "$ctx"
+    export CONTEXT="$ctx"
   fi
 
   gum log --level info "context" "$ctx"

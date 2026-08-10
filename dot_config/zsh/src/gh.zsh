@@ -191,7 +191,7 @@ function ghpr_watch() {
 function ghpr_checks_watch() {
   _check_gum_cmd || return 1
 
-  local pr="${1:-}" interval="${2:-5}" checks rc failed
+  local pr="${1:-}" interval="${2:-5}" checks rc failed table last_table
   local -a args
   [[ -n "$pr" ]] && args=("$pr")
 
@@ -219,10 +219,16 @@ function ghpr_checks_watch() {
       return 1
     fi
 
-    # Redrawn in place of the old `clear`, which wiped whatever was on screen
-    # before the watch started along with the previous pass.
-    jq -r '["STATE","CHECK"], (.[] | [.state, .name]) | @csv' <<< "$checks" \
-      | gum table --print --border=rounded --widths=14,60
+    # `gum table --print` prints a fresh table rather than redrawing the last
+    # one, and a long pending run polls for minutes - printing every pass would
+    # bury the scrollback in identical copies. Printing only on change keeps the
+    # log to one table per state transition, and leaves what was on screen
+    # before the watch started intact (which the old `clear` did not).
+    table=$(jq -r '["STATE","CHECK"], (.[] | [.state, .name]) | @csv' <<< "$checks")
+    if [[ "$table" != "$last_table" ]]; then
+      printf '%s\n' "$table" | gum table --print --border=rounded --widths=14,60
+      last_table="$table"
+    fi
 
     # bucket is gh's own categorisation of state into pass/fail/pending/
     # skipping/cancel, which is why there is no list of state strings here.
