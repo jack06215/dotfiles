@@ -42,7 +42,7 @@ EOF
 # gum - hence the plain fallback on both halves.
 if command -v gum > /dev/null 2>&1; then
   printf '%s\n' "$CODE" | gum format -t code -l bash
-  gum confirm 'Execute this code?' || {
+  gum confirm 'Execute this code?' --default=false || {
     echo 'Aborted.'
     exit 0
   }
