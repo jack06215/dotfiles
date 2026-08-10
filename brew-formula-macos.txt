@@ -55,6 +55,7 @@ gnupg
 go
 grpcui
 grpcurl
+gum
 hadolint
 harfbuzz
 htop

@@ -66,8 +66,29 @@ function send_notification() {
 }
 
 function preview_sound() {
-  select s in /System/Library/Sounds/*.aiff; do
-    [[ -n "$s" ]] && afplay "$s"
+  _check_gum_cmd || return 1
+
+  local sound
+  local -a names
+
+  # :t:r reduces each path to its bare name, which is also the form
+  # terminal-notifier's -sound flag wants - so whatever is picked here can be
+  # passed straight to send_notification. N drops the glob when the directory
+  # is empty rather than leaving the pattern unexpanded.
+  names=(/System/Library/Sounds/*.aiff(N:t:r))
+
+  ((${#names})) || {
+    echo "No sounds found in /System/Library/Sounds." >&2
+    return 1
+  }
+
+  # Loops the way the `select` builtin it replaces did, so several sounds can
+  # be auditioned in a row; escaping the picker is what ends it.
+  while sound=$(printf '%s\n' "${names[@]}" \
+    | gum filter --header="Preview which sound? (esc to stop)" \
+      --placeholder="sound"); do
+    [[ -n "$sound" ]] || break
+    afplay "/System/Library/Sounds/${sound}.aiff"
   done
 }
 
@@ -167,15 +188,29 @@ function jsonl2yml() {
 }
 
 function export_secret {
+  _check_gum_cmd || return 1
+
   local var_name="$1"
   local secret=""
 
-  echo -n "Enter ${var_name}: " >&2
-  read -rs secret
-  echo >&2
+  [[ -n "$var_name" ]] || {
+    print -u2 'usage: export_secret <VAR_NAME>'
+    return 2
+  }
+
+  # gum input --password does the masking, the prompt and the terminal-state
+  # restore that the hand-rolled `read -rs` had to arrange between two manual
+  # writes to stderr - including on interrupt, where the old version could
+  # leave echo disabled.
+  secret=$(gum input --password --header="Enter ${var_name}") || return 1
+
+  [[ -n "$secret" ]] || {
+    print -u2 'Aborted: empty value.'
+    return 1
+  }
 
   printf -v "${var_name}" '%s' "${secret}"
   export "${var_name}"
 
-  echo "Exported: ${var_name}=***" >&2
+  print -u2 "Exported: ${var_name}=***"
 }

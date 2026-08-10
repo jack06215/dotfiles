@@ -155,8 +155,10 @@ local config = {
   color_scheme = "Catppuccin Mocha",
   font = wezterm.font("PlemolJP Console NF", { weight = "Medium", stretch = "Normal", style = "Normal" }),
   font_size = 22,
-  window_background_opacity = 0.5,
-  text_background_opacity = 0.5,
+  -- Tune these with `wezterm_config` rather than by editing here: the values
+  -- come from a machine-local state file, and chezmoi regenerates this file.
+  window_background_opacity = tmpl.pct("windowBackgroundOpacity"),
+  text_background_opacity = tmpl.pct("textBackgroundOpacity"),
   window_decorations = "RESIZE",
   window_padding = { left = 10, right = 5, top = 10, bottom = 0 },
 
@@ -191,7 +193,7 @@ local config = {
 
 -- macOS-only settings
 if tmpl.is_true("myComputer.isDarwin") then
-  config.macos_window_background_blur = 5
+  config.macos_window_background_blur = tmpl.num("macosWindowBackgroundBlur")
 
   -- Both Option keys must send ESC-prefixed sequences, not composed glyphs.
   -- tmux.conf drives nearly everything off M-* bindings, and by default one

@@ -1,3 +1,21 @@
+{{- $stateHome := env "XDG_STATE_HOME" | default (joinPath .chezmoi.homeDir ".local/state") -}}
+{{- $stateFile := joinPath $stateHome "wezterm/appearance.json" -}}
+{{- $saved := dict -}}
+{{- if stat $stateFile -}}
+{{-   $saved = output "cat" $stateFile | fromJson -}}
+{{- end -}}
+{{- $windowBackgroundOpacity := 65 -}}
+{{- if hasKey $saved "windowBackgroundOpacity" -}}
+{{-   $windowBackgroundOpacity = $saved.windowBackgroundOpacity -}}
+{{- end -}}
+{{- $textBackgroundOpacity := 50 -}}
+{{- if hasKey $saved "textBackgroundOpacity" -}}
+{{-   $textBackgroundOpacity = $saved.textBackgroundOpacity -}}
+{{- end -}}
+{{- $macosWindowBackgroundBlur := 20 -}}
+{{- if hasKey $saved "macosWindowBackgroundBlur" -}}
+{{-   $macosWindowBackgroundBlur = $saved.macosWindowBackgroundBlur -}}
+{{- end -}}
 local M = {}
 
 --- Trim leading/trailing whitespace from a chezmoi-rendered long string.
@@ -41,6 +59,33 @@ M._data = {
 ---@return boolean
 function M.is_true(key)
 	return M._data[key] == true
+end
+
+--- Appearance numbers, as authored: a 0-100 percentage for the two opacities
+--- and a point radius for the blur. Change them with `wezterm_config` (zsh)
+--- rather than by editing this file, which chezmoi regenerates.
+M._numbers = {
+	windowBackgroundOpacity = tonumber(M.tmpl([=[{{ $windowBackgroundOpacity }}]=])),
+	textBackgroundOpacity = tonumber(M.tmpl([=[{{ $textBackgroundOpacity }}]=])),
+	macosWindowBackgroundBlur = tonumber(M.tmpl([=[{{ $macosWindowBackgroundBlur }}]=])),
+}
+
+--- Raw value for an appearance key, in the units it is authored in.
+---
+---@param key string
+---@return number
+function M.num(key)
+	return M._numbers[key]
+end
+
+--- An appearance percentage as the 0.0-1.0 fraction WezTerm's opacity options
+--- expect. Keeping the conversion here means the 0-100 scale that
+--- `wezterm_config` presents is mapped in exactly one place.
+---
+---@param key string
+---@return number
+function M.pct(key)
+	return M._numbers[key] / 100
 end
 
 --- Build a string list, appending each extra value only if it is non-empty.

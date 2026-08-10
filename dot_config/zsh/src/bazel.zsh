@@ -56,10 +56,23 @@ function _bazel_buffer_and_pick() {
     # stdout (labels) → buffer for fzf
     # stderr (server startup, progress, warnings) → /dev/tty so they're
     # visible above the fzf prompt without polluting the selection list
-    bazel query \
-      "${query}" \
-      "${_BAZEL_QUERY_FLAGS[@]}" \
-      > "${tmp}" 2> /dev/tty
+    #
+    # On a large repo the query runs long enough to be indistinguishable from a
+    # hang, so wrap it in a spinner when gum is available. gum passes the
+    # command's stdout through, so the redirect into the buffer still works,
+    # and --show-error keeps stderr hidden unless the query actually fails -
+    # which costs little here, since _BAZEL_QUERY_FLAGS already sets
+    # --noshow_progress.
+    if command -v gum > /dev/null 2>&1; then
+      gum spin --spinner=minidot --show-error --title="Querying targets..." -- \
+        bazel query "${query}" "${_BAZEL_QUERY_FLAGS[@]}" \
+        > "${tmp}"
+    else
+      bazel query \
+        "${query}" \
+        "${_BAZEL_QUERY_FLAGS[@]}" \
+        > "${tmp}" 2> /dev/tty
+    fi
 
     local selection
     selection="$(_bazel_fzf_pick "${prompt}" "${multi}" < "${tmp}")"
