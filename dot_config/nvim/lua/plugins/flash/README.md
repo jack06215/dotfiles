@@ -10,8 +10,10 @@
 
 ## Japanese search (romaji → kana/kanji)
 
-`search.mode` is wired to [vim-kensaku][] through `kensaku.lua`, so flash targets
-Japanese text by typing romaji — no IME switch.
+`search.mode` is wired to [vim-kensaku][] through `kensaku.lua`, which delegates
+to the shared `plugins.kensaku.query`, so flash targets Japanese text by typing
+romaji — no IME switch. See `plugins/kensaku` for the same trick on `/` and
+`:%s`.
 
 Press `s`, type `nihongo`, and 日本語 gets a jump label. Internally kensaku
 expands the input into a Vim regex covering every reading:
