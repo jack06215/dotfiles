@@ -1,6 +1,8 @@
 #!/usr/bin/env zsh
 # shellcheck shell=bash
 
+export DOCKER_HOST="unix://$COLIMA_HOME/default/docker.sock"
+
 alias firefox='/Applications/Firefox.app/Contents/MacOS/firefox'
 alias firefox_version='/Applications/Firefox.app/Contents/MacOS/firefox --version'
 alias chrome='/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome'
