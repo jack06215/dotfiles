@@ -106,17 +106,27 @@ end
 -- =============================================================
 local is_maximized = false
 
+-- The "opal" layout, applied to the tab owning `pane`: a large main pane, a
+-- two-pane column down the right, and a short three-pane strip along the
+-- bottom — six panes in total.
+--
+-- ~/.config/tmux/opal-layout.sh builds the same arrangement out of tmux splits
+-- for the "tmux" tab. Change one and the other should follow.
+local function build_opal_layout(pane)
+  local bottom = pane:split({ direction = "Bottom", size = 0.1 })
+  local right = pane:split({ direction = "Right", size = 0.15 })
+  right:split({ direction = "Bottom", size = 0.5 })
+  bottom:split({ direction = "Right", size = 0.15 })
+  bottom:split({ direction = "Left", size = 0.15 })
+end
+
 wezterm.on("gui-startup", function(cmd)
   local tab1, pane1, window1 = mux.spawn_window(cmd or {})
   tab1:set_title("opal")
   window1:gui_window():maximize()
 
   wezterm.time.call_after(0.3, function()
-    local pane1_bottom = pane1:split({ direction = "Bottom", size = 0.1 })
-    local pane1_right = pane1:split({ direction = "Right", size = 0.15 })
-    pane1_right:split({ direction = "Bottom", size = 0.5 })
-    pane1_bottom:split({ direction = "Right", size = 0.15 })
-    pane1_bottom:split({ direction = "Left", size = 0.15 })
+    build_opal_layout(pane1)
 
     local tab2, pane2, window2 = window1:spawn_tab({})
     tab2:set_title("ruby")
@@ -124,6 +134,18 @@ wezterm.on("gui-startup", function(cmd)
 
     local tab3, pane3, window3 = window1:spawn_tab({})
     tab3:set_title("diamond")
+
+    -- One WezTerm pane, running tmux, which then builds the opal arrangement
+    -- with its own splits. Splitting in WezTerm here as well would nest two
+    -- pane managers in one tab. Skipped on Windows, which has no tmux.
+    if not tmpl.is_true("myComputer.isWindows") then
+      local tmux_argv = { table.unpack(default_prog) }
+      table.insert(tmux_argv, "-c")
+      table.insert(tmux_argv, "exec " .. wezterm.home_dir .. "/.config/tmux/opal-layout.sh")
+
+      local tab4 = window1:spawn_tab({ args = tmux_argv })
+      tab4:set_title("tmux-opal")
+    end
 
     tab1:activate()
   end)
