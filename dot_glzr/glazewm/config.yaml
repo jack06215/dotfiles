@@ -1,12 +1,40 @@
 # =============================================================================
 # GlazeWM — modifier grammar
 # -----------------------------------------------------------------------------
-#   alt              + h/j/k/l   focus window in direction
-#   alt + shift      + h/j/k/l   move window in direction
-#   alt + ctrl       + h/j/k/l   resize focused window
-#   alt + ctrl+shift + h/j/k/l   move whole workspace to monitor in direction
-#   alt              + 1..9      focus workspace N
-#   alt + shift      + 1..9      send focused window to workspace N (and follow)
+#   alt                  + arrows    focus window in direction
+#   alt + shift          + h/j/k/l   move window in direction
+#   alt + control        + h/j/k/l   resize focused window
+#   alt + control+shift  + h/j/k/l   move whole workspace to monitor in direction
+#   alt + control        + 1..9      focus workspace N
+#   alt + shift          + 1..9      send focused window to workspace N (follows)
+# -----------------------------------------------------------------------------
+# The Control modifier MUST be spelled `control`. GlazeWM accepts only
+# shift/lshift/rshift, control/lctrl/rctrl, alt/lalt/ralt, lwin/rwin — `ctrl` is
+# not among them, and an unrecognised modifier is dropped SILENTLY: the config
+# parses, errors.log stays empty, and the binding simply never fires. This file
+# shipped with `alt+ctrl+h/j/k/l` for resize, which therefore never worked.
+# -----------------------------------------------------------------------------
+# RESERVED: plain `alt` + a bare letter or digit belongs to tmux, not to GlazeWM.
+#
+# GlazeWM registers its bindings at the OS level, so whatever it claims never
+# reaches the focused application at all. tmux.conf drives nearly everything off
+# prefix-less M-* bindings, and this file used to sit on plain `alt` — which
+# silently ate M-h/j/k/l (pane nav), M-v/M-t (splits), M-s/M-d (session switch,
+# detach), M-1..9 (window select), M-m (copy mode) and M-r. The failure mode is
+# nasty: the key produces nothing at all, so it reads as "tmux is broken" rather
+# than as a clash between two programs.
+#
+# Hence the grammar above. Everything GlazeWM owns carries `control` or `shift`
+# alongside `alt`, or uses an arrow key — none of which tmux binds. The only
+# plain-`alt` bindings left here are the four arrows and `alt+enter`.
+#
+# Do NOT "simplify" a binding back to plain alt+<letter> or alt+<digit> without
+# checking `tmux list-keys -T root` first.
+#
+# (An earlier attempt split the two Option keys instead — GlazeWM on `ralt`,
+# tmux on `lalt`. GlazeWM's docs list `lalt`/`ralt` as valid and the config
+# parsed without error, but its macOS build ignores the left/right distinction:
+# `ralt+v` still fired on the LEFT Option key. Do not retry that approach.)
 # =============================================================================
 
 general:
@@ -79,7 +107,7 @@ window_rules:
       - window_process: { equals: "wezterm-gui" }
 
 binding_modes:
-  # alt+r → resize with h/j/k/l or arrows; enter/escape exits.
+  # alt+control+r → resize with h/j/k/l or arrows; enter/escape exits.
   - name: "resize"
     keybindings:
       - commands: ["resize --width -2%"]
@@ -100,16 +128,16 @@ binding_modes:
 
 keybindings:
   # ---------------------------------------------------------------------------
-  # Focus window            alt + h/j/k/l
+  # Focus window            alt + arrows
   # ---------------------------------------------------------------------------
   - commands: ["focus --direction left"]
-    bindings: ["alt+h", "alt+left"]
+    bindings: ["alt+left"]
   - commands: ["focus --direction down"]
-    bindings: ["alt+j", "alt+down"]
+    bindings: ["alt+down"]
   - commands: ["focus --direction up"]
-    bindings: ["alt+k", "alt+up"]
+    bindings: ["alt+up"]
   - commands: ["focus --direction right"]
-    bindings: ["alt+l", "alt+right"]
+    bindings: ["alt+right"]
 
   # ---------------------------------------------------------------------------
   # Move window             alt + shift + h/j/k/l
@@ -124,34 +152,34 @@ keybindings:
     bindings: ["alt+shift+l", "alt+shift+right"]
 
   # ---------------------------------------------------------------------------
-  # Resize window           alt + ctrl + h/j/k/l   (mirrors resize mode)
+  # Resize window           alt + control + h/j/k/l   (mirrors resize mode)
   # ---------------------------------------------------------------------------
   - commands: ["resize --width -2%"]
-    bindings: ["alt+ctrl+h"]
+    bindings: ["alt+control+h"]
   - commands: ["resize --width +2%"]
-    bindings: ["alt+ctrl+l"]
+    bindings: ["alt+control+l"]
   - commands: ["resize --height +2%"]
-    bindings: ["alt+ctrl+k"]
+    bindings: ["alt+control+k"]
   - commands: ["resize --height -2%"]
-    bindings: ["alt+ctrl+j"]
+    bindings: ["alt+control+j"]
 
   # ---------------------------------------------------------------------------
-  # Move workspace → monitor  alt + ctrl + shift + h/j/k/l
+  # Move workspace → monitor  alt + control + shift + h/j/k/l
   # ---------------------------------------------------------------------------
   - commands: ["move-workspace --direction left"]
-    bindings: ["alt+ctrl+shift+h"]
+    bindings: ["alt+control+shift+h"]
   - commands: ["move-workspace --direction down"]
-    bindings: ["alt+ctrl+shift+j"]
+    bindings: ["alt+control+shift+j"]
   - commands: ["move-workspace --direction up"]
-    bindings: ["alt+ctrl+shift+k"]
+    bindings: ["alt+control+shift+k"]
   - commands: ["move-workspace --direction right"]
-    bindings: ["alt+ctrl+shift+l"]
+    bindings: ["alt+control+shift+l"]
 
   # ---------------------------------------------------------------------------
   # Binding modes
   # ---------------------------------------------------------------------------
   - commands: ["wm-enable-binding-mode --name resize"]
-    bindings: ["alt+r"]
+    bindings: ["alt+control+r"]
   - commands: ["wm-enable-binding-mode --name pause"]
     bindings: ["alt+shift+p"]
 
@@ -164,17 +192,17 @@ keybindings:
   # detach the subject container (GlazeWM silently drops any commands
   # chained after it in that case).
   - commands: ["set-tiling-direction vertical"]
-    bindings: ["alt+v"]
+    bindings: ["alt+control+v"]
   - commands: ["set-tiling-direction horizontal"]
     bindings: ["alt+shift+v"]
   - commands: ["toggle-floating --centered"]
     bindings: ["alt+shift+space"]
   - commands: ["toggle-tiling"]
-    bindings: ["alt+t"]
+    bindings: ["alt+control+t"]
   - commands: ["toggle-fullscreen"]
-    bindings: ["alt+f"]
+    bindings: ["alt+control+f"]
   - commands: ["toggle-minimized"]
-    bindings: ["alt+m"]
+    bindings: ["alt+control+m"]
   - commands: ["close"]
     bindings: ["alt+shift+q"]
 
@@ -195,32 +223,32 @@ keybindings:
     bindings: ["alt+enter"]
 
   # ---------------------------------------------------------------------------
-  # Focus workspace         alt + 1..9   (+ a/s/d cycling, non-directional)
+  # Focus workspace         alt + control + 1..9   (+ control+a/s/d cycling, non-directional)
   # ---------------------------------------------------------------------------
   - commands: ["focus --prev-workspace"]
-    bindings: ["alt+a"]
+    bindings: ["alt+control+a"]
   - commands: ["focus --next-workspace"]
-    bindings: ["alt+s"]
+    bindings: ["alt+control+s"]
   - commands: ["focus --recent-workspace"]
-    bindings: ["alt+d"]
+    bindings: ["alt+control+d"]
   - commands: ["focus --workspace 1"]
-    bindings: ["alt+1"]
+    bindings: ["alt+control+1"]
   - commands: ["focus --workspace 2"]
-    bindings: ["alt+2"]
+    bindings: ["alt+control+2"]
   - commands: ["focus --workspace 3"]
-    bindings: ["alt+3"]
+    bindings: ["alt+control+3"]
   - commands: ["focus --workspace 4"]
-    bindings: ["alt+4"]
+    bindings: ["alt+control+4"]
   - commands: ["focus --workspace 5"]
-    bindings: ["alt+5"]
+    bindings: ["alt+control+5"]
   - commands: ["focus --workspace 6"]
-    bindings: ["alt+6"]
+    bindings: ["alt+control+6"]
   - commands: ["focus --workspace 7"]
-    bindings: ["alt+7"]
+    bindings: ["alt+control+7"]
   - commands: ["focus --workspace 8"]
-    bindings: ["alt+8"]
+    bindings: ["alt+control+8"]
   - commands: ["focus --workspace 9"]
-    bindings: ["alt+9"]
+    bindings: ["alt+control+9"]
 
   # ---------------------------------------------------------------------------
   # Send window → workspace   alt + shift + 1..9  (moves and follows)
