@@ -1,0 +1,439 @@
+# tmux-which-key menu, opened with `prefix + Space` (prefix is C-s).
+#
+# The plugin only reads this file from *inside* its own plugin directory, which
+# TPM owns and chezmoi does not manage, so tmux.conf symlinks it there before
+# TPM loads the plugin. Edit this file, then `prefix + r` - the plugin re-runs
+# its build step (python3 + the vendored pyyaml) on every config load and
+# regenerates the menu.
+#
+# Schema: ~/.local/share/tmux/plugins/tmux-which-key/config.schema.yaml
+#
+# TWO QUOTING RULES, both of which fail *silently* if broken:
+#
+# 1. Every `command:` is wrapped in single quotes here. In an unquoted YAML
+#    scalar a space followed by `#` starts a comment, so `neww -c
+#    #{pane_current_path}` would be stored as `neww -c` and `confirm -p "Kill
+#    pane #P?..."` would lose everything from `#P` on. Both truncations parse
+#    fine and produce a menu entry that just does the wrong thing.
+#
+# 2. Never put a literal single quote *inside* a command. The generated menu is
+#    stored in a tmux option that the build script wraps in single quotes, and
+#    tmux does no escape processing inside those - one apostrophe truncates the
+#    rest of the menu. Double quotes are fine at one level of nesting; they are
+#    escaped and unescaped correctly. Deeper nesting (\" inside "...") is not.
+
+command_alias_start_index: 200
+
+keybindings:
+  prefix_table: Space
+  # `root_table` is deliberately unset. It defaults to C-Space, which would be
+  # prefix-less and therefore swallowed before the pane's program ever saw it -
+  # the same trap the C-j/C-k note in tmux.conf describes. LazyVim binds
+  # <C-Space> for completion and for treesitter incremental selection, so
+  # enabling this would break both.
+
+title:
+  style: align=centre,bold
+  prefix: tmux
+  prefix_style: fg=green,align=centre,bold
+
+position:
+  x: R
+  y: P
+
+custom_variables:
+  - name: log_info
+    value: '#[fg=green,italics] [info]#[default]#[italics]'
+
+macros:
+  - name: reload-config
+    commands:
+      # $HOME/.tmux.conf (the plugin's default) does not exist here - the config
+      # lives under XDG, same path as the `bind r` binding in tmux.conf.
+      - 'display "#{log_info} Reloading config ..."'
+      - 'source-file $HOME/.config/tmux/tmux.conf'
+      - 'display "#{log_info} Reloaded"'
+  - name: restart-pane
+    commands:
+      - 'display "#{log_info} Restarting pane"'
+      - 'respawnp -k -c #{pane_current_path}'
+
+# Items whose name ends in (M-x) already have that direct keybinding in
+# tmux.conf - the menu entry is the discoverable way in, the M- key is the fast
+# way once it is memorised.
+items:
+  - name: Run command
+    key: space
+    command: 'command-prompt'
+  - name: Last window
+    key: tab
+    command: 'last-window'
+  - name: Last pane
+    key: '`'
+    command: 'last-pane'
+  - name: Last session (M-i)
+    key: i
+    command: 'switchc -l'
+  - separator: true
+
+  - name: +Windows
+    key: w
+    menu:
+      - name: Choose
+        key: w
+        command: 'choose-tree -Zw'
+      - name: Last
+        key: tab
+        command: 'last-window'
+      - name: Previous (M-,)
+        key: p
+        command: 'previous-window'
+        transient: true
+      - name: Next (M-;)
+        key: n
+        command: 'next-window'
+        transient: true
+      - name: New (M-c)
+        key: c
+        command: 'neww -c #{pane_current_path}'
+      - separator: true
+      - name: +Layout
+        key: l
+        menu:
+          - name: Next
+            key: l
+            command: 'nextl'
+            transient: true
+          - name: Tiled
+            key: t
+            command: 'selectl tiled'
+          - name: Even horizontal
+            key: h
+            command: 'selectl even-horizontal'
+          - name: Even vertical
+            key: v
+            command: 'selectl even-vertical'
+          - name: Main horizontal
+            key: H
+            command: 'selectl main-horizontal'
+          - name: Main vertical
+            key: V
+            command: 'selectl main-vertical'
+      - name: Split right (M-b)
+        key: /
+        command: 'splitw -h -c #{pane_current_path}'
+      - name: Split down (M-v)
+        key: '-'
+        command: 'splitw -v -c #{pane_current_path}'
+      - name: Rotate
+        key: o
+        command: 'rotatew'
+        transient: true
+      - name: Rotate reverse
+        key: O
+        command: 'rotatew -D'
+        transient: true
+      - separator: true
+      - name: Rename
+        key: R
+        command: 'command-prompt -p "Rename window:" -I "#W" "renamew -- \"%%\""'
+      - name: Move to index
+        key: m
+        command: 'command-prompt -p "Move window to index:" "movew -t %%"'
+      - name: Swap left
+        key: '<'
+        command: 'swapw -t -1'
+        transient: true
+      - name: Swap right
+        key: '>'
+        command: 'swapw -t +1'
+        transient: true
+      - name: Kill
+        key: X
+        command: 'confirm -p "Kill window #W? (y/n)" killw'
+
+  - name: +Panes
+    key: p
+    menu:
+      - name: Choose
+        key: p
+        command: 'displayp -d 0'
+      - name: Last
+        key: tab
+        command: 'lastp'
+      - separator: true
+      - name: Left (M-h)
+        key: h
+        command: 'selectp -L'
+      - name: Down (M-j)
+        key: j
+        command: 'selectp -D'
+      - name: Up (M-k)
+        key: k
+        command: 'selectp -U'
+      - name: Right (M-l)
+        key: l
+        command: 'selectp -R'
+      - separator: true
+      - name: Split right (M-b)
+        key: /
+        command: 'splitw -h -c #{pane_current_path}'
+      - name: Split down (M-v)
+        key: '-'
+        command: 'splitw -v -c #{pane_current_path}'
+      - name: Split sidebar 100 cols (M-y)
+        key: y
+        command: 'splitw -h -c #{pane_current_path} ; resizep -x 100'
+      - name: Split terminal 16 rows (M-t)
+        key: t
+        command: 'splitw -v -c #{pane_current_path} ; resizep -y 16'
+      - separator: true
+      - name: Zoom (M-z)
+        key: z
+        command: 'resizep -Z'
+      - name: +Resize
+        key: r
+        menu:
+          - name: Left
+            key: h
+            command: 'resizep -L 5'
+            transient: true
+          - name: Down
+            key: j
+            command: 'resizep -D 5'
+            transient: true
+          - name: Up
+            key: k
+            command: 'resizep -U 5'
+            transient: true
+          - name: Right
+            key: l
+            command: 'resizep -R 5'
+            transient: true
+          - name: Left more
+            key: H
+            command: 'resizep -L 20'
+            transient: true
+          - name: Down more
+            key: J
+            command: 'resizep -D 20'
+            transient: true
+          - name: Up more
+            key: K
+            command: 'resizep -U 20'
+            transient: true
+          - name: Right more
+            key: L
+            command: 'resizep -R 20'
+            transient: true
+          - name: Even out
+            key: '='
+            command: 'selectl even-horizontal'
+      - name: Swap left
+        key: H
+        command: 'swapp -t "{left-of}"'
+      - name: Swap down
+        key: J
+        command: 'swapp -t "{down-of}"'
+      - name: Swap up
+        key: K
+        command: 'swapp -t "{up-of}"'
+      - name: Swap right
+        key: L
+        command: 'swapp -t "{right-of}"'
+      - separator: true
+      - name: Break to window
+        key: '!'
+        command: 'break-pane'
+      - name: Join from window
+        key: '@'
+        command: 'command-prompt -p "Join pane from window:" "joinp -h -s %%"'
+      - name: Mark
+        key: m
+        command: 'selectp -m'
+      - name: Unmark
+        key: M
+        command: 'selectp -M'
+      - name: Capture to buffer
+        key: C
+        command: 'capture-pane'
+      - name: Respawn
+        key: R
+        macro: restart-pane
+      - name: Kill (M-x)
+        key: X
+        command: 'confirm -p "Kill pane #P? (y/n)" killp'
+
+  - name: +Sessions
+    key: s
+    menu:
+      - name: Choose (M-s)
+        key: s
+        command: 'choose-tree -Zs'
+      - name: Last (M-i)
+        key: l
+        command: 'switchc -l'
+      - name: Previous
+        key: p
+        command: 'switchc -p'
+        transient: true
+      - name: Next
+        key: n
+        command: 'switchc -n'
+        transient: true
+      - separator: true
+      - name: New
+        key: N
+        command: 'new -c #{pane_current_path}'
+      - name: Rename
+        key: r
+        command: 'command-prompt -p "Rename session:" -I "#S" "rename-session -- \"%%\""'
+      - name: Detach (M-d)
+        key: d
+        command: 'detach'
+      - separator: true
+      # The two popup sessions tmux.conf binds to M-w and M-r.
+      - name: Scratch popup (M-w)
+        key: w
+        command: 'display-popup -w 80% -h 80% -E "tmux new-session -A -s scratch"'
+      - name: Monitor popup (M-r)
+        key: m
+        command: 'display-popup -w 90% -h 95% -E "tmux new-session -A -s monitor"'
+      - separator: true
+      - name: Kill
+        key: X
+        command: 'confirm -p "Kill session #S? (y/n)" kill-session'
+
+  - name: +Copy
+    key: c
+    menu:
+      - name: Copy mode (M-m)
+        key: c
+        command: 'copy-mode -e'
+      # Same runtime clipboard probe as the M-p binding in tmux.conf, rewritten
+      # without single quotes - see quoting rule 2 at the top of this file.
+      - name: Paste system clipboard (M-p)
+        key: p
+        command: 'run-shell "if command -v pbpaste >/dev/null 2>&1; then pbpaste; elif command -v wl-paste >/dev/null 2>&1; then wl-paste --no-newline; else xclip -selection clipboard -out; fi | tmux load-buffer - && tmux paste-buffer"'
+      - name: Paste tmux buffer
+        key: P
+        command: 'pasteb'
+      - separator: true
+      # Plugin entry points, replicated from the bindings each plugin installs.
+      - name: extrakto - fzf the pane (Tab)
+        key: e
+        command: 'run-shell "$HOME/.local/share/tmux/plugins/extrakto/scripts/open.sh #{pane_id}"'
+      - name: jump to a character (prefix j)
+        key: j
+        command: 'run-shell -b $HOME/.local/share/tmux/plugins/tmux-jump/scripts/tmux-jump.sh'
+      # tmux-fingers' own `prefix + F` binding is gone: tmux-fzf loads after it
+      # and binds F to itself, so this menu is the only way into fingers'
+      # default mode. `prefix + J` (jump mode) still works.
+      - name: fingers - hint every match
+        key: f
+        command: 'run-shell -b "$HOME/.local/share/tmux/plugins/tmux-fingers/bin/tmux-fingers start --mode default #{pane_id}"'
+      - name: fingers - jump mode (prefix J)
+        key: F
+        command: 'run-shell -b "$HOME/.local/share/tmux/plugins/tmux-fingers/bin/tmux-fingers start --mode jump #{pane_id}"'
+      - separator: true
+      - name: copytk easycopy (S)
+        key: s
+        command: 'run-shell -b "python3 $HOME/.local/share/tmux/plugins/tmux-copy-toolkit/copytk.py easycopy --search-nkeys 1"'
+      - name: copytk quickcopy (Q)
+        key: q
+        command: 'run-shell -b "python3 $HOME/.local/share/tmux/plugins/tmux-copy-toolkit/copytk.py quickcopy"'
+      - name: copytk quickopen (P)
+        key: o
+        command: 'run-shell -b "python3 $HOME/.local/share/tmux/plugins/tmux-copy-toolkit/copytk.py quickopen"'
+      - name: copytk linecopy (W)
+        key: w
+        command: 'run-shell -b "python3 $HOME/.local/share/tmux/plugins/tmux-copy-toolkit/copytk.py linecopy"'
+
+  - name: +Buffers
+    key: b
+    menu:
+      - name: Choose
+        key: b
+        command: 'choose-buffer -Z'
+      - name: List
+        key: l
+        command: 'lsb'
+      - name: Paste
+        key: p
+        command: 'pasteb'
+      - name: Delete
+        key: X
+        command: 'deleteb'
+
+  - name: +Tools
+    key: t
+    menu:
+      - name: tmux-fzf menu (F)
+        key: f
+        command: 'run-shell -b "TMUX_FZF_CLIENT=#{client_tty} $HOME/.local/share/tmux/plugins/tmux-fzf/main.sh"'
+      - separator: true
+      - name: Claude - launch here (prefix y)
+        key: y
+        command: 'run-shell "$HOME/.local/share/tmux/plugins/tmux-claude-session-manager/scripts/launch.sh #{q:pane_current_path} #{q:window_id}"'
+      - name: Claude - list sessions (prefix u)
+        key: u
+        command: 'run-shell "$HOME/.local/share/tmux/plugins/tmux-claude-session-manager/scripts/list.sh #{q:client_name}"'
+      # No tmux-suspend entry: its script takes the resume key and the whole
+      # @suspend_suspended_options blob as arguments, and passing that blob here
+      # needs the nested quoting rule 2 rules out. Use M-q.
+
+  - name: +Client
+    key: C
+    menu:
+      - name: Choose
+        key: c
+        command: 'choose-client -Z'
+      - name: Last
+        key: l
+        command: 'switchc -l'
+      - name: Previous
+        key: p
+        command: 'switchc -p'
+      - name: Next
+        key: n
+        command: 'switchc -n'
+      - separator: true
+      - name: Refresh
+        key: R
+        command: 'refresh'
+      - name: Detach (M-d)
+        key: D
+        command: 'detach'
+      - name: Suspend client
+        key: Z
+        command: 'suspendc'
+      - separator: true
+      - name: +Plugins
+        key: P
+        menu:
+          - name: Install
+            key: i
+            command: 'run-shell $HOME/.local/share/tmux/plugins/tpm/bindings/install_plugins'
+          - name: Update
+            key: u
+            command: 'run-shell $HOME/.local/share/tmux/plugins/tpm/bindings/update_plugins'
+          - name: Clean
+            key: c
+            command: 'run-shell $HOME/.local/share/tmux/plugins/tpm/bindings/clean_plugins'
+      - name: Reload config (prefix r)
+        key: r
+        macro: reload-config
+      - name: Customize options
+        key: ','
+        command: 'customize-mode -Z'
+
+  - separator: true
+  - name: Clock
+    key: T
+    command: 'clock-mode'
+  - name: Show messages
+    key: '~'
+    command: 'show-messages'
+  - name: List all keys
+    key: '?'
+    command: 'list-keys -N'
