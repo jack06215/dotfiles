@@ -296,7 +296,10 @@ Renaming is worth the habit once you have four windows — the status bar become
 
 `M-s` opens a searchable list; type to filter, `Enter` to switch, `q` to cancel.
 It hides the session you are already in, plus the two popup sessions below, so
-the list only ever shows somewhere useful to go.
+the list only ever shows somewhere useful to go. (It does *not* hide the
+`claude-…` sessions created by
+[tmux-claude-session-manager](#tmux-claude-session-manager-in-detail) — use
+`prefix + u` for those.)
 
 `M-i` is the session equivalent of `cd -` — flip between two projects with one
 key.
@@ -442,11 +445,171 @@ listed at the bottom of `tmux.conf`).
 | | `prefix + W` | Copy a whole line by label. |
 | **tmux-fingers** | `prefix + F` | Same family: overlays letter hints on paths/hashes/IPs; press a hint to copy. |
 | **tmux-suspend** | `M-q` | Freezes the *outer* tmux so every key passes to a nested inner tmux (over SSH). The status bar greys out to show it is suspended; `M-q` again resumes. |
-| **tmux-claude-session-manager** | — | Manages Claude Code sessions across panes. Check its README (or `prefix + ?` after installing) for its keys. |
+| **tmux-claude-session-manager** | `prefix + y` | Opens Claude Code for the current directory in a popup, in its own tmux session. |
+| | `prefix + u` | The picker: every running Claude, with live `working` / `waiting` / `idle` status. |
 
 There is a lot of overlap between extrakto, copy-toolkit, and fingers. Do not
 try to learn all three. Start with **`prefix + Tab`** (extrakto) — it covers the
 common case — and ignore the others until you hit something it does not do.
+
+### tmux-claude-session-manager, in detail
+
+The other four plugins are single-key conveniences. This one is a workflow, so
+it gets its own section.
+
+**The problem it solves.** If you run Claude Code one-per-project, you end up
+with a dozen of them and no way to tell which are finished without opening each
+one. This plugin puts each Claude in its own tmux session and gives you one
+list showing which need you.
+
+| Key | Action |
+|---|---|
+| `prefix + y` | Launch — or re-attach to — a Claude session for the **current pane's directory**, in a popup |
+| `M-d` (or `prefix + d`) | Close the popup. Claude **keeps running** |
+| `prefix + u` | Open the picker |
+
+Inside the picker:
+
+| Key | Action |
+|---|---|
+| `↑` `↓` | Move; typing anything filters |
+| `Enter` | Jump to that agent |
+| `Ctrl-x` | Kill the highlighted agent |
+| `Esc` | Close the picker |
+
+Agents that need you (`waiting`, `idle`) sort to the top. Each row also carries
+an **age** column — how long since that agent last did anything. A brand-new one
+that has not taken a turn yet shows `-`.
+
+The status is read straight from `claude agents --json`, which Claude Code
+publishes about itself. **There is nothing to configure for it to work.**
+
+<details>
+<summary>What "jump" actually does, and why sessions show up twice</summary>
+
+The picker identifies each agent by its **Claude process**, not by its tmux
+session. So two Claudes in one project get two rows, and a Claude you started by
+hand in an ordinary pane gets a row too.
+
+That distinction changes what `Enter` does:
+
+- A **dedicated** agent (one `prefix + y` created, living in a `claude-…`
+  session) — tmux switches you to the window you launched it from, then resumes
+  it in a popup over that window.
+- A **loose** agent (one you started by typing `claude` in a normal pane) — tmux
+  just focuses that pane where it is.
+
+Pressing `prefix + u` *from inside a popup* closes the popup first, then opens
+the picker full-size on the real client — so you never get a popup inside a
+popup.
+
+</details>
+
+#### It fits the popup pattern you already know
+
+`prefix + y` is the same idea as `M-w` and `M-r` from
+[Popup scratch sessions](#popup-scratch-sessions): a separate tmux session shown
+floating over your layout. Everything you learned there applies — `M-d` dismisses
+it, whatever is inside keeps running, and pressing the launch key again from
+*inside* the popup would stack another one rather than closing it.
+
+The one difference is that the session name is derived from your directory. So
+`prefix + y` in `~/workspace/jack06215/dotfiles` always returns you to *that*
+project's Claude, not a shared scratchpad.
+
+#### Those `claude-…` entries in `M-s`
+
+The `M-s` session picker filters out `scratch` and `monitor`, but it knows
+nothing about this plugin — so every dedicated Claude session appears in that
+list as a cryptic `claude-<hash>`. That is expected, not a bug. Use `prefix + u`
+to navigate Claude sessions; it shows the project path and status instead of
+a hash.
+
+#### Bell notifications need a one-time Claude Code setup
+
+The plugin can flag the window you launched an agent from when that agent rings
+the terminal bell — so you notice a finished run without opening the picker.
+
+It only *forwards* a bell; Claude Code has to emit one, and that takes **both**
+of the two settings below. Check where yours stand:
+
+```sh
+jq '.preferredNotifChannel'        ~/.config/claude/settings.json
+jq '.messageIdleNotifThresholdMs'  ~/.config/claude/.claude.json
+```
+
+`null` from either one means no bell ever rings, so there is nothing to forward.
+
+Mind those paths — on this machine the two settings do **not** live where the
+plugin's README says. Your `CLAUDE_CONFIG_DIR` points at `~/.config/claude`, so
+the README's `~/.claude/settings.json` and `~/.claude.json` are both really:
+
+| README says | On this machine |
+|---|---|
+| `~/.claude/settings.json` | `~/.config/claude/settings.json` |
+| `~/.claude.json` | `~/.config/claude/.claude.json` |
+
+**How** it notifies — in `settings.json`:
+
+```json
+{ "preferredNotifChannel": "terminal_bell" }
+```
+
+Only `terminal_bell` and `iterm2_with_bell` write a real bell character. The
+other channels send escape sequences tmux does not count as a bell, and the
+default `auto` picks by terminal — so pin it explicitly.
+
+**When** it notifies — in `.claude.json` (`settings.json` ignores this key and
+drops it without complaining):
+
+```json
+{ "messageIdleNotifThresholdMs": 0 }
+```
+
+Claude rings after sitting idle this long. The default is 60000 — a minute,
+by which point you have usually looked anyway. `0` rings the moment a turn ends.
+
+> ⚠️ `~/.config/claude/settings.json` is chezmoi-managed too
+> (`dot_config/claude/settings.json` in this repo). Same rule as `tmux.conf`:
+> edit the source, then `chezmoi apply`. `.claude.json` is *not* managed —
+> Claude Code rewrites it constantly, so edit that one in place.
+
+Set `@claude_forward_bell 'off'` in `tmux.conf` if you would rather have no
+bells at all.
+
+> **Stale hooks, worth cleaning up.** Your `settings.json` still has four hooks
+> (`UserPromptSubmit`, `Notification`, `PreToolUse`, `Stop`) calling
+> `tmux-claude-session-manager/scripts/state.sh`. That script no longer exists —
+> the plugin dropped it when it switched to reading `claude agents --json`, which
+> is why status now needs no setup. The hooks fail silently on every prompt and
+> every turn end. They are harmless but dead; deleting the `hooks` block from
+> `dot_config/claude/settings.json` costs you nothing.
+
+#### Options
+
+All optional, all set in `tmux.conf` **before** the `run` line at the bottom:
+
+```tmux
+set -g @claude_launch_key     'y'        # prefix key: launch for current dir
+set -g @claude_list_key       'u'        # prefix key: open the picker
+set -g @claude_command        'claude'   # command run in new sessions
+set -g @claude_args           ''         # extra args appended to it
+set -g @claude_session_prefix 'claude-'  # tmux session name prefix
+set -g @claude_popup_width    '90%'      # popup width
+set -g @claude_popup_height   '90%'      # popup height
+set -g @claude_fzf_options    ''         # extra options for the fzf picker
+set -g @claude_forward_bell   'on'       # highlight origin window on a bell
+```
+
+None are set in your config, so you are on every default above.
+
+`prefix + y` and `prefix + u` are free in this config — nothing else claims
+them — so there is no conflict to worry about. (And the plugin loads from the
+last line of `tmux.conf`, so even if you did bind them yourself earlier in the
+file, the plugin would win. Change `@claude_launch_key` rather than fighting it.)
+
+**Requirements, all already met here:** tmux ≥ 3.2 (you have 3.7b), `fzf`, `jq`,
+and Claude Code ≥ 2.1.139 (you have 2.1.239).
 
 ---
 
@@ -490,6 +653,20 @@ narrow enough to leave room. Open one file in each.
 
 `prefix + Tab`, type a few characters of the path, `Enter`. Much faster than
 selecting it with the mouse.
+
+**Run Claude on three projects at once**
+
+In each project's session, `cd` to the project root and press **`prefix + y`** —
+Claude opens in a popup, in its own tmux session tied to that directory. Give it
+a task, then `M-d` to dismiss the popup and carry on working; it keeps running.
+
+When you want to know who is done, **`prefix + u`** from anywhere. The picker
+lists all three with `working` / `waiting` / `idle`, the ones needing you at the
+top, and a live preview of each screen. `Enter` drops you back into one,
+`Ctrl-x` kills a finished one.
+
+That is the whole loop: `prefix + y` to start, `M-d` to walk away, `prefix + u`
+to check back. See [Part 4](#tmux-claude-session-manager-in-detail) for details.
 
 ---
 
