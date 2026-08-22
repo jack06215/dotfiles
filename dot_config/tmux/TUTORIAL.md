@@ -164,8 +164,8 @@ Panes are for things you watch at once. Windows are for switching context.
 | `M-,` / `M-;` | Previous / next window |
 | `prefix + X` | Kill this window (capital X) |
 
-Create a couple of windows and watch the status bar at the top left — it lists
-them, with the current one highlighted in red.
+Create a couple of windows and watch the middle of the status bar — it lists
+them, with the current one on a highlighted purple tile.
 
 Windows are numbered from **1**, not 0, so `M-1` is the leftmost. (`M-0` is
 wired to window 10, which is where the tenth one naturally lands.)
@@ -216,10 +216,19 @@ Back inside tmux, press **`prefix + I`** — that is `Ctrl-s`, then capital `I`
 (Shift+i).
 
 The status bar shows "Installing plugins..." for a few seconds, then
-"Done". The five plugins listed at the bottom of `tmux.conf` are now live; see
-[Part 4 — Plugins](#part-4--plugins) for what they do.
+"Done". The plugins listed at the bottom of `tmux.conf` are now live; see
+[Part 4 — Plugins](#part-4--plugins) for what they do. One of them,
+tmux-powerline, redraws the whole bar, so it will look different afterwards —
+[Part 3](#part-3--reading-the-status-bar) is the guide to it.
 
 If nothing happens at all, TPM did not get cloned — redo Step 1.
+
+If the bar comes up peppered with `?` boxes or blank gaps, the terminal font has
+no powerline glyphs. WezTerm here is set to **PlemolJP Console NF**, which does;
+if you are in some other terminal, either point it at a
+[Nerd Font](https://www.nerdfonts.com/) or set
+`TMUX_POWERLINE_PATCHED_FONT_IN_USE="false"` in
+`~/.config/tmux-powerline/config.sh` to fall back to ASCII separators.
 
 ### Step 9: reload after editing the config
 
@@ -282,8 +291,8 @@ bottom" are the two layouts you end up building by hand over and over.
 | `prefix + X` | Kill this window |
 | `prefix + ,` | Rename this window |
 
-Renaming is worth the habit once you have four windows — the status bar becomes
-`1:edit 2:server 3:logs` instead of three identical `zsh`es.
+Renaming is worth the habit once you have four windows — the window list becomes
+`1 edit  2 server  3 logs` instead of three identical `zsh`es.
 
 ### Sessions
 
@@ -402,32 +411,103 @@ SSH into a machine that also uses tmux. Press it and the keystroke goes to the
 
 ## Part 3 — Reading the status bar
 
-The bar sits at the **top** of the window.
+The bar sits at the **top** of the window and is drawn by **tmux-powerline**
+(Part 4). Three regions:
 
 ```
-learn 2 1     │  1:zsh  2:nvim* 3:ping     │  nvim TUTORIAL.md   [2026-08-21(Fri) 23:40]
-└───────────┘                              └────────────────┘
-   left                                          right
+ TMUX  dotfiles  A0229   master ↑2 +1 ~3 ?2      1 zsh•  2 nvim   3 build     󰚩 ●2 ●1  ~/…/dotfiles  87%  Sun  2026-08-23  23:40
+└──────────────────── left ────────────────────┘        └──── windows ────┘        └──────────────────── right ────────────────────┘
 ```
 
-**Left side** — where you are, in the three nouns from Part 0:
+Every tile disappears when it has nothing to say, so the bar is usually shorter
+than that.
 
-- green — **session name** (`learn`)
-- yellow — **window number** (`2`)
-- cyan — **pane number** (`1`)
+### Left — where you are
 
-**Middle** — the window list. The current window is white-on-red. A window
-where output has appeared while you were looking elsewhere gets flagged
-(`monitor-activity` is on) — useful for spotting "the build finished" without
-switching. There is no popup interrupting you; the flag is the whole
-notification.
+| Tile | Meaning |
+|---|---|
+| `TMUX` | Resting state: nothing latched. |
+| `PREFIX` (red) | You pressed `C-s` and tmux is waiting for the second key. When you are not sure whether a keypress registered, this is the answer. |
+| `COPY` (yellow) | The pane is in copy mode (`M-m`). |
+| `SUSPEND` (orange) | `M-q` handed the keyboard to a nested tmux; the whole bar greys out too. |
+| `dotfiles` | **Session** name — what `M-s` switches between, and what the `claude-…` popup sessions are named after. |
+| `A0229` | Hostname. Redundant locally, the thing you want over SSH. |
+| ` master ↑2 +1 ~3 ?2` | Git state of the current pane's directory (below). |
 
-**Right side** — the command actually running in the current pane (so you can
-tell a busy pane from an idle shell at a glance), then the date and time.
+The git tile, piece by piece:
 
-The bar refreshes every 15 seconds, so the clock is approximate and the command
-name can lag a moment. That is deliberate — refreshing faster costs a subprocess
-every tick.
+| | |
+|---|---|
+| ` master` | Branch name. A short SHA instead means HEAD is detached — mid-rebase, or a tag or commit checked out directly. |
+| `↑2` `↓1` | Commits ahead of / behind the upstream branch. Stale until you `git fetch`; git only knows what it last heard. |
+| `✓` | Working tree clean. Replaces all four counters below. |
+| `+3` | Staged, ready to commit. |
+| `~5` | Tracked files changed but not staged. |
+| `?2` | Untracked files. |
+| `!1` | Merge conflicts. |
+
+Outside a git repository the tile vanishes entirely.
+
+### Middle — the window list
+
+One entry per window, numbered the way `M-1`…`M-9` expect. The current window is
+the highlighted purple tile; a `Z` in it means the pane is zoomed (`M-z`).
+
+A yellow `•` after a window name means output appeared there while you were
+looking somewhere else — `monitor-activity` is on and that dot is the entire
+notification, nothing pops up. A red `!` is a terminal bell.
+
+### Right — what wants your attention
+
+| Tile | Meaning |
+|---|---|
+| `󰚩 ●2 ●1 ●3` | Claude Code sessions by state: **yellow** waiting on you, **green** idle and finished, **red** still working. The same three colours the `prefix + u` picker uses — the bar says *how many*, the picker says *which*. Gone when no Claude is running. |
+| `~/…/dotfiles` | Current pane's directory, truncated from the left so the tail stays readable. |
+| `󰚥` / `87%` | Battery: a plug on AC, a percentage (red under 50%) once discharging. |
+| `Sun 2026-08-23 23:40` | Clock. |
+
+### What it costs
+
+The bar redraws every **5 seconds**. Each redraw is *two* shell processes — one
+for the whole left side, one for the whole right — not one per tile, so adding a
+segment is cheaper than it looks. The two custom tiles are the expensive ones and
+are written for it: the git tile is a single `git status` call (with
+`--no-optional-locks`, so it never fights lazygit for `.git/index.lock`), and the
+Claude tile caches its answer for 10 seconds because asking costs a Node process.
+
+`PREFIX` and `COPY` are the exception — those are tmux format conditionals rather
+than script output, so they light up on the keypress instead of waiting for the
+next tick.
+
+### Changing it
+
+Everything lives in `~/.config/tmux-powerline/`, chezmoi-managed like the rest of
+this config:
+
+| File | What is in it |
+|---|---|
+| `config.sh` | Refresh interval, side lengths, per-segment options. |
+| `themes/mocha.sh` | The Catppuccin Mocha palette, and which tiles appear on each side in what order. |
+| `segments/vcs_status.sh` | The git tile. |
+| `segments/claude_agents.sh` | The Claude tile. |
+
+To add one of the stock segments — memory, weather, kubernetes context, a second
+clock in UTC — put its name in one of the two arrays at the bottom of
+`themes/mocha.sh` and reload with `prefix + r`. The commented-out lines there
+show the syntax, and
+
+```console
+$ ls ~/.local/share/tmux/plugins/tmux-powerline/segments/
+```
+
+lists everything that ships with the plugin. When a tile renders as nothing,
+
+```console
+$ ~/.local/share/tmux/plugins/tmux-powerline/doctor.sh
+```
+
+prints every resolved setting and the dependencies each segment needs, which is
+almost always the answer.
 
 ---
 
@@ -444,9 +524,10 @@ listed at the bottom of `tmux.conf`).
 | | `prefix + P` | Quickopen — open a path or URL from the screen. |
 | | `prefix + W` | Copy a whole line by label. |
 | **tmux-fingers** | `prefix + F` | Same family: overlays letter hints on paths/hashes/IPs; press a hint to copy. |
-| **tmux-suspend** | `M-q` | Freezes the *outer* tmux so every key passes to a nested inner tmux (over SSH). The status bar greys out to show it is suspended; `M-q` again resumes. |
+| **tmux-suspend** | `M-q` | Freezes the *outer* tmux so every key passes to a nested inner tmux (over SSH). The bar greys out and the left tile reads `SUSPEND`; `M-q` again resumes. |
 | **tmux-claude-session-manager** | `prefix + y` | Opens Claude Code for the current directory in a popup, in its own tmux session. |
 | | `prefix + u` | The picker: every running Claude, with live `working` / `waiting` / `idle` status. |
+| **tmux-powerline** | — | Draws the whole status bar (Part 3). No keys of its own; it is declared last in `tmux.conf` because it overwrites `status-left`, `status-right` and the window-status formats, and whichever plugin loads last wins. |
 
 There is a lot of overlap between extrakto, copy-toolkit, and fingers. Do not
 try to learn all three. Start with **`prefix + Tab`** (extrakto) — it covers the
