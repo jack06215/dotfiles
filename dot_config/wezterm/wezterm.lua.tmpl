@@ -106,44 +106,53 @@ end
 -- =============================================================
 local is_maximized = false
 
+-- The "opal" tab is disabled: tmux-opal covers the same workspace, and running
+-- both meant two copies of every long-lived process. Kept here (with its layout
+-- helper below) so it can be restored by uncommenting both blocks.
+--
 -- The "opal" layout, applied to the tab owning `pane`: a large main pane, a
 -- two-pane column down the right, and a short three-pane strip along the
 -- bottom — six panes in total.
-local function build_opal_layout(pane)
-  local bottom = pane:split({ direction = "Bottom", size = 0.1 })
-  local right = pane:split({ direction = "Right", size = 0.15 })
-  right:split({ direction = "Bottom", size = 0.5 })
-  bottom:split({ direction = "Right", size = 0.15 })
-  bottom:split({ direction = "Left", size = 0.15 })
-end
+-- local function build_opal_layout(pane)
+--   local bottom = pane:split({ direction = "Bottom", size = 0.1 })
+--   local right = pane:split({ direction = "Right", size = 0.15 })
+--   right:split({ direction = "Bottom", size = 0.5 })
+--   bottom:split({ direction = "Right", size = 0.15 })
+--   bottom:split({ direction = "Left", size = 0.15 })
+-- end
 
 wezterm.on("gui-startup", function(cmd)
-  local tab1, pane1, window1 = mux.spawn_window(cmd or {})
-  tab1:set_title("opal")
+  -- The first tab is one WezTerm pane running tmux, which builds its own
+  -- four-pane cockpit layout (editor / agent / shell / srv). Splitting in
+  -- WezTerm here as well would nest two pane managers in one tab, so every tmux
+  -- binding would apply to a quarter of the screen. Skipped on Windows (no
+  -- tmux) and when `wezterm start -- <cmd>` asked for something specific.
+  local spawn_tmux = cmd == nil and not tmpl.is_true("myComputer.isWindows")
+  local spawn_args = cmd or {}
+  if spawn_tmux then
+    local tmux_argv = { table.unpack(default_prog) }
+    table.insert(tmux_argv, "-c")
+    table.insert(tmux_argv, "exec " .. wezterm.home_dir .. "/.config/tmux/dev-workspace.sh")
+    spawn_args = { args = tmux_argv }
+  end
+
+  local tab1, _pane1, window1 = mux.spawn_window(spawn_args)
+  if spawn_tmux then
+    tab1:set_title("tmux-opal")
+  end
   window1:gui_window():maximize()
 
   wezterm.time.call_after(0.3, function()
-    build_opal_layout(pane1)
+    -- local tab_opal, pane_opal = window1:spawn_tab({})
+    -- tab_opal:set_title("opal")
+    -- build_opal_layout(pane_opal)
 
-    local tab2, pane2, window2 = window1:spawn_tab({})
+    local tab2, pane2 = window1:spawn_tab({})
     tab2:set_title("ruby")
     pane2:split({ direction = "Bottom", size = 0.3 })
 
-    local tab3, pane3, window3 = window1:spawn_tab({})
+    local tab3 = window1:spawn_tab({})
     tab3:set_title("diamond")
-
-    -- One WezTerm pane running tmux, which builds its own four-pane cockpit
-    -- layout (editor / agent / shell / srv). Splitting in WezTerm here as well
-    -- would nest two pane managers in one tab, so every tmux binding would
-    -- apply to a quarter of the screen. Skipped on Windows, which has no tmux.
-    if not tmpl.is_true("myComputer.isWindows") then
-      local tmux_argv = { table.unpack(default_prog) }
-      table.insert(tmux_argv, "-c")
-      table.insert(tmux_argv, "exec " .. wezterm.home_dir .. "/.config/tmux/dev-workspace.sh")
-
-      local tab4 = window1:spawn_tab({ args = tmux_argv })
-      tab4:set_title("tmux-opal")
-    end
 
     tab1:activate()
   end)
