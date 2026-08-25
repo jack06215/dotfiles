@@ -36,7 +36,10 @@
 	# (the #[fg=…] markup does not count), and silently cuts anything longer —
 	# which looks like "my clock disappeared" rather than like an error, so both
 	# are set well above what the segments below actually produce.
-	export TMUX_POWERLINE_STATUS_LEFT_LENGTH="120"
+	# Left was 120, which was ample until the tock segment joined it: worst case
+	# there is ~48 columns (glyph, a 28-column label, elapsed, today's total) on
+	# top of mode + session + host + branch.
+	export TMUX_POWERLINE_STATUS_LEFT_LENGTH="170"
 	export TMUX_POWERLINE_STATUS_RIGHT_LENGTH="140"
 
 	# Keeps the bar transparent. main.tmux takes over `status-style` from
@@ -117,6 +120,24 @@
 
 # vcs_status.sh (custom, see segments/vcs_status.sh) {
 	export TMUX_POWERLINE_SEG_VCS_STATUS_MAX_LEN="24"
+# }
+
+# tock.sh (custom, see segments/tock.sh) {
+	# "project ▸ description" is truncated to this; the elapsed time and today's
+	# total are appended after it and are not counted in the limit.
+	export TMUX_POWERLINE_SEG_TOCK_MAX_LEN="28"
+	# Elapsed time turns yellow at 90 minutes and red at 5 hours. The yellow one
+	# is a nudge (a block this long has either earned a break or drifted off what
+	# you said you were doing); the red one means an activity nobody stopped.
+	export TMUX_POWERLINE_SEG_TOCK_WARN_MINUTES="90"
+	export TMUX_POWERLINE_SEG_TOCK_STALE_MINUTES="300"
+	# Today's total, alongside the current activity. One extra `tock` call per
+	# refresh (~7 ms); set "false" to drop it and reclaim ~10 columns.
+	export TMUX_POWERLINE_SEG_TOCK_SHOW_TODAY="true"
+	# The half that earns the segment: with nothing running it shows a dim
+	# "󰅐 —" rather than disappearing, because a tracker that is silently off is
+	# a tracker producing wrong numbers. "false" hides it when idle instead.
+	export TMUX_POWERLINE_SEG_TOCK_SHOW_WHEN_IDLE="true"
 # }
 
 # claude_agents.sh (custom, see segments/claude_agents.sh) {

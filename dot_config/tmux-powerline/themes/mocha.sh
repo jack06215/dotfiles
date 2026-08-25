@@ -8,11 +8,12 @@
 #
 # Reading the layout:
 #
-#   ┌─ mode ─┬─ session ─┬─ host ─┬─ git ─┐   ┌─ windows ─┐   ┌─ claude ─┬─ pwd ─┬─ battery ─┬─ clock ─┐
-#   │  TMUX  │  dotfiles │ A0229  │  main │   │ 1 zsh …   │   │ ●2       │ ~/…   │ 󰚥         │ 23:40   │
+#   ┌─ mode ─┬─ session ─┬─ host ─┬─ git ─┬─ tock ────────────┐   ┌─ windows ─┐   ┌─ claude ─┬─ pwd ─┬─ battery ─┬─ clock ─┐
+#   │  TMUX  │  dotfiles │ A0229  │  main │ 󰅐 dotfiles ▸ … 45m │   │ 1 zsh …   │   │ ●2       │ ~/…   │ 󰚥         │ 23:40   │
 #
-# Left = "where am I / what state is the repo in", centre = window list,
-# right = "what needs me / what is the machine doing / what time is it".
+# Left = "where am I / what state is the repo in / what am I doing", centre =
+# window list, right = "what needs me / what is the machine doing / what time is
+# it".
 #
 # NOTE Changes here take effect on the next status refresh, but tmux caches the
 # window-status formats, so run `prefix + r` (or `tmux source-file
@@ -166,6 +167,11 @@ if [ -z "$TMUX_POWERLINE_LEFT_STATUS_SEGMENTS" ]; then
 		# Custom segment: branch + ahead/behind + staged/modified/untracked from
 		# one git call. See segments/vcs_status.sh.
 		"vcs_status ${surface0} ${text}"
+		# Custom segment: what tock is tracking, and today's total. Last on this
+		# side deliberately — tmux truncates status-left from the tail, so the
+		# widest and most expendable segment is the one that should lose columns
+		# first, ahead of the session name and the branch. See segments/tock.sh.
+		"tock ${surface0} ${text}"
 	)
 fi
 

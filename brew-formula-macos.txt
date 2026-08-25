@@ -125,6 +125,7 @@ terminal-notifier
 terraform
 terraform-ls
 tesseract
+tock
 tree
 unbound
 unixodbc

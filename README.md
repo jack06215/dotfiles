@@ -39,6 +39,8 @@ dot_config/
   claude/                   → Claude Code settings + skills
   git/, gh-dash/, lazygit/  → git tooling
   starship/                 → prompt theme (Nord palette)
+  tock/                     → time tracker (tock.yaml; log under XDG_DATA_HOME)
+  tmux/, tmux-powerline/    → multiplexer config, which-key menu, status bar
   wezterm/                  → terminal emulator config (Lua, templated)
   nvim/                     → LazyVim-based Neovim config
   zellij/                   → terminal multiplexer keybinds
@@ -62,7 +64,8 @@ private credentials → core shell options → OS pre-init
 (`darwin_pre_init` / `wsl_pre_init` / `termux_pre_init`) → asdf/rbenv →
 functions → zinit plugins → history/PATH → completion (compinit then
 carapace) → prompt tools (atuin, fzf, starship, zoxide) → domain modules
-(aws, bazel, chezmoi, gh, git, jira, k8s, mysql, notify, pet, search) →
+(aws, bazel, chezmoi, gh, git, jira, k8s, mysql, notify, pet, search,
+tock) →
 aliases/keybinds → OS post-init (last). Set `ZSH_DEBUG_INIT=1` or
 `ZSH_PROFILE_STARTUP=1` to trace/profile startup.
 
@@ -79,6 +82,7 @@ Highlights under `src/`:
 | `jira.zsh` | `jira_workitem` (via `acli`, rendered through `myscripts/jira_render.py`), `jira_project_list` |
 | `chezmoi.zsh` | `chezmoi-data`: fzf browser over `chezmoi data` output |
 | `pet.zsh` | binds `Ctrl-S` to `pet search` snippet lookup |
+| `tock.zsh` | time tracking: `tk` (start/switch, project inferred from the git root), `tockpick`/`tkr` (gum picker over history), `tkn`/`tkd` + `tks`/`tkc`/`tkl`/`tkw`/`tka` |
 | `wezterm.zsh` | `wezterm_config`: gum-driven live tuning of WezTerm opacity/blur, persisted per-machine in `$XDG_STATE_HOME/wezterm/appearance.json` |
 | `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |
 | `search.zsh` | fzf-based search helpers |
@@ -124,6 +128,45 @@ all Python tooling invoked from zsh:
 - **atuin, fzf, zoxide** — shell history/search/navigation, wired in `init.zsh`.
 - **lazygit**, **gh-dash** — git/PR TUIs (`dot_config/lazygit`, `dot_config/gh-dash`); gh-dash is preconfigured with Flywheel-specific PR sections.
 - **bottom, btop, htop** — system monitors.
+
+## Time tracking (tock)
+
+[tock](https://github.com/kriuchkov/tock) logs activities as plaintext,
+one line per activity, under `$XDG_DATA_HOME/tock/tock.todo.txt`;
+`dot_config/tock/tock.yaml` sets the backend, a Catppuccin Mocha theme
+matching WezTerm and the tmux bar, and a six-tag vocabulary (`deep`,
+`meeting`, `review`, `ops`, `admin`, `learning`) that the shell picker
+offers and the calendar colours.
+
+The backend is `todotxt` rather than tock's tidier default `file`
+because, on the version homebrew-core ships (1.9.8), `file` accepts tags
+and silently discards them — `--tag` writes nothing, `tock tag` reports
+success and writes nothing, and no `tags` field ever reaches `--json`.
+`todotxt` keeps everything that made `file` attractive (plaintext, one
+line per activity, greppable, readable without tock) and actually stores
+the tags, at the cost of a noisier line.
+
+The point of the wiring is that tracking costs nothing to start and is
+impossible to forget:
+
+- **`tk`** (`src/tock.zsh`) starts — or switches to — an activity, taking
+  the project from the git repository root you are standing in. `tk fix
+  the exporter` is the whole interaction; bare `tk` asks via gum. Because
+  `tock start` closes whatever is running at the new start time, `tk` is
+  also the switch command, so there is nothing else to remember.
+- **The tmux status bar** (`tmux-powerline/segments/tock.sh`) shows the
+  running activity, how long it has been going (yellow past 90 minutes,
+  red past 5 hours — that one means nobody stopped it) and today's total.
+  With nothing running it shows a dim `󰅐 —`, which is the part that
+  matters: a tracker that is silently off produces wrong numbers.
+- **`prefix + Space`, then `k`** opens the same actions as popups —
+  start/switch, resume from history, stop, calendar, reports, stopwatch.
+  `tk` and `tockpick` reach a non-interactive popup shell through the
+  `zshfn` dispatcher (`dot_local/bin/`), not through duplicated scripts.
+
+`working_hours` in `tock.yaml` is the backstop for an activity left
+running overnight, and is the one setting left switched off — it needs a
+cutoff hour, and a guessed one truncates real work.
 
 ## Git
 
