@@ -169,7 +169,7 @@ if ! tmux has-session -t "=$session" 2> /dev/null; then
   tmux set-option -w -t "$session:opal" pane-border-format ' #P #{pane_title} '
   tmux set-option -w -t "$session:opal" @opal_panes "$editor $agent $aux $logs $shell $srv"
 
-  tmux select-pane -t "$agent" -T agent
+  tmux select-pane -t "$agent" -T ai_chat
   tmux select-pane -t "$aux" -T aux
   tmux select-pane -t "$logs" -T logs
   tmux select-pane -t "$shell" -T shell
