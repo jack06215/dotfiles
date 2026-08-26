@@ -6,10 +6,11 @@
 # $ZDOTDIR/src/tock.zsh sets no TOCK_* variables precisely so that this file
 # stays the single place a setting is decided.
 #
-# `tock` is a single Go binary and a plaintext log - both cheap enough that the
+# `tock` is a single Go binary over a single local file - cheap enough that the
 # tmux status bar queries it on every refresh (see
-# ~/.config/tmux-powerline/segments/tock.sh; ~7 ms per call, measured, which is
-# less than the one git call vcs_status.sh makes right beside it).
+# ~/.config/tmux-powerline/segments/tock.sh; ~7 ms per call on the sqlite
+# backend, measured, which is about half of the one git call vcs_status.sh
+# makes right beside it).
 #
 # The installed version is what homebrew-core ships (1.9.8). Upstream's own tap
 # is further ahead (2.x) and adds a `tray:` block for a macOS menu-bar timer;
@@ -19,41 +20,59 @@
 
 # Storage backend: file, todotxt, timewarrior, or sqlite.
 #
-# `todotxt` rather than the prettier default `file`, for one measured reason:
-# on the installed version (1.9.8, homebrew-core) the `file` backend accepts
-# tags and then silently discards them. `--tag deep` writes nothing, `tock tag`
-# answers "Tags added." and writes nothing, a tag appended to a line by hand is
-# ignored on read, and no `tags` field ever appears in --json. `todotxt` and
-# `sqlite` both persist them.
+# The prettier default `file` is out on a measured fact: on the installed
+# version (1.9.8, homebrew-core) it accepts tags and then silently discards
+# them. `--tag deep` writes nothing, `tock tag` answers "Tags added." and
+# writes nothing, a tag appended to a line by hand is ignored on read, and no
+# `tags` field ever appears in --json. `todotxt` and `sqlite` both persist
+# them, so the real choice was between those two, and it comes down to notes.
 #
-# So this is a choice between a tidier log and tags that exist. Tags win,
-# because the question that justifies tracking time at all - "how much of last
-# month was meetings?" - cannot be answered from free-text descriptions.
+# On `todotxt` a note is not in the log at all. It goes to a sidecar file named
+# after the activity's start *second*, under a hidden .tock/notes/ directory
+# beside the log - so the log stops being the whole record, grepping it does
+# not search your notes, copying it leaves them behind, and two activities
+# started inside the same second share one note file with the later note
+# winning. On `sqlite` the note is a column on the activity's own row, keyed by
+# a start_time the schema declares UNIQUE and stores to the microsecond. One
+# file, no sidecars, nothing that can drift out of sync.
 #
-# The usual reason to prefer `file` survives the switch: todo.txt is still
-# plaintext, still exactly one line per activity, still greppable and diffable
-# and still readable without tock. It is just noisier, because tock round-trips
-# full fidelity through `tock_*` key:value extensions on top of the todo.txt
-# fields (see the bottom of this file). sqlite would store tags too, at the cost
-# of being a binary blob; timewarrior would mean a second tool to keep in sync.
+# The cost is real and worth saying plainly: the log stops being plaintext. It
+# is no longer greppable with the tools next to it, no longer diffable, and no
+# longer readable without something that speaks SQLite. Two ways back out, both
+# of which keep notes and tags:
 #
-# Going back is one line - set `backend: file` and swap the path key below - as
-# long as you accept that tags stop being recorded from that point on.
-backend: todotxt
+#   tock export --fmt json --stdout --from 2026-01-01 --to 2026-12-31
+#   sqlite3 ~/.local/share/tock/tock.db 'select * from activities'
+#
+# The schema is small enough to be worth knowing by heart - it is at the bottom
+# of this file.
+#
+# Speed is not part of the trade. Measured over 30 runs each: ~7 ms per `tock
+# current` against sqlite, ~6.4 ms against todotxt, both comfortably under the
+# ~13 ms the one git call in vcs_status.sh costs beside it in the same bar.
+#
+# Going back is this key plus the path block below. What does not come back on
+# its own is the data: each backend is its own store, so anything tracked since
+# the switch stays in the database until `tock export --fmt json` carries it
+# across.
+backend: sqlite
 
-todotxt:
-  # tock's default is ~/.tock.todo.txt. This moves it under XDG_DATA_HOME
-  # (pinned to ~/.local/share in .zshenv) so $HOME stays clean, and puts it
-  # beside the other tool state rather than in the dotfile pile.
+sqlite:
+  # tock's default is ~/.tock.db. This moves it under XDG_DATA_HOME (pinned to
+  # ~/.local/share in .zshenv) so $HOME stays clean, and puts it beside the
+  # other tool state rather than in the dotfile pile.
   #
-  # Two things follow the file rather than being configured separately:
-  # per-activity notes, which tock writes as individual files in a `notes/`
-  # directory next to this path, and the parent directories, which tock creates
-  # on first write - so no run_onchange_ script is needed to mkdir it.
+  # Unlike the todotxt backend, this one does NOT create the parent directory -
+  # a missing one fails the command outright with "unable to open database
+  # file: no such file or directory", on every tock call including the status
+  # bar's. dot_local/share/private_tock/.keep in the chezmoi source exists only
+  # so that `chezmoi apply` creates ~/.local/share/tock/ before tock ever needs
+  # it; the private_ prefix is what keeps the directory at 0700, since the
+  # notes column now puts working notes inside it.
   #
   # tock expands a leading ~ itself. It does NOT expand $XDG_DATA_HOME, so the
   # literal path is the honest way to write it.
-  path: ~/.local/share/tock/tock.todo.txt
+  path: ~/.local/share/tock/tock.db
 
 # 24-hour, matching every other clock in this setup: the tmux-powerline `time`
 # segment (%H:%M), the date segment (%F), and timenow-jst.
@@ -143,8 +162,8 @@ theme:
   # list is offered by the `tk` picker in $ZDOTDIR/src/tock.zsh - keep the two in
   # sync, or the picker starts producing tags that render in the default colour.
   #
-  # This block only means anything on a backend that stores tags, which is why
-  # `backend` above is todotxt and not file.
+  # This block only means anything on a backend that stores tags, which is one
+  # of the two reasons `backend` above is sqlite and not file.
   #
   # A small closed vocabulary is the point. Free-form tags accumulate into
   # synonyms (meeting/meetings/mtg) that no report can aggregate, and the value
@@ -159,26 +178,44 @@ theme:
     learning: "#a6e3a1"  # green  - reading, courses, deliberate practice
 
 # =============================================================================
-# Log format, for when you edit the file by hand
+# Schema, for when the file has to be read or edited without tock
 # =============================================================================
-# One activity per line, in todo.txt syntax plus tock's own key:value fields:
+# The whole database is one table, created by tock on first use:
 #
-#   x 2026-08-25 2026-08-25 wire up tock +dotfiles @deep \
-#       tock_start:2026-08-25T10:00:00+09:00 tock_end:2026-08-25T11:30:00+09:00 \
-#       tock_project:dotfiles tock_desc:wire+up+tock tock_tags:deep
-#   │ │          │            │           │        └─ tags, one @ each
-#   │ │          │            │           └────────── project, todo.txt style
-#   │ │          │            └────────────────────── description
-#   │ │          └─────────────────────────────────── creation date
-#   │ └────────────────────────────────────────────── completion date
-#   └──────────────────────────────────────────────── x = finished
+#   CREATE TABLE activities (
+#     id          INTEGER PRIMARY KEY AUTOINCREMENT,
+#     description TEXT NOT NULL,
+#     project     TEXT NOT NULL,
+#     start_time  DATETIME NOT NULL UNIQUE,
+#     end_time    DATETIME,          -- NULL while the activity is running
+#     notes       TEXT,              -- the `tk` / `tkr` prompts land here
+#     tags        TEXT               -- a JSON array, e.g. ["deep","review"]
+#   );
+#   CREATE INDEX idx_start_time ON activities(start_time);
 #
-# The left half is what any todo.txt tool sees; the tock_* half is what makes
-# the round trip lossless, since base todo.txt only has date resolution and tock
-# tracks minutes. Both halves describe the same activity, so an edit has to
-# change both - which is the real cost of this backend over `file`.
+# Three things follow from those two nullable columns.
 #
-# A line with no `x` and no tock_end is what "currently running" means. That is
+# `end_time IS NULL` is the entire definition of "currently running" - which is
 # why `tock current` is a file read rather than a daemon query, and why an
-# activity left open overnight stays open until something closes it - see
-# working_hours above, and the red elapsed time in the tmux segment.
+# activity left open overnight stays open until something closes it (see
+# working_hours above, and the red elapsed time in the tmux segment).
+#
+# Times are stored UTC with an explicit offset - "2026-08-25 01:00:00+00:00" is
+# 10:00 JST - so a hand-written query wants datetime(start_time,'localtime')
+# before comparing against a local date.
+#
+# `tags` is a JSON array in a TEXT column, not a join table, and "no tags" has
+# three spellings depending on how the row was written: the JSON array ["deep"],
+# the empty array [], and the literal four-character string null. Filtering on
+# json_type() rather than `tags is not null` is what covers all three:
+#
+#   sqlite3 ~/.local/share/tock/tock.db "
+#     select t.value, count(*),
+#            round(sum(julianday(end_time)-julianday(start_time))*24, 2) as hours
+#     from activities a, json_each(a.tags) t
+#     where a.end_time is not null and json_type(a.tags) = 'array'
+#     group by t.value order by hours desc"
+#
+# `tock report`, `tock analyze` and the calendar answer most of this already;
+# the point of writing the schema down is that they no longer have to be the
+# only thing that can.

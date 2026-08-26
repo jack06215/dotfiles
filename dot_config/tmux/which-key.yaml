@@ -393,6 +393,12 @@ items:
   # That has to happen inside the popup's own command: display-popup returns to
   # tmux immediately, so a second command in a macro would run while the popup
   # was still open.
+  #
+  # Both of those also end on a `gum write` note prompt - a 4-line textarea plus
+  # a header and gum's key-bind footer - which is what the heights below are
+  # sized for. A percentage of a short terminal can still get tight; the prompt
+  # is skippable with esc either way, and enter is what saves it (ctrl+j is the
+  # newline, which is the pair most people expect the other way round).
   - name: +Time (tock)
     key: k
     menu:
@@ -400,10 +406,10 @@ items:
       # time, so this is the only key needed to move from one thing to the next.
       - name: Start / switch here
         key: k
-        command: 'display-popup -w 60% -h 40% -d "#{pane_current_path}" -E "tk && tmux refresh-client -S"'
+        command: 'display-popup -w 60% -h 50% -d "#{pane_current_path}" -E "tk && tmux refresh-client -S"'
       - name: Resume from history
         key: r
-        command: 'display-popup -w 60% -h 50% -d "#{pane_current_path}" -E "tockpick && tmux refresh-client -S"'
+        command: 'display-popup -w 60% -h 60% -d "#{pane_current_path}" -E "tockpick && tmux refresh-client -S"'
       - name: Stop
         key: s
         command: 'run-shell "tock stop; tmux refresh-client -S"'

@@ -39,7 +39,7 @@ dot_config/
   claude/                   → Claude Code settings + skills
   git/, gh-dash/, lazygit/  → git tooling
   starship/                 → prompt theme (Nord palette)
-  tock/                     → time tracker (tock.yaml; log under XDG_DATA_HOME)
+  tock/                     → time tracker (tock.yaml; SQLite db under XDG_DATA_HOME)
   tmux/, tmux-powerline/    → multiplexer config, which-key menu, status bar
   wezterm/                  → terminal emulator config (Lua, templated)
   nvim/                     → LazyVim-based Neovim config
@@ -82,7 +82,7 @@ Highlights under `src/`:
 | `jira.zsh` | `jira_workitem` (via `acli`, rendered through `myscripts/jira_render.py`), `jira_project_list` |
 | `chezmoi.zsh` | `chezmoi-data`: fzf browser over `chezmoi data` output |
 | `pet.zsh` | binds `Ctrl-S` to `pet search` snippet lookup |
-| `tock.zsh` | time tracking: `tk` (start/switch, project inferred from the git root), `tockpick`/`tkr` (gum picker over history), `tkn`/`tkd` + `tks`/`tkc`/`tkl`/`tkw`/`tka` |
+| `tock.zsh` | time tracking: `tk` (start/switch, project inferred from the git root, prompts for tag + note), `tockpick`/`tkr` (gum picker over history, shows last note and asks for a new one), `tkn`/`tkd` + `tks`/`tkc`/`tkl`/`tkw`/`tka` |
 | `wezterm.zsh` | `wezterm_config`: gum-driven live tuning of WezTerm opacity/blur, persisted per-machine in `$XDG_STATE_HOME/wezterm/appearance.json` |
 | `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |
 | `search.zsh` | fzf-based search helpers |
@@ -131,29 +131,51 @@ all Python tooling invoked from zsh:
 
 ## Time tracking (tock)
 
-[tock](https://github.com/kriuchkov/tock) logs activities as plaintext,
-one line per activity, under `$XDG_DATA_HOME/tock/tock.todo.txt`;
-`dot_config/tock/tock.yaml` sets the backend, a Catppuccin Mocha theme
-matching WezTerm and the tmux bar, and a six-tag vocabulary (`deep`,
-`meeting`, `review`, `ops`, `admin`, `learning`) that the shell picker
-offers and the calendar colours.
+[tock](https://github.com/kriuchkov/tock) logs activities to a SQLite
+database at `$XDG_DATA_HOME/tock/tock.db`; `dot_config/tock/tock.yaml`
+sets the backend, a Catppuccin Mocha theme matching WezTerm and the tmux
+bar, and a six-tag vocabulary (`deep`, `meeting`, `review`, `ops`,
+`admin`, `learning`) that the shell picker offers and the calendar
+colours.
 
-The backend is `todotxt` rather than tock's tidier default `file`
-because, on the version homebrew-core ships (1.9.8), `file` accepts tags
+The backend is `sqlite`. tock's tidier default `file` is out on a
+measured fact: on the version homebrew-core ships (1.9.8) it accepts tags
 and silently discards them — `--tag` writes nothing, `tock tag` reports
 success and writes nothing, and no `tags` field ever reaches `--json`.
-`todotxt` keeps everything that made `file` attractive (plaintext, one
-line per activity, greppable, readable without tock) and actually stores
-the tags, at the cost of a noisier line.
+That left `todotxt` and `sqlite`, and notes decide it. On `todotxt` a
+note is not in the log at all — it goes to a sidecar file named after the
+activity's start second under a hidden `.tock/notes/`, so the log stops
+being the whole record, grepping it misses the notes, and copying it
+leaves them behind. On `sqlite` the note is a column on the activity's
+own row. The cost is that the log is no longer plaintext, greppable, or
+diffable; `tock export --fmt json --stdout` and `sqlite3` are the ways
+back out, and the schema (one `activities` table) is documented at the
+bottom of `tock.yaml`. Per-call cost is unchanged at ~7 ms, so the status
+bar does not notice.
+
+Unlike the todotxt backend, sqlite does not create its parent directory —
+a missing one fails every tock call outright — so
+`dot_local/share/private_tock/` carries a `.keep` to make `chezmoi apply`
+create it first, at `0700` since working notes now live in there.
 
 The point of the wiring is that tracking costs nothing to start and is
 impossible to forget:
 
 - **`tk`** (`src/tock.zsh`) starts — or switches to — an activity, taking
   the project from the git repository root you are standing in. `tk fix
-  the exporter` is the whole interaction; bare `tk` asks via gum. Because
-  `tock start` closes whatever is running at the new start time, `tk` is
-  also the switch command, so there is nothing else to remember.
+  the exporter` is the whole interaction; bare `tk` asks via gum, for a
+  description, then a tag, then a note. Because `tock start` closes
+  whatever is running at the new start time, `tk` is also the switch
+  command, so there is nothing else to remember.
+- **Notes** are the free-form half: what "done" looks like, the ticket
+  URL, where you left off. The prompt is a `gum write` textarea — enter
+  saves, ctrl+j is the newline, esc skips — and the argument forms of
+  `tk` stay silent, so `tk fix the exporter` is still one step and
+  `--note` sets one without asking. `tkr`/`tockpick` asks on the way back
+  in and puts the note you left last time in the prompt header, which is
+  the point: resuming shows you where you stopped. On the sqlite backend
+  a note is just the `notes` column on the activity's row, so it travels
+  with the entry through `--json`, `-F '{{.Notes}}'` and every export.
 - **The tmux status bar** (`tmux-powerline/segments/tock.sh`) shows the
   running activity, how long it has been going (yellow past 90 minutes,
   red past 5 hours — that one means nobody stopped it) and today's total.
