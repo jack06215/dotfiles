@@ -1,0 +1,81 @@
+{{ if ne .chezmoi.os "windows" -}}
+#!/bin/bash
+set -euo pipefail
+
+# Word list backing neovim's dictionary completion source
+# (dot_config/nvim/lua/plugins/blink/config.lua, via blink-cmp-dictionary).
+#
+# Generated rather than committed: it is ~200k lines of static English that
+# would outweigh everything else in this repo, and every machine can rebuild
+# it from something it already has. Like the nushell integrations it lands in
+# XDG_DATA_HOME, not the config tree - this is a build artifact, not config.
+#
+# The source fingerprints are embedded below (chezmoi hashes this rendered
+# file to decide whether to rerun), so the list is rebuilt when the system
+# word list changes or wordnet is installed:
+#   words:   {{ output "sh" "-c" "cksum /usr/share/dict/words 2>/dev/null || cksum /usr/share/dict/american-english 2>/dev/null || echo none" | trim }}
+#   wordnet: {{ output "sh" "-c" "command -v wn || echo not-installed" | trim }}
+
+dict_dir="${XDG_DATA_HOME:-$HOME/.local/share}/dict"
+out="$dict_dir/words.txt"
+
+raw=$(mktemp)
+words=$(mktemp)
+trap 'rm -f "$raw" "$words"' EXIT
+
+# wordnet is the fallback that makes WSL2 work without apt: it is already in
+# brew-formula-wsl2.txt for `wn`, which blink-cmp-dictionary shells out to for
+# the definitions it shows alongside each word, and the same package ships the
+# index files read below.
+wn_share=""
+if command -v brew > /dev/null 2>&1; then
+  wn_prefix=$(brew --prefix wordnet 2> /dev/null || true)
+  if [[ -n "$wn_prefix" && -r "$wn_prefix/share/wordnet/index.noun" ]]; then
+    wn_share="$wn_prefix/share/wordnet"
+  fi
+fi
+if [[ -z "$wn_share" && -r /usr/share/wordnet/index.noun ]]; then
+  # Where apt's wordnet-base package puts the same files.
+  wn_share="/usr/share/wordnet"
+fi
+
+# First source that exists wins.
+if [[ -r /usr/share/dict/words ]]; then
+  # macOS ships this (Webster's Second); on Linux it arrives with wamerican.
+  src="/usr/share/dict/words"
+  cat "$src" > "$raw"
+elif [[ -r /usr/share/dict/american-english ]]; then
+  # The real Debian/Ubuntu file - `words` there is a dictionaries-common
+  # symlink that is not always present.
+  src="/usr/share/dict/american-english"
+  cat "$src" > "$raw"
+elif [[ -n "$wn_share" ]]; then
+  # WordNet's index files open with a licence header whose lines all start
+  # with two spaces; on every other line the first field is the lemma.
+  src="$wn_share/index.*"
+  for pos in noun verb adj adv; do
+    if [[ -r "$wn_share/index.$pos" ]]; then
+      awk '!/^ /{print $1}' "$wn_share/index.$pos" >> "$raw"
+    fi
+  done
+else
+  echo "dictionary: no system word list found, skipping $out" >&2
+  echo "dictionary: install one with 'brew install wordnet' or 'apt install wamerican'" >&2
+  exit 0
+fi
+
+# Drop possessives, hyphenated and accented entries, and the one- and
+# two-letter words that the source's min_keyword_length of 3 makes useless.
+# LC_ALL=C keeps the ordering identical across machines.
+grep -x '[A-Za-z]\{3,\}' "$raw" | LC_ALL=C sort -u > "$words" || true
+
+if [[ ! -s "$words" ]]; then
+  echo "dictionary: $src produced no usable words, skipping $out" >&2
+  exit 0
+fi
+
+mkdir -p "$dict_dir"
+mv "$words" "$out"
+chmod 644 "$out"
+echo "dictionary: wrote $(wc -l < "$out" | tr -d ' ') words to $out (from $src)"
+{{ end -}}

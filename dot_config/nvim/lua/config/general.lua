@@ -158,6 +158,12 @@ vim.opt.cmdheight = 0
 vim.opt.exrc = true
 vim.opt.signcolumn = "yes:1"
 vim.opt.spelloptions = "camel,noplainbuffer"
+-- Same reasoning as dot_config/vim/vimrc: `zg` fails with E764 unless
+-- 'spellfile' has a value, and nvim only fills it in on its own once a
+-- `spell` directory already exists inside 'runtimepath'. Pointing it here
+-- also keeps the word list in the repo, where chezmoi syncs it across
+-- machines and the dictionary completion source reads it back.
+vim.opt.spellfile = vim.fn.stdpath("config") .. "/spell/en.utf-8.add"
 vim.opt.ignorecase = true
 vim.opt.shortmess:append("C")
 
