@@ -21,6 +21,8 @@
 typeset -A funcs=(
   jqc jq.zsh
   jqf jq.zsh
+  tk tock.zsh
+  tockpick tock.zsh
 )
 
 local name=${0:t}

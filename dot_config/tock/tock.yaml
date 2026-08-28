@@ -1,0 +1,221 @@
+# tock - command-line time tracker. https://github.com/kriuchkov/tock
+#
+# Read from ~/.config/tock/tock.yaml, which is where tock looks by default, so
+# nothing has to point at this file. Precedence is flags > TOCK_* environment
+# variables > this file > tock's own defaults; the shell layer in
+# $ZDOTDIR/src/tock.zsh sets no TOCK_* variables precisely so that this file
+# stays the single place a setting is decided.
+#
+# `tock` is a single Go binary over a single local file - cheap enough that the
+# tmux status bar queries it on every refresh (see
+# ~/.config/tmux-powerline/segments/tock.sh; ~7 ms per call on the sqlite
+# backend, measured, which is about half of the one git call vcs_status.sh
+# makes right beside it).
+#
+# The installed version is what homebrew-core ships (1.9.8). Upstream's own tap
+# is further ahead (2.x) and adds a `tray:` block for a macOS menu-bar timer;
+# the keys for it are noted below but left out, because an unknown key here is
+# silently ignored and a config that pretends to configure something is worse
+# than one that says it does not.
+
+# Storage backend: file, todotxt, timewarrior, or sqlite.
+#
+# The prettier default `file` is out on a measured fact: on the installed
+# version (1.9.8, homebrew-core) it accepts tags and then silently discards
+# them. `--tag deep` writes nothing, `tock tag` answers "Tags added." and
+# writes nothing, a tag appended to a line by hand is ignored on read, and no
+# `tags` field ever appears in --json. `todotxt` and `sqlite` both persist
+# them, so the real choice was between those two, and it comes down to notes.
+#
+# On `todotxt` a note is not in the log at all. It goes to a sidecar file named
+# after the activity's start *second*, under a hidden .tock/notes/ directory
+# beside the log - so the log stops being the whole record, grepping it does
+# not search your notes, copying it leaves them behind, and two activities
+# started inside the same second share one note file with the later note
+# winning. On `sqlite` the note is a column on the activity's own row, keyed by
+# a start_time the schema declares UNIQUE and stores to the microsecond. One
+# file, no sidecars, nothing that can drift out of sync.
+#
+# The cost is real and worth saying plainly: the log stops being plaintext. It
+# is no longer greppable with the tools next to it, no longer diffable, and no
+# longer readable without something that speaks SQLite. Two ways back out, both
+# of which keep notes and tags:
+#
+#   tock export --fmt json --stdout --from 2026-01-01 --to 2026-12-31
+#   sqlite3 ~/.local/share/tock/tock.db 'select * from activities'
+#
+# The schema is small enough to be worth knowing by heart - it is at the bottom
+# of this file.
+#
+# Speed is not part of the trade. Measured over 30 runs each: ~7 ms per `tock
+# current` against sqlite, ~6.4 ms against todotxt, both comfortably under the
+# ~13 ms the one git call in vcs_status.sh costs beside it in the same bar.
+#
+# Going back is this key plus the path block below. What does not come back on
+# its own is the data: each backend is its own store, so anything tracked since
+# the switch stays in the database until `tock export --fmt json` carries it
+# across.
+backend: sqlite
+
+sqlite:
+  # tock's default is ~/.tock.db. This moves it under XDG_DATA_HOME (pinned to
+  # ~/.local/share in .zshenv) so $HOME stays clean, and puts it beside the
+  # other tool state rather than in the dotfile pile.
+  #
+  # Unlike the todotxt backend, this one does NOT create the parent directory -
+  # a missing one fails the command outright with "unable to open database
+  # file: no such file or directory", on every tock call including the status
+  # bar's. dot_local/share/private_tock/.keep in the chezmoi source exists only
+  # so that `chezmoi apply` creates ~/.local/share/tock/ before tock ever needs
+  # it; the private_ prefix is what keeps the directory at 0700, since the
+  # notes column now puts working notes inside it.
+  #
+  # tock expands a leading ~ itself. It does NOT expand $XDG_DATA_HOME, so the
+  # literal path is the honest way to write it.
+  path: ~/.local/share/tock/tock.db
+
+# 24-hour, matching every other clock in this setup: the tmux-powerline `time`
+# segment (%H:%M), the date segment (%F), and timenow-jst.
+time_format: "24"
+
+# Weekly workload target, used by the calendar view's progress display.
+weekly_target: "40h"
+
+# Off, for two reasons. Homebrew owns this binary (`brew upgrade` runs from
+# setup.sh, and tock is listed in brew-formula-macos.txt), so an in-band nag
+# cannot act on anything. More practically the notice goes to stderr on *every*
+# invocation, and the status bar segment invokes tock several times a minute -
+# `brew outdated` is where a version check belongs.
+check_updates: false
+
+# =============================================================================
+# Working hours
+# =============================================================================
+# The one safeguard worth having: an activity left running overnight does not
+# just misreport one day, it silently makes every aggregate downstream wrong.
+# With this on, the next tock command after `stop_at` on a listed weekday closes
+# the running activity at that time instead of letting it accumulate.
+#
+# Left disabled because it needs *your* cutoff, and a guessed one truncates real
+# work: set `stop_at` to an hour you are reliably done by (later is safer - it
+# is a backstop, not a policy) and flip `enabled` to true.
+working_hours:
+  enabled: false
+  # stop_at: "20:00"
+  weekdays: "mon,tue,wed,thu,fri"
+
+# =============================================================================
+# Calendar view (`tock list` / `tock calendar`)
+# =============================================================================
+calendar:
+  # Go reference-time layouts, not strftime: 15 is the 24-hour hour and 04 the
+  # minute, so "15:04" renders a 1h16m activity as "01:16". Durations of 24h or
+  # more wrap (25h shows as 01:00), which is a non-issue for per-activity spans
+  # and the reason time_total_format below is worth a thought if you ever track
+  # multi-day.
+  #
+  # "decimal" is the other useful value here - 2h15m becomes "2.25" - which is
+  # what a timesheet that bills in fractional hours wants. Swap both this and
+  # time_total_format together if you go that way.
+  time_spent_format: "15:04"
+  time_start_format: "15:04"
+  # Appended verbatim after the duration, separators included. The • matches the
+  # separator the tmux-powerline mode_indicator segment uses.
+  time_end_format: " • 15:04"
+  time_total_format: "15:04"
+  # Duration first, in a fixed-width column:
+  #   01:30 Refactor the exporter
+  #   00:45 Code review
+  # rather than "- Refactor the exporter: 01:30". The times line up, so a day
+  # scans vertically instead of having to be read.
+  align_duration_left: true
+
+# =============================================================================
+# Export
+# =============================================================================
+export:
+  ical:
+    file_name: "tock_export.ics"
+
+# =============================================================================
+# Theme - Catppuccin Mocha
+# =============================================================================
+# Same palette as WezTerm's colour_scheme and ~/.config/tmux-powerline/themes/
+# mocha.sh, so the calendar TUI reads as part of the terminal rather than a
+# window pasted over it. If the WezTerm scheme changes, these six values and the
+# ones in mocha.sh are what need to move together.
+#
+# `name: custom` is what activates the colours below. Without it tock
+# auto-detects (TrueColor vs ANSI, light vs dark background) and picks one of
+# its own built-ins - a reasonable default, and the right choice on a machine
+# where the terminal theme is not pinned. Here it is pinned.
+theme:
+  name: custom
+  primary: "#cba6f7"    # mauve     - selection, the active day
+  secondary: "#89dceb"  # sky       - headings, secondary emphasis
+  text: "#cdd6f4"       # text
+  sub_text: "#a6adc8"   # subtext0
+  faint: "#6c7086"      # overlay0  - grid lines, days outside the month
+  highlight: "#f9e2af"  # yellow    - today
+
+  # Per-tag colours. These six tag names are the whole vocabulary, and the same
+  # list is offered by the `tk` picker in $ZDOTDIR/src/tock.zsh - keep the two in
+  # sync, or the picker starts producing tags that render in the default colour.
+  #
+  # This block only means anything on a backend that stores tags, which is one
+  # of the two reasons `backend` above is sqlite and not file.
+  #
+  # A small closed vocabulary is the point. Free-form tags accumulate into
+  # synonyms (meeting/meetings/mtg) that no report can aggregate, and the value
+  # of tagging at all is being able to ask "how much of last month was meetings"
+  # and get an answer that is not off by the tags you forgot you had.
+  tag_colors:
+    deep: "#cba6f7"      # mauve  - uninterrupted focused work
+    meeting: "#fab387"   # peach  - anything with someone else's calendar in it
+    review: "#89b4fa"    # blue   - reading code, PRs, design docs
+    ops: "#f38ba8"       # red    - incidents, on-call, unplanned interrupts
+    admin: "#9399b2"     # overlay2 - process, expenses, tickets, mail
+    learning: "#a6e3a1"  # green  - reading, courses, deliberate practice
+
+# =============================================================================
+# Schema, for when the file has to be read or edited without tock
+# =============================================================================
+# The whole database is one table, created by tock on first use:
+#
+#   CREATE TABLE activities (
+#     id          INTEGER PRIMARY KEY AUTOINCREMENT,
+#     description TEXT NOT NULL,
+#     project     TEXT NOT NULL,
+#     start_time  DATETIME NOT NULL UNIQUE,
+#     end_time    DATETIME,          -- NULL while the activity is running
+#     notes       TEXT,              -- the `tk` / `tkr` prompts land here
+#     tags        TEXT               -- a JSON array, e.g. ["deep","review"]
+#   );
+#   CREATE INDEX idx_start_time ON activities(start_time);
+#
+# Three things follow from those two nullable columns.
+#
+# `end_time IS NULL` is the entire definition of "currently running" - which is
+# why `tock current` is a file read rather than a daemon query, and why an
+# activity left open overnight stays open until something closes it (see
+# working_hours above, and the red elapsed time in the tmux segment).
+#
+# Times are stored UTC with an explicit offset - "2026-08-25 01:00:00+00:00" is
+# 10:00 JST - so a hand-written query wants datetime(start_time,'localtime')
+# before comparing against a local date.
+#
+# `tags` is a JSON array in a TEXT column, not a join table, and "no tags" has
+# three spellings depending on how the row was written: the JSON array ["deep"],
+# the empty array [], and the literal four-character string null. Filtering on
+# json_type() rather than `tags is not null` is what covers all three:
+#
+#   sqlite3 ~/.local/share/tock/tock.db "
+#     select t.value, count(*),
+#            round(sum(julianday(end_time)-julianday(start_time))*24, 2) as hours
+#     from activities a, json_each(a.tags) t
+#     where a.end_time is not null and json_type(a.tags) = 'array'
+#     group by t.value order by hours desc"
+#
+# `tock report`, `tock analyze` and the calendar answer most of this already;
+# the point of writing the schema down is that they no longer have to be the
+# only thing that can.

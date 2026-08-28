@@ -444,6 +444,23 @@ function jsonl2csv() {
     '  let n = (($bad | first | get index) + 1)'
     '  error make --unspanned { msg: $"line ($n) is not a JSON object -- expected one object per line" }'
     '}'
+    # A CSV cell holds one scalar, so a nested array or object has to become text
+    # on the way out. Left alone, `to csv` fails with "can't convert list<string>
+    # to string" reported against the span of `from json` - the reader, not the
+    # column that would not fit - which says nothing about where to look. Compact
+    # JSON is the representation worth writing: it stays on one line, survives a
+    # trip through Excel, and reads back with any JSON parser.
+    'let rows = ($rows | update cells {|v|'
+    '  let t = ($v | describe)'
+    '  if (($t | str starts-with "list") or ($t | str starts-with "table") or ($t | str starts-with "record")) {'
+    '    $v | to json --raw'
+    '  } else {'
+    '    $v'
+    '  }'
+    # `update cells` hands back a lazy stream, and `to csv` streaming a table
+    # whose records do not all carry the same keys dies the moment a later row
+    # introduces a column. `collect` puts the table back together first.
+    '} | collect)'
   )
   # No records means no columns to name, so nothing at all is the honest answer -
   # `to csv` would otherwise emit a lone `""` for an empty table.
@@ -478,7 +495,7 @@ function jsonl2csv() {
 }
 
 function jsonl2yml() {
-  if [ "$" -gt 0 ]; then
+  if [ "$#" -gt 0 ]; then
     cat -- "$@" | nu -n --stdin -c 'from json --objects | to yaml'
   elif [ -t 0 ]; then
     printf 'usage: jsonl2yml [file...]   # or pipe JSONL on stdin\n' >&2
@@ -486,6 +503,135 @@ function jsonl2yml() {
   else
     nu -n --stdin -c 'from json --objects | to yaml'
   fi
+}
+
+function _yml2jsonl_usage() {
+  print -u2 -- "usage: yml2jsonl [options] [file|-] [path.to.list]
+
+Reads stdin when no file (or '-') is given. A YAML sequence, or a file of several
+'---' separated documents, becomes one JSON object per line; a lone mapping
+becomes a single line. The trailing path descends through mapping keys first,
+for the common case of the sequence being nested under one.
+
+  -p, --path PATH      the dotted path, for when there is no file argument
+  -e, --encoding ENC   decode input as ENC (default: utf-8). cp932, shift-jis
+                       and eucjp are also accepted
+  -h, --help           this message"
+}
+
+# The reverse of jsonl2yml. `from yaml` already folds a multi-document file into
+# a list, so '---' separators and a plain YAML sequence arrive as the same thing
+# and each become one line - which is the whole point of the format.
+#
+# The file path and the dotted path travel in the environment rather than being
+# spliced into the nu source, for the reason _csv2 does the same: both can hold
+# quotes, and nu's single-quoted strings have no escape syntax to defend against
+# that.
+function yml2jsonl() {
+  local caller=${funcstack[1]:-yml2jsonl}
+  _check_nu_cmd "$caller" || return 1
+
+  local -a o_help o_path o_enc
+  zparseopts -D -E -F -- \
+    h=o_help -help=o_help \
+    p:=o_path -path:=o_path \
+    e:=o_enc -encoding:=o_enc 2> /dev/null || {
+      print -u2 "$caller: unknown option; try '$caller --help'"
+      return 2
+    }
+
+  ((${#o_help})) && {
+    _yml2jsonl_usage
+    return 0
+  }
+
+  (($# > 2)) && {
+    print -u2 "$caller: unexpected argument '$3'"
+    return 2
+  }
+
+  # Not `path`: that name is tied to $PATH in zsh, and a local one blanks the
+  # command search path for the rest of the function.
+  local file=${1:-} keypath=${2:-}
+  if ((${#o_path})); then
+    [[ -z $keypath ]] || {
+      print -u2 "$caller: give the path once, as --path or as the trailing argument"
+      return 2
+    }
+    keypath=${o_path[-1]}
+  fi
+  [[ $file == - ]] && file=''
+
+  if [[ -n $file ]]; then
+    [[ -r $file ]] || {
+      print -u2 "$caller: cannot read '$file'"
+      return 1
+    }
+  elif [[ -t 0 ]]; then
+    _yml2jsonl_usage
+    return 2
+  fi
+
+  local enc
+  enc=$(_nu_encoding_label "${o_enc[-1]:-utf-8}")
+
+  local source_expr
+  local -a nu_args=(-n -c)
+  if [[ -n $file ]]; then
+    source_expr='open --raw $env.__Y2J_FILE'
+  else
+    # As in _csv2: nu hands stdin over already decoded as text whenever the bytes
+    # happen to be valid UTF-8, so going back to bytes is what lets `decode`
+    # apply --encoding whichever way the input arrived.
+    nu_args=(-n --stdin -c)
+    source_expr='$in | into binary'
+  fi
+
+  local -a script=(
+    "mut doc = (${source_expr} | decode \$env.__Y2J_ENC | from yaml)"
+  )
+
+  if [[ -n $keypath ]]; then
+    # Left to `get`, a key that misses reports itself against the environment
+    # block the path arrived in, naming neither the key nor what was there
+    # instead. Walk a step at a time and say where the descent stopped.
+    script+=(
+      'for k in ($env.__Y2J_PATH | split row ".") {'
+      '  let shape = ($doc | describe)'
+      '  if not ($shape | str starts-with "record") {'
+      '    error make --unspanned { msg: $"cannot look up ($k): the path reached a ($shape), not a mapping" }'
+      '  }'
+      '  if $k not-in ($doc | columns) {'
+      '    let have = ($doc | columns | str join ", ")'
+      '    error make --unspanned { msg: $"no such key: ($k) -- mapping has: ($have)" }'
+      '  }'
+      '  $doc = ($doc | get $k)'
+      '}'
+    )
+  fi
+
+  # A document that parses to a scalar is what a file that is not YAML at all
+  # looks like - `from yaml` reads plain prose as one long string - so that is
+  # worth refusing rather than emitting a quoted blob. An empty input is not an
+  # error, it just has no lines in it.
+  script+=(
+    'let shape = ($doc | describe)'
+    'let rows = (if $shape == "nothing" {'
+    '  []'
+    '} else if (($shape | str starts-with "list") or ($shape | str starts-with "table")) {'
+    '  $doc'
+    '} else if ($shape | str starts-with "record") {'
+    '  [$doc]'
+    '} else {'
+    '  error make --unspanned { msg: $"expected a mapping or a sequence, got a ($shape)" }'
+    '})'
+    # `to json --raw` keeps each record on one line and writes non-ASCII
+    # literally rather than as \uXXXX escapes, so Japanese text stays readable.
+    '$rows | each {|row| $row | to json --raw } | to text'
+  )
+
+  __Y2J_FILE=$file __Y2J_PATH=$keypath __Y2J_ENC=$enc \
+    nu "${nu_args[@]}" "${(F)script}"
 }
 
 function export_secret {

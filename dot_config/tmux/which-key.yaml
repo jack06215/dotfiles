@@ -382,6 +382,60 @@ items:
       # @suspend_suspended_options blob as arguments, and passing that blob here
       # needs the nested quoting rule 2 rules out. Use M-q.
 
+  # tock, the time tracker. `tk` and `tockpick` are zsh functions from
+  # $ZDOTDIR/src/tock.zsh, reachable here because ~/.local/bin symlinks both at
+  # the zshfn dispatcher — a popup runs `$SHELL -c`, which reads .zshenv and
+  # never sources init.zsh, so a bare function name would be "command not
+  # found". Everything else on this menu is the tock binary directly.
+  #
+  # The two that change state end in `tmux refresh-client -S` so the status bar
+  # updates the moment the popup closes rather than on its next 5-second tick.
+  # That has to happen inside the popup's own command: display-popup returns to
+  # tmux immediately, so a second command in a macro would run while the popup
+  # was still open.
+  #
+  # Both of those also end on a `gum write` note prompt - a 4-line textarea plus
+  # a header and gum's key-bind footer - which is what the heights below are
+  # sized for. A percentage of a short terminal can still get tight; the prompt
+  # is skippable with esc either way, and enter is what saves it (ctrl+j is the
+  # newline, which is the pair most people expect the other way round).
+  - name: +Time (tock)
+    key: k
+    menu:
+      # Also a switch: `tock start` closes whatever is running at the new start
+      # time, so this is the only key needed to move from one thing to the next.
+      - name: Start / switch here
+        key: k
+        command: 'display-popup -w 60% -h 50% -d "#{pane_current_path}" -E "tk && tmux refresh-client -S"'
+      - name: Resume from history
+        key: r
+        command: 'display-popup -w 60% -h 60% -d "#{pane_current_path}" -E "tockpick && tmux refresh-client -S"'
+      - name: Stop
+        key: s
+        command: 'run-shell "tock stop; tmux refresh-client -S"'
+      - separator: true
+      - name: Calendar
+        key: c
+        command: 'display-popup -w 90% -h 90% -E "tock list"'
+      - name: Today
+        key: d
+        command: 'display-popup -w 80% -h 60% -E "tock report --today | less -R"'
+      - name: Yesterday
+        key: y
+        command: 'display-popup -w 80% -h 60% -E "tock report --yesterday | less -R"'
+      # `report` filters by a single day (--today/--yesterday/--date) or not at
+      # all — there is no range flag, so this one is every project ever, totals
+      # only. The calendar (c) is where a week is actually readable.
+      - name: All projects, totals
+        key: t
+        command: 'display-popup -w 80% -h 60% -E "tock report --summary | less -R"'
+      - name: Stopwatch
+        key: w
+        command: 'display-popup -w 50% -h 30% -E "tock watch"'
+      - name: Analyze work habits
+        key: a
+        command: 'display-popup -w 90% -h 90% -E "tock analyze | less -R"'
+
   - name: +Client
     key: C
     menu:
