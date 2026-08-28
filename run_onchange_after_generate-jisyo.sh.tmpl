@@ -19,7 +19,8 @@ set -euo pipefail
 # file to decide whether to rerun), so the table is rebuilt when a
 # system-installed jisyo changes. Editing the kana table further down changes
 # this file's hash too, which is what reruns it after a transliteration fix.
-#   jisyo: {{ output "sh" "-c" "cksum /usr/share/skk/SKK-JISYO.L /usr/local/share/skk/SKK-JISYO.L /opt/homebrew/share/skk/SKK-JISYO.L 2>/dev/null | head -1 | grep . || echo none" | trim }}
+#   size:  {{ env "SKK_JISYO_SIZE" | default "L" }}
+#   jisyo: {{ output "sh" "-c" "size=${SKK_JISYO_SIZE:-L}; cksum /usr/share/skk/SKK-JISYO.$size /usr/local/share/skk/SKK-JISYO.$size /opt/homebrew/share/skk/SKK-JISYO.$size 2>/dev/null | head -1 | grep . || echo none" | trim }}
 
 # SKK-JISYO.L is the full list (personal names, place names, compounds); .M is
 # roughly a tenth of it. The whole table is loaded into memory on the first
