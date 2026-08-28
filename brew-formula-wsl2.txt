@@ -15,6 +15,7 @@ clang-format
 cmake
 colordiff
 coreutils
+deno
 detekt
 docker-compose
 docker-credential-helper-ecr

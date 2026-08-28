@@ -1,0 +1,253 @@
+{{ if ne .chezmoi.os "windows" -}}
+#!/bin/bash
+set -euo pipefail
+
+# Romaji-keyed Japanese word table backing neovim's IM completion source
+# (dot_config/nvim/lua/plugins/blink/config.lua, via blink-cmp-im).
+#
+# Same trick kensaku already plays for searching, pointed the other way: there
+# you type romaji and it builds a regex that *matches* Japanese, here you type
+# romaji and the menu *inserts* Japanese. Neither needs an OS IME.
+#
+# Generated rather than committed for the same reason as the English word list
+# - it is a few hundred thousand lines rebuilt from an upstream file - and it
+# lands in XDG_DATA_HOME beside it, in its own directory: the dictionary
+# source globs `**/*.txt` under $XDG_DATA_HOME/dict, so a jisyo dropped there
+# would be swallowed into English completion.
+#
+# The source fingerprints are embedded below (chezmoi hashes this rendered
+# file to decide whether to rerun), so the table is rebuilt when a
+# system-installed jisyo changes. Editing the kana table further down changes
+# this file's hash too, which is what reruns it after a transliteration fix.
+#   jisyo: {{ output "sh" "-c" "cksum /usr/share/skk/SKK-JISYO.L /usr/local/share/skk/SKK-JISYO.L /opt/homebrew/share/skk/SKK-JISYO.L 2>/dev/null | head -1 | grep . || echo none" | trim }}
+
+# SKK-JISYO.L is the full list (personal names, place names, compounds); .M is
+# roughly a tenth of it. The whole table is loaded into memory on the first
+# Japanese completion of a session, so drop to M here if that pause is
+# noticeable - the rest of the script does not care which one it gets.
+jisyo_name="${SKK_JISYO_SIZE:-L}"
+
+ja_dir="${XDG_DATA_HOME:-$HOME/.local/share}/dict-ja"
+cache_dir="${XDG_CACHE_HOME:-$HOME/.cache}/skk"
+out="$ja_dir/skk.txt"
+# The decoded jisyo is an output too, not just an intermediate: skkeleton
+# reads it at runtime for the conjugating half of Japanese input, which is why
+# it lands in XDG_DATA_HOME beside the table rather than staying in the cache.
+decoded="$ja_dir/SKK-JISYO.utf8"
+
+pairs=$(mktemp)
+table=$(mktemp)
+utf8=$(mktemp)
+trap 'rm -f "$pairs" "$table" "$utf8"' EXIT
+
+# A system-installed jisyo wins over the network: these are the paths Debian's
+# skkdic and the usual brew/pkg layouts use.
+jisyo=""
+for candidate in \
+  "/usr/share/skk/SKK-JISYO.$jisyo_name" \
+  "/usr/local/share/skk/SKK-JISYO.$jisyo_name" \
+  "/opt/homebrew/share/skk/SKK-JISYO.$jisyo_name" \
+  "$cache_dir/SKK-JISYO.$jisyo_name"; do
+  if [[ -r "$candidate" ]]; then
+    jisyo="$candidate"
+    break
+  fi
+done
+
+if [[ -z "$jisyo" ]]; then
+  # Nothing installed and nothing cached, so fetch once and keep it. Failure
+  # here is not fatal: an offline machine just goes without the source, the
+  # same way the English list skips when no word list exists.
+  url="https://skk-dev.github.io/dict/SKK-JISYO.$jisyo_name.gz"
+  mkdir -p "$cache_dir"
+  if curl -fsSL --max-time 120 "$url" 2> /dev/null | gunzip -c > "$cache_dir/SKK-JISYO.$jisyo_name.tmp" 2> /dev/null; then
+    mv "$cache_dir/SKK-JISYO.$jisyo_name.tmp" "$cache_dir/SKK-JISYO.$jisyo_name"
+    jisyo="$cache_dir/SKK-JISYO.$jisyo_name"
+  else
+    rm -f "$cache_dir/SKK-JISYO.$jisyo_name.tmp"
+    echo "jisyo: could not fetch $url, skipping $out" >&2
+    echo "jisyo: install one with 'apt install skkdic', or retry when online" >&2
+    exit 0
+  fi
+fi
+
+# Upstream ships EUC-JP; distro packages sometimes ship UTF-8 already. Round
+# tripping through iconv is the cheapest reliable way to tell them apart.
+if iconv -f UTF-8 -t UTF-8 < "$jisyo" > /dev/null 2>&1; then
+  cat "$jisyo" > "$utf8"
+elif iconv -f EUC-JP -t UTF-8 < "$jisyo" > "$utf8" 2> /dev/null; then
+  :
+else
+  echo "jisyo: $jisyo is neither UTF-8 nor EUC-JP, skipping $out" >&2
+  exit 0
+fi
+
+# LC_ALL=C throughout: it keeps `sort` ordering identical across machines, and
+# it puts awk in byte mode on both gawk and BSD awk, so the fixed 3-byte steps
+# through the kana below mean the same thing everywhere.
+LC_ALL=C awk '
+function add(kana, hepburn, kunrei) {
+  HEP[kana] = hepburn
+  KUN[kana] = (kunrei == "" ? hepburn : kunrei)
+}
+
+# Walk the reading in UTF-8 code points - every kana here is exactly 3 bytes -
+# trying the two-kana digraphs first. An unknown character rejects the whole
+# reading, which is what drops the numeric (`だい#`) and non-hiragana entries.
+function romaji(s, mode,   i, len, key, val, out) {
+  len = length(s)
+  i = 1
+  out = ""
+  while (i <= len) {
+    key = substr(s, i, 6)
+    val = (mode == "h" ? HEP[key] : KUN[key])
+    if (val != "") {
+      out = out val
+      i += 6
+      continue
+    }
+    key = substr(s, i, 3)
+    val = (mode == "h" ? HEP[key] : KUN[key])
+    if (val == "") return ""
+    out = out val
+    i += 3
+  }
+  return out
+}
+
+# Two markers survive romaji(): Q for the sokuon, which doubles the consonant
+# after it, and R for the long-vowel bar, which repeats the vowel before it.
+function fixup(s,   c) {
+  while (match(s, /Q[a-z]/)) {
+    c = substr(s, RSTART + 1, 1)
+    s = substr(s, 1, RSTART - 1) c c substr(s, RSTART + 2)
+  }
+  while (match(s, /[aiueo]R/)) {
+    c = substr(s, RSTART, 1)
+    s = substr(s, 1, RSTART) c substr(s, RSTART + 2)
+  }
+  gsub(/[QR]/, "", s)
+  return s
+}
+
+# Keys shorter than 3 characters are every one- and two-kana word in the
+# language sharing a handful of prefixes; they match constantly and say
+# nothing. min_keyword_length on the provider is set to the same 3.
+function emit(key, rank, value) {
+  if (length(key) >= 3) printf "%s\t%02d\t%s\n", key, rank, value
+}
+
+BEGIN {
+  # Digraphs, tried first. Where Hepburn and Kunrei disagree both spellings
+  # are emitted, so `shinbun` and `sinbun` each find 新聞.
+  add("きゃ", "kya"); add("きゅ", "kyu"); add("きょ", "kyo")
+  add("ぎゃ", "gya"); add("ぎゅ", "gyu"); add("ぎょ", "gyo")
+  add("しゃ", "sha", "sya"); add("しゅ", "shu", "syu"); add("しょ", "sho", "syo")
+  add("じゃ", "ja", "zya"); add("じゅ", "ju", "zyu"); add("じょ", "jo", "zyo")
+  add("ちゃ", "cha", "tya"); add("ちゅ", "chu", "tyu"); add("ちょ", "cho", "tyo")
+  add("ぢゃ", "ja", "dya"); add("ぢゅ", "ju", "dyu"); add("ぢょ", "jo", "dyo")
+  add("にゃ", "nya"); add("にゅ", "nyu"); add("にょ", "nyo")
+  add("ひゃ", "hya"); add("ひゅ", "hyu"); add("ひょ", "hyo")
+  add("びゃ", "bya"); add("びゅ", "byu"); add("びょ", "byo")
+  add("ぴゃ", "pya"); add("ぴゅ", "pyu"); add("ぴょ", "pyo")
+  add("みゃ", "mya"); add("みゅ", "myu"); add("みょ", "myo")
+  add("りゃ", "rya"); add("りゅ", "ryu"); add("りょ", "ryo")
+
+  # Loanword clusters. Rare in hiragana readings, but without them a single
+  # ふぁ throws away the whole entry.
+  add("しぇ", "she", "sye"); add("じぇ", "je", "zye"); add("ちぇ", "che", "tye")
+  add("てぃ", "ti", "thi"); add("でぃ", "di", "dhi")
+  add("ふぁ", "fa"); add("ふぃ", "fi"); add("ふぇ", "fe"); add("ふぉ", "fo")
+  add("うぃ", "wi"); add("うぇ", "we"); add("うぉ", "wo")
+
+  add("あ", "a"); add("い", "i"); add("う", "u"); add("え", "e"); add("お", "o")
+  add("か", "ka"); add("き", "ki"); add("く", "ku"); add("け", "ke"); add("こ", "ko")
+  add("が", "ga"); add("ぎ", "gi"); add("ぐ", "gu"); add("げ", "ge"); add("ご", "go")
+  add("さ", "sa"); add("し", "shi", "si"); add("す", "su"); add("せ", "se"); add("そ", "so")
+  add("ざ", "za"); add("じ", "ji", "zi"); add("ず", "zu"); add("ぜ", "ze"); add("ぞ", "zo")
+  add("た", "ta"); add("ち", "chi", "ti"); add("つ", "tsu", "tu"); add("て", "te"); add("と", "to")
+  add("だ", "da"); add("ぢ", "ji", "di"); add("づ", "zu", "du"); add("で", "de"); add("ど", "do")
+  add("な", "na"); add("に", "ni"); add("ぬ", "nu"); add("ね", "ne"); add("の", "no")
+  add("は", "ha"); add("ひ", "hi"); add("ふ", "fu", "hu"); add("へ", "he"); add("ほ", "ho")
+  add("ば", "ba"); add("び", "bi"); add("ぶ", "bu"); add("べ", "be"); add("ぼ", "bo")
+  add("ぱ", "pa"); add("ぴ", "pi"); add("ぷ", "pu"); add("ぺ", "pe"); add("ぽ", "po")
+  add("ま", "ma"); add("み", "mi"); add("む", "mu"); add("め", "me"); add("も", "mo")
+  add("や", "ya"); add("ゆ", "yu"); add("よ", "yo")
+  add("ら", "ra"); add("り", "ri"); add("る", "ru"); add("れ", "re"); add("ろ", "ro")
+  add("わ", "wa"); add("ゐ", "i"); add("ゑ", "e"); add("を", "wo", "o"); add("ん", "n")
+  add("ゔ", "vu")
+
+  # Small kana that survived the digraph pass stand alone.
+  add("ぁ", "a"); add("ぃ", "i"); add("ぅ", "u"); add("ぇ", "e"); add("ぉ", "o")
+  add("ゃ", "ya"); add("ゅ", "yu"); add("ょ", "yo"); add("ゎ", "wa")
+
+  add("っ", "Q"); add("ー", "R")
+}
+
+# The okuri-ari half of the file comes first and is useless here: its keys end
+# in an okurigana stem (`おくr`) that only means something to a live
+# conversion engine.
+/^;/ {
+  if ($0 ~ /okuri-nasi entries/) nasi = 1
+  next
+}
+!nasi { next }
+
+{
+  split_at = index($0, " /")
+  if (split_at == 0) next
+  reading = substr($0, 1, split_at - 1)
+  rest = substr($0, split_at + 1)
+
+  hep = fixup(romaji(reading, "h"))
+  if (hep !~ /^[a-z]+$/) next
+  kun = fixup(romaji(reading, "k"))
+
+  n = split(rest, cands, "/")
+  rank = 0
+  for (i = 1; i <= n; i++) {
+    c = cands[i]
+    sub(/;.*$/, "", c)
+    # `(concat "...")` wraps candidates containing / or ; and a candidate with
+    # whitespace would break the space-separated table format.
+    if (c == "" || c ~ /^\(/ || c ~ /[ \t]/) continue
+    rank++
+    emit(hep, rank, c)
+    if (kun != hep) emit(kun, rank, c)
+  }
+  # The reading itself, last, so romaji also reaches plain kana.
+  emit(hep, 50, reading)
+  if (kun != hep) emit(kun, 50, reading)
+}
+' "$utf8" > "$pairs"
+
+# Sorting the rank into the key keeps each entry in the jisyo order that put
+# the common candidate first, which `sort` on the text alone would scramble.
+LC_ALL=C sort -u "$pairs" | LC_ALL=C awk -F '\t' '
+{
+  if ($1 != key) {
+    if (key != "") print key "\t" buf
+    key = $1
+    buf = $3
+    n = 1
+  } else if (n < 8) {
+    buf = buf " " $3
+    n++
+  }
+}
+END { if (key != "") print key "\t" buf }
+' > "$table"
+
+if [[ ! -s "$table" ]]; then
+  echo "jisyo: $jisyo produced no usable entries, skipping $out" >&2
+  exit 0
+fi
+
+mkdir -p "$ja_dir"
+mv "$table" "$out"
+chmod 644 "$out"
+cp "$utf8" "$decoded"
+chmod 644 "$decoded"
+echo "jisyo: wrote $(wc -l < "$out" | tr -d ' ') romaji keys to $out (from $jisyo)"
+echo "jisyo: wrote decoded jisyo to $decoded (skkeleton reads this)"
+{{ end -}}
