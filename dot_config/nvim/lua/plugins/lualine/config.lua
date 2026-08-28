@@ -79,10 +79,36 @@ return {
       end
 
       ------------------------------------------------------------
+      -- あ SKK input mode
+      ------------------------------------------------------------
+      -- Without this the only way to find out whether <C-j> left you in kana
+      -- mode is to type and see. The in-buffer ▽/▼ markers show a conversion
+      -- in progress, but nothing shows the mode you are about to type in.
+      local skk_labels = {
+        hira = "あ",
+        kata = "ア",
+        hankata = "ｱ",
+        zenkaku = "Ａ",
+        abbrev = "aA",
+      }
+
+      local function skk_mode()
+        -- Reading the globals directly rather than calling skkeleton#is_enabled():
+        -- that function is only `return g:skkeleton#enabled`, and this runs on
+        -- every statusline redraw. Both are nil until skkeleton first loads.
+        if not vim.g["skkeleton#enabled"] then
+          return ""
+        end
+
+        return skk_labels[vim.g["skkeleton#mode"]] or "あ"
+      end
+
+      ------------------------------------------------------------
       -- Section
       ------------------------------------------------------------
       opts.sections.lualine_x = {
         -- git_branch,
+        skk_mode,
         python_env,
         active_lsp,
         current_directory,

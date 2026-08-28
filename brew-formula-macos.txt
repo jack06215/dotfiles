@@ -131,6 +131,7 @@ unbound
 unixodbc
 volta
 whisper-cpp
+wordnet
 xz
 yamllint
 yt-dlp

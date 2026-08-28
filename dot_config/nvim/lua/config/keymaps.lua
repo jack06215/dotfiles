@@ -30,6 +30,7 @@ require("config.keymaps.python").create_keymaps()
 require("config.keymaps.typescript").create_keymaps()
 
 -- Plugins
+require("config.keymaps.blink").create_keymaps()
 require("config.keymaps.lazyvim").create_keymaps()
 require("config.keymaps.neogit").create_keymaps()
 require("config.keymaps.octo").create_keymaps()
