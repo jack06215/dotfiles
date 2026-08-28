@@ -154,7 +154,10 @@ function tockpick() {
   # note prompt below needs a second field out of the same answer and asking
   # tock twice could get two different ones.
   local json
-  json=$(tock last --json -n "${1:-20}" 2> /dev/null)
+  json=$(tock last --json -n "${1:-20}") || {
+    print -u2 -- "tockpick: failed to load activity history"
+    return 1
+  }
 
   local -a rows
   # Tab-separated so the two fields survive a description containing any of the

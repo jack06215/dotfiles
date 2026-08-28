@@ -83,7 +83,10 @@ run_segment() {
 	# With nothing running tock prints nothing at all and exits 0, which is what
 	# distinguishes idle from an error here.
 	local tab=$'\t' current
-	current=$(tock current -F "{{.Project}}${tab}{{.Description}}${tab}{{.DurationHMS}}" 2>/dev/null | head -n 1)
+	if ! current=$(tock current -F "{{.Project}}${tab}{{.Description}}${tab}{{.DurationHMS}}" 2>/dev/null); then
+		return 0
+	fi
+	current=${current%%$'\n'*}
 
 	if [ -z "$current" ]; then
 		[ "$TMUX_POWERLINE_SEG_TOCK_SHOW_WHEN_IDLE" = "true" ] || return 0
