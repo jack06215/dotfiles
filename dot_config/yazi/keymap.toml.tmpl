@@ -1,0 +1,55 @@
+#:schema https://yazi-rs.github.io/schemas/keymap.json
+
+# Overrides only - see the header of yazi.toml for why this is not a full copy
+# of the preset keymap.
+#
+# `prepend_keymap` wins over a preset binding on the same key; `append_keymap`
+# loses to one. So plugin bindings that deliberately replace a built-in action
+# (`l` below) must be prepended, and only genuinely new keys could be appended.
+
+# Replaces the built-in `enter`, which does nothing on a file. Selection is
+# unaffected: smart-enter passes --hovered to `open`, so it acts on the file
+# under the cursor rather than on the marked set.
+[[mgr.prepend_keymap]]
+on   = "l"
+run  = "plugin smart-enter"
+desc = "Enter the child directory, or open the file"
+
+# `c` is the copy-to-clipboard prefix in the preset (cc/cd/cf/cn); `cm` is free.
+[[mgr.prepend_keymap]]
+on   = [ "c", "m" ]
+run  = "plugin chmod"
+desc = "Chmod on selected files"
+
+# Vim's `f`: press `f`, then a character, to jump to the next entry whose name
+# starts with it. Taking `f` displaces the preset's `filter --smart`, which is
+# why the next binding puts it back on `F` - `F` is unbound in the preset, so
+# nothing is lost, and the vim muscle memory is the whole point of the plugin.
+[[mgr.prepend_keymap]]
+on   = "f"
+run  = "plugin jump-to-char"
+desc = "Jump to char"
+
+[[mgr.prepend_keymap]]
+on   = "F"
+run  = "filter --smart"
+desc = "Filter files"
+{{- if eq .chezmoi.os "darwin" }}
+
+# mactag.yazi. `b` is one of the few unused prefixes in the preset keymap.
+# Each chord opens a which-key menu built from the `keys` table in init.lua
+# (r/o/y/g/b/p), then shells out to `tag` for the whole selection - or for the
+# hovered file when nothing is selected.
+#
+# macOS-only for the same reason as the rest of mactag: on WSL these would bind
+# to a plugin that was never installed and error the moment they were pressed.
+[[mgr.prepend_keymap]]
+on   = [ "b", "a" ]
+run  = "plugin mactag add"
+desc = "Tag selected files"
+
+[[mgr.prepend_keymap]]
+on   = [ "b", "r" ]
+run  = "plugin mactag remove"
+desc = "Untag selected files"
+{{- end }}

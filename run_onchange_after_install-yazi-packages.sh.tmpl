@@ -1,0 +1,51 @@
+#!/bin/bash
+set -euo pipefail
+
+# Installs the yazi packages - plugins and flavors - declared in
+# dot_config/yazi/package.toml.tmpl.
+#
+# package.toml is the declaration AND the lock file: `ya pkg` writes a resolved
+# `rev`/`hash` back into it after every install or upgrade. That is why it is
+# tracked here while the checkouts it produces (~/.config/yazi/plugins/ and
+# ~/.config/yazi/flavors/) are in .chezmoiignore - the pinned revision is the
+# reproducible part, the clone is not.
+#
+# The consequence to remember: after `ya pkg upgrade` bumps a rev, hand-copy the
+# new rev/hash into the source template. `chezmoi re-add` will NOT do it any
+# more - chezmoi refuses to overwrite a template, and package.toml became
+# package.toml.tmpl once mactag (macOS-only) had to sit behind an OS
+# conditional. Skip that step and the next apply reinstates the old pin and
+# silently downgrades the plugin again.
+#
+# Why the revs in package.toml are old rather than HEAD: yazi-rs/plugins tracks
+# Yazi's nightly API, and its current main requires Yazi 26.8.15, while Homebrew
+# still ships 26.5.6 (as of 2026-08-29). Every plugin is therefore pinned to its
+# last revision whose `@since` is <= 26.5.6:
+#
+#   git, full-border, chmod  last compatible rev
+#   mactag  0be29a9  (@since 26.5.6 - exactly the version we run)
+#   piper   56d6277  (@since 26.1.22)
+#   smart-enter, jump-to-char  main; neither needs anything past 25.5.31
+#
+# The two newest pins carry compat shims for APIs 26.5.6 lacks, and each was
+# checked against this build rather than assumed: `ya.throttle` and `th.icon`
+# are both nil here, so mactag falls back to its plain fetcher and piper to
+# `File:icon()`, and `rt.term.light` is a plain boolean, so piper's
+# `type(light) == "function"` branch is correctly skipped. Bumping either past
+# these revs drops the shims and breaks on 26.5.6.
+#
+# Once `brew info yazi` reports 26.8.15 or later, `ya pkg upgrade` will move
+# them all forward - and this comment can go.
+#
+# Hashing the declaration below is what makes chezmoi rerun this script when,
+# and only when, the package set changes:
+# package.toml hash: {{ include "dot_config/yazi/package.toml.tmpl" | sha256sum }}
+
+if ! command -v ya > /dev/null 2>&1; then
+  echo "yazi: 'ya' not installed, skipping plugin install" >&2
+  exit 0
+fi
+
+# init.lua calls require() on these, and yazi hard-errors at startup if one is
+# missing - so a failure here must be loud rather than silently swallowed.
+ya pkg install

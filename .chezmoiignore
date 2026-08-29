@@ -18,6 +18,12 @@ history.txt
 # nvim compiles en.utf-8.add.spl next to the word list every time `zg` runs
 **/spell/*.spl
 
+# `ya pkg install` clones plugin sources into the yazi config dir. They are
+# upstream checkouts, not configuration, and package.toml (which IS tracked)
+# already pins the revision each one is installed at.
+.config/yazi/plugins/**
+.config/yazi/flavors/**
+
 **/*flywheel*
 **/*flywheel*/**
 

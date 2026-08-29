@@ -11,6 +11,12 @@ add_path_front "$BUN_INSTALL/bin"
 # Only put rbenv on PATH when it's the chosen Ruby manager (see init.zsh),
 # otherwise it silently fights asdf for ruby/gem resolution.
 [[ "${ZSH_RUBY_MANAGER:-asdf}" == "rbenv" ]] && add_path_front "$HOME/.rbenv/bin"
+
+# imagemagick-full is keg-only, so it must go in FRONT of /opt/homebrew/bin to
+# beat the linked plain imagemagick. It's the build with the jxl/rsvg/raw
+# delegates yazi's `magick` previewer needs (see yazi.toml).
+add_path_front "/opt/homebrew/opt/imagemagick-full/bin"
+
 add_path_back "$HOME/go/bin"
 add_path_back "$XDG_DATA_HOME/npm/bin"
 add_path_back "/opt/homebrew/opt/mysql@8.0/bin"

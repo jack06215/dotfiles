@@ -19,6 +19,7 @@ deno
 detekt
 docker-compose
 docker-credential-helper-ecr
+exiftool
 eza
 fd
 ffmpeg
@@ -47,6 +48,8 @@ libvidstab
 libxv
 luarocks
 markdownlint-cli
+media-info
+mpv
 ncdu
 neovim
 nushell
@@ -74,6 +77,7 @@ theora
 wordnet
 xvid
 yamllint
+yazi
 zeromq
 zimg
 zoxide
