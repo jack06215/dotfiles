@@ -1,3 +1,3 @@
-local avante = require("plugins.avante.config")
+-- local avante = require("plugins.avante.config")
 
-return avante
+-- return avante

@@ -8,9 +8,9 @@ M.create_keymaps = function()
   -- LazyVim defaults to drop. Only list keys LazyVim actually sets, otherwise
   -- the safe_del is a silent no-op that reads like it is doing something.
   local keys = {
-    "<leader>gG",
     "<leader>K",
     "<leader>l",
+    "<leader>E", -- neo-tree extra's alias for <leader>fE
   }
 
   for _, key in ipairs(keys) do

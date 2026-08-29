@@ -131,14 +131,13 @@ return {
     desc = "LazyVim Changelog",
   },
   { "<leader>e", "<leader>fe", desc = "Explorer NeoTree (Root Dir)", remap = true },
-  { "<leader>E", "<leader>fE", desc = "Explorer NeoTree (cwd)", remap = true },
+  -- [removed]
+  -- { "<leader>E", "<leader>fE", desc = "Explorer NeoTree (cwd)", remap = true },
   { "<leader>-", "<C-W>s", desc = "Split Window Below", remap = true },
   { "<leader>|", "<C-W>v", desc = "Split Window Right", remap = true },
-
-  -- [removed] deleted by config/keymaps/lazyvim.lua:13
+  -- [removed]
   -- { "<leader>l", "<cmd>Lazy<cr>", desc = "Lazy" },
-
-  -- [removed] deleted by config/keymaps/lazyvim.lua:12
+  -- [removed]
   -- { "<leader>K", "<cmd>norm! K<cr>", desc = "Keywordprg" },
 
   -- ╭──────────────────────────────────────────────────────────────────────╮
@@ -593,16 +592,21 @@ return {
   },
 
   -- overridden by config/keymaps/neogit.lua -- "Open Neogit"
-  {
-    "<leader>gg",
-    function()
-      Snacks.lazygit({ cwd = LazyVim.root.git() })
-    end,
-    desc = "Lazygit (Root Dir)",
-  },
+  -- {
+  --   "<leader>gg",
+  --   function()
+  --     Snacks.lazygit({ cwd = LazyVim.root.git() })
+  --   end,
+  --   desc = "Lazygit (Root Dir)",
+  -- },
 
-  -- [removed] deleted by config/keymaps/lazyvim.lua:11
-  -- { "<leader>gG", function() Snacks.lazygit() end, desc = "Lazygit (cwd)" },
+  {
+    "<leader>gG",
+    function()
+      Snacks.lazygit()
+    end,
+    desc = "Lazygit",
+  },
 
   -- ╭──────────────────────────────────────────────────────────────────────╮
   -- │ <leader>q -- quit/session                                            │
