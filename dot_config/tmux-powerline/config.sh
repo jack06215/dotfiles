@@ -141,11 +141,11 @@ export TMUX_POWERLINE_SEG_VCS_STATUS_MAX_LEN="24"
 # "project ▸ description" is truncated to this; the elapsed time and today's
 # total are appended after it and are not counted in the limit.
 export TMUX_POWERLINE_SEG_TOCK_MAX_LEN="28"
-# Elapsed time turns yellow at 90 minutes and red at 5 hours. The yellow one
+# Elapsed time turns yellow at 90 minutes and red at 3 hours. The yellow one
 # is a nudge (a block this long has either earned a break or drifted off what
-# you said you were doing); the red one means an activity nobody stopped.
+# you said you were doing).
 export TMUX_POWERLINE_SEG_TOCK_WARN_MINUTES="90"
-export TMUX_POWERLINE_SEG_TOCK_STALE_MINUTES="300"
+export TMUX_POWERLINE_SEG_TOCK_STALE_MINUTES="180"
 # Today's total, alongside the current activity. One extra `tock` call per
 # refresh (~7 ms); set "false" to drop it and reclaim ~10 columns.
 export TMUX_POWERLINE_SEG_TOCK_SHOW_TODAY="true"
