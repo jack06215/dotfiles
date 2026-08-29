@@ -1068,13 +1068,13 @@ return {
   },
 
   -- overridden by config/keymaps/general.lua -- "Toggle Relative Line Numbers"
-  {
-    "<leader>ul",
-    function()
-      Snacks.toggle.line_number():toggle()
-    end,
-    desc = "Toggle Line Number",
-  },
+  -- {
+  --   "<leader>ul",
+  --   function()
+  --     Snacks.toggle.line_number():toggle()
+  --   end,
+  --   desc = "Toggle Line Number",
+  -- },
 
   -- [yours] config/keymaps/blink.lua:37 -- <leader>uj "Toggle Japanese IM completion"
 
@@ -1134,14 +1134,14 @@ return {
   { "<leader>xQ", "<cmd>Trouble qflist toggle<cr>", desc = "Quickfix List (Trouble)" },
 
   -- overridden by config/keymaps/todo-comments.lua -- "Todo (Trouble)" (TodoTrouble)
-  { "<leader>xt", "<cmd>Trouble todo toggle<cr>", desc = "Todo (Trouble)" },
+  -- { "<leader>xt", "<cmd>Trouble todo toggle<cr>", desc = "Todo (Trouble)" },
 
   -- overridden by config/keymaps/todo-comments.lua -- "Todo/Fix/Fixme (Trouble)"
-  {
-    "<leader>xT",
-    "<cmd>Trouble todo toggle filter = {tag = {TODO,FIX,FIXME}}<cr>",
-    desc = "Todo/Fix/Fixme (Trouble)",
-  },
+  -- {
+  --   "<leader>xT",
+  --   "<cmd>Trouble todo toggle filter = {tag = {TODO,FIX,FIXME}}<cr>",
+  --   desc = "Todo/Fix/Fixme (Trouble)",
+  -- },
 
   -- ╭──────────────────────────────────────────────────────────────────────╮
   -- │ Yours only -- no LazyVim default on these prefixes                   │
