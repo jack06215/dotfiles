@@ -1,0 +1,39 @@
+{{- /*
+    lookup — pick a machine-specific value out of a table.
+
+    Go templates have no user-defined functions, but chezmoi exposes named
+    templates from .chezmoitemplates via `includeTemplate`, which returns the
+    rendered text as a string — close enough to call it one.
+
+    Arguments (a dict):
+      chezmoi  the caller's .chezmoi variable; the candidate keys are derived
+               from it, most specific first:
+                 os/hostname/username -> os/hostname -> os
+               The first one present in `table` wins.
+      table    dict of key -> value
+      default  optional: returned when no key matches (defaults to "")
+
+    Values are plain strings; build paths on the caller side with joinPath so
+    that a miss stays empty instead of collapsing to a bare base directory.
+
+    Usage — no preamble needed, works in any template:
+      {{ includeTemplate "lookup" (dict
+           "chezmoi" .chezmoi
+           "table" (dict
+             "darwin" (joinPath .chezmoi.homeDir "Library/Caches")
+             "linux"  (joinPath .chezmoi.homeDir ".cache"))) }}
+*/ -}}
+{{- $c := .chezmoi -}}
+{{- $keys := list
+      (printf "%s/%s/%s" $c.os $c.hostname $c.username)
+      (printf "%s/%s" $c.os $c.hostname)
+      $c.os -}}
+{{- $value := index . "default" | default "" -}}
+{{- $found := false -}}
+{{- range $keys -}}
+{{-   if and (not $found) (hasKey $.table .) -}}
+{{-     $value = index $.table . -}}
+{{-     $found = true -}}
+{{-   end -}}
+{{- end -}}
+{{- $value -}}

@@ -1,52 +1,64 @@
-{{- $pypoetryDir := "" -}}
-{{- if and (eq .chezmoi.os "darwin") (eq .chezmoi.hostname "jack06215") -}}
-{{-   $pypoetryDir = joinPath .chezmoi.homeDir ".cache/pypoetry/virtualenvs" -}}
-{{- else if and (eq .chezmoi.os "darwin") (eq .chezmoi.hostname "A0229") -}}
-{{-   $pypoetryDir = joinPath .chezmoi.homeDir "Library/Caches/pypoetry/virtualenvs" -}}
-{{- else if eq .chezmoi.os "linux" -}}
-{{-   $pypoetryDir = joinPath .chezmoi.homeDir "" -}}
-{{- else if eq .chezmoi.os "windows" -}}
-{{-   $pypoetryDir = joinPath .chezmoi.homeDir "" -}}
-{{- end -}}
+{{- $pypoetryDir :=
+      includeTemplate "lookup" (dict
+        "chezmoi" .chezmoi
+        "table" (dict
+          "darwin/jack06215/nacho" (joinPath .chezmoi.homeDir ".cache/pypoetry/virtualenvs")
+          "darwin/A0229/jack.cho"  (joinPath .chezmoi.homeDir "Library/Caches/pypoetry/virtualenvs")
+        )
+      )
+-}}
 
-{{- $firefoxProfilesDir := "" -}}
-{{- if eq .chezmoi.os "darwin" -}}
-{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir "Library/Application Support/Firefox/Profiles" -}}
-{{- else if eq .chezmoi.os "linux" -}}
-{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir ".mozilla/firefox" -}}
-{{- else if eq .chezmoi.os "windows" -}}
-{{-   $firefoxProfilesDir = joinPath .chezmoi.homeDir "AppData/Roaming/Mozilla/Firefox/Profiles" -}}
-{{- end -}}
+{{- $firefoxProfilesDir :=
+      includeTemplate "lookup" (dict
+        "chezmoi" .chezmoi
+        "table" (dict
+          "darwin"  (joinPath .chezmoi.homeDir "Library/Application Support/Firefox/Profiles")
+          "linux"   (joinPath .chezmoi.homeDir ".mozilla/firefox")
+          "windows" (joinPath .chezmoi.homeDir "AppData/Roaming/Mozilla/Firefox/Profiles")
+        )
+      )
+-}}
 
-{{- $firefoxProfileId := "vfop1w54.default" -}}
-{{- if eq .chezmoi.os "windows" -}}
-{{-   $firefoxProfileId = "au24w27m.MinimalistDark" -}}
-{{- end -}}
+{{- $firefoxProfileId :=
+      includeTemplate "lookup" (dict
+        "chezmoi" .chezmoi
+        "default" "vfop1w54.default"
+        "table" (dict
+          "windows" "au24w27m.MinimalistDark"
+        )
+      )
+-}}
 
-{{- $vscodeUserDir := "" -}}
-{{- if eq .chezmoi.os "darwin" -}}
-{{-   $vscodeUserDir = joinPath .chezmoi.homeDir "Library/Application Support/Code/User" -}}
-{{- else if eq .chezmoi.os "linux" -}}
-{{-   $vscodeUserDir = joinPath .chezmoi.homeDir ".config/Code/User" -}}
-{{- else if eq .chezmoi.os "windows" -}}
-{{-   $vscodeUserDir = joinPath .chezmoi.homeDir "AppData/Roaming/Code/User" -}}
-{{- end -}}
+{{- $vscodeUserDir :=
+      includeTemplate "lookup" (dict
+        "chezmoi" .chezmoi
+        "table" (dict
+          "darwin"  (joinPath .chezmoi.homeDir "Library/Application Support/Code/User")
+          "linux"   (joinPath .chezmoi.homeDir ".config/Code/User")
+          "windows" (joinPath .chezmoi.homeDir "AppData/Roaming/Code/User")
+        )
+      )
+-}}
 
-{{- $zshPythonDir := "" -}}
-{{- if eq .chezmoi.os "darwin" -}}
-{{-   if and (eq .chezmoi.hostname "jack06215") (eq .chezmoi.username "nacho") -}}
-{{-     $zshPythonDir = joinPath $pypoetryDir "monorepo-e2o0ZM2H-py3.14" -}}
-{{-   else if and (eq .chezmoi.hostname "A0229") (eq .chezmoi.username "jack.cho") -}}
-{{-     $zshPythonDir = joinPath $pypoetryDir "monorepo-kcQbGqAg-py3.14" -}}
-{{-   end -}}
-{{- end -}}
+{{- /* poetry venv names are per-machine hashes, so these key on the username too */ -}}
+{{- $zshPythonDir :=
+      includeTemplate "lookup" (dict
+        "chezmoi" .chezmoi
+        "table" (dict
+          "darwin/jack06215/nacho" (joinPath $pypoetryDir "monorepo-e2o0ZM2H-py3.14")
+          "darwin/A0229/jack.cho"  (joinPath $pypoetryDir "monorepo-kcQbGqAg-py3.14")
+        )
+      )
+-}}
 
-{{- $fwMonorepoPythonDir := "" -}}
-{{- if eq .chezmoi.os "darwin" -}}
-{{-   if and (eq .chezmoi.hostname "A0229") (eq .chezmoi.username "jack.cho") -}}
-{{-     $fwMonorepoPythonDir = joinPath $pypoetryDir "monorepo-XYqwb38J-py3.13" -}}
-{{-   end -}}
-{{- end -}}
+{{- $fwMonorepoPythonDir :=
+      includeTemplate "lookup" (dict
+        "chezmoi" .chezmoi
+        "table" (dict
+          "darwin/A0229/jack.cho" (joinPath $pypoetryDir "monorepo-XYqwb38J-py3.13")
+        )
+      )
+-}}
 
 sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "workspace/jack06215/dotfiles") | quote }}
 
