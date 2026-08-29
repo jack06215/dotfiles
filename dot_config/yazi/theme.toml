@@ -1,0 +1,19 @@
+#:schema https://yazi-rs.github.io/schemas/theme.json
+
+# Flavor selection only - see the header of yazi.toml for why this is not a full
+# copy of the preset theme.
+#
+# The palette itself is not in this repo: it lives in
+# ~/.config/yazi/flavors/catppuccin-mocha.yazi/, cloned by `ya pkg install` from
+# the revision pinned in package.toml. Same split as the plugins - the pin is
+# tracked, the checkout is in .chezmoiignore.
+#
+# Yazi chooses between `dark` and `light` from the terminal's reported
+# background, then merges whatever else this file defines over the chosen
+# flavor. `light` is deliberately empty: Catppuccin's light variant is a
+# separate package, so a light terminal falls back to Yazi's built-in preset
+# until `ya pkg add yazi-rs/flavors:catppuccin-latte` adds one to pair here.
+
+[flavor]
+dark  = "catppuccin-mocha"
+light = ""

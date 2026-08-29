@@ -1,0 +1,50 @@
+-- Plugin setup. The plugins themselves are declared in package.toml and land in
+-- ~/.config/yazi/plugins/ via `ya pkg install`, which the chezmoi
+-- run_onchange_after_install-yazi-packages script runs on apply.
+--
+-- Yazi errors on startup if a required() plugin is missing, so keep this file
+-- and package.toml in sync.
+--
+-- Only plugins that need Lua-side configuration appear here. jump-to-char is
+-- wired up purely in keymap.toml, piper purely in yazi.toml.
+
+-- Draws the border around every pane rather than just between them.
+require("full-border"):setup { type = ui.Border.ROUNDED }
+
+-- Per-file git status in the linemode. `order` places the sign relative to
+-- other linemode components; 1500 is the value the plugin's README suggests.
+require("git"):setup { order = 1500 }
+{{- if eq .chezmoi.os "darwin" }}
+
+-- macOS Finder tags, drawn as coloured dots in the linemode. This block is
+-- templated out everywhere else because mactag shells out to jdberry/tag, which
+-- exists only on macOS - and a require() of a plugin that package.toml never
+-- installed is a hard startup error, not a warning.
+--
+-- `keys` are the second half of the `ba`/`br` chords in keymap.toml, not
+-- standalone bindings: `ba` opens a which-key menu built from this table.
+--
+-- `colors` are Finder's own tag colours rather than the Catppuccin palette,
+-- deliberately - a file tagged Red in Finder should read as the same red here.
+--
+-- `order` sits below git's 1500 so the dots render left of the git sign.
+require("mactag"):setup {
+	keys = {
+		r = "Red",
+		o = "Orange",
+		y = "Yellow",
+		g = "Green",
+		b = "Blue",
+		p = "Purple",
+	},
+	colors = {
+		Red    = "#ee7b70",
+		Orange = "#f5bd5c",
+		Yellow = "#fbe764",
+		Green  = "#91fc87",
+		Blue   = "#5fa3f8",
+		Purple = "#cb88f8",
+	},
+	order = 500,
+}
+{{- end }}

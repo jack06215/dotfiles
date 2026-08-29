@@ -33,6 +33,7 @@ docker-compose
 docker-credential-helper-ecr
 elvish
 entr
+exiftool
 eza
 fd
 ffmpeg
@@ -61,6 +62,7 @@ harfbuzz
 htop
 ibazel
 imagemagick
+imagemagick-full
 jid
 jpeg-xl
 jq
@@ -82,8 +84,10 @@ llvm
 luarocks
 markdownlint-cli
 marksman
+media-info
 minijinja-cli
 moreutils
+mpv
 msedit
 mysql
 mysql-client
@@ -116,11 +120,13 @@ rclone
 ripgrep
 saml2aws
 sd
+sevenzip
 shellcheck
 sleepwatcher
 sql-formatter
 sqruff
 starship
+tag
 terminal-notifier
 terraform
 terraform-ls
@@ -134,6 +140,7 @@ whisper-cpp
 wordnet
 xz
 yamllint
+yazi
 yt-dlp
 zellij
 zoxide

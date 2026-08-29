@@ -1,0 +1,80 @@
+#:schema https://yazi-rs.github.io/schemas/yazi.json
+
+# Overrides only.
+#
+# Yazi merges this file over its built-in preset (yazi-config/preset/
+# yazi-default.toml) at startup, so anything not named here keeps tracking
+# upstream. This file used to be a full copy of the v25.5.31 preset, which meant
+# it both froze that release's defaults and - after the opener/rule syntax
+# changed in v26 - failed to parse outright.
+#
+# Location matters: on Unix Yazi reads $XDG_CONFIG_HOME/yazi/, but on Windows it
+# reads %APPDATA%\yazi\config\. The `config/` subdirectory these files used to
+# sit in was the Windows layout, carried over verbatim when they moved out of
+# AppData/ - which made the whole config invisible on macOS and WSL.
+
+[preview]
+# The preset caps decoded previews at 600x900, which visibly softens a photo
+# filling a full-height preview pane on a HiDPI display. Raising it costs
+# preload CPU and cache size, nothing else.
+max_width  = 1200
+max_height = 1200
+
+[opener]
+# The preset sends audio/video to the platform `open`, i.e. QuickTime here.
+# mpv keeps playback in the same keyboard-driven place as everything else and
+# handles the codecs QuickTime refuses. The mediainfo entry is the preset's,
+# repeated because naming `play` replaces the whole list rather than appending.
+play = [
+	{ run = "mpv --force-window %s", desc = "Play", for = "unix", orphan = true },
+	{ run = "mediainfo %s1; echo 'Press enter to exit'; read _", desc = "Show media info", for = "unix", block = true },
+]
+
+# git.yazi, showing per-file VCS status as a linemode sign. Two rules because
+# files and directories are fetched separately; the shared `group` lets both
+# resolve from one cache entry.
+[[plugin.prepend_fetchers]]
+url   = "*"
+run   = "git"
+group = "git"
+
+[[plugin.prepend_fetchers]]
+url   = "*/"
+run   = "git"
+group = "git"
+{{- if eq .chezmoi.os "darwin" }}
+
+# mactag.yazi, reading macOS Finder tags. Same two-rule shape as git above and
+# for the same reason: files and directories are fetched separately.
+#
+# macOS-only, and this block matters more than the others - a fetcher naming a
+# plugin that was never installed fails on every directory Yazi reads, not just
+# when a key is pressed.
+[[plugin.prepend_fetchers]]
+url   = "*"
+run   = "mactag"
+group = "mactag"
+
+[[plugin.prepend_fetchers]]
+url   = "*/"
+run   = "mactag"
+group = "mactag"
+{{- end }}
+
+# piper.yazi pipes a file through an arbitrary shell command and previews the
+# command's stdout. It ships no rules of its own, so each one has to be spelled
+# out here: `$1` is the file path, plus `$w`/`$h` for the pane size and `$t` for
+# the terminal's dark/light mode.
+#
+# Only one rule for now, because the preset already covers most types well -
+# archives, PDFs, fonts, images and video all have built-in previewers, and
+# piping them through a shell command would be a downgrade. Audio is the real
+# gap: it matches no preset previewer and falls through to `file -bL`, which
+# reports "Audio file with ID3 version 2.4.0" and nothing else.
+#
+# ffprobe writes its human-readable dump to stderr, hence the redirect - piper
+# only reads stdout. ffmpeg is already a hard dependency of the preset's video
+# previewer, so this adds nothing new to install.
+[[plugin.prepend_previewers]]
+mime = "audio/*"
+run  = 'piper -- ffprobe -hide_banner "$1" 2>&1'
