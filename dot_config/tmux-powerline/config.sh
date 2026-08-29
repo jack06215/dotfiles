@@ -95,7 +95,22 @@ export TMUX_POWERLINE_SEG_MODE_INDICATOR_SEPARATOR_TEXT=" • "
 # middle of the bar, and the pane index is not worth a column when panes are
 # reached by direction with M-h/j/k/l rather than by number. Use
 # "#S:#I.#P" if you ever want the full address back.
-export TMUX_POWERLINE_SEG_TMUX_SESSION_INFO_FORMAT="#S"
+#
+# Not plain "#S", because a session's *name* is also its address: tmux parses
+# "." and ":" in a target as the session:window.pane separators, so
+# dev-workspace.sh has to fold those out before it can address the session at
+# all (a directory like ~/jack.cho would otherwise produce a session nothing can
+# attach to). That leaves the bar showing "jack_cho" for a directory called
+# "jack.cho". dev-workspace.sh stashes the unfolded name in the session-level
+# @display_name option, and this format prefers it, so tmux keeps addressing the
+# safe name while you read the real one.
+#
+# The "?" arm matters: @display_name is unset for every session not built by
+# that script (the M-w scratch and M-r monitor popups, plain `tmux new`), and
+# those fall through to #S. The segment does not run this through
+# display-message itself -- it echoes the string into status-left and tmux
+# expands it per redraw, so each client resolves it against its own session.
+export TMUX_POWERLINE_SEG_TMUX_SESSION_INFO_FORMAT="#{?@display_name,#{@display_name},#S}"
 # }
 
 # hostname.sh {

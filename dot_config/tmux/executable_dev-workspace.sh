@@ -121,7 +121,12 @@ esac
 start_dir=${2:-$PWD}
 session=${1:-${start_dir##*/}}
 # tmux treats "." and ":" as separators inside target specifiers, so a session
-# named after a directory like "my.project" becomes unaddressable. Fold them.
+# named after a directory like "my.project" becomes unaddressable -- even the
+# exact-match form `-t "=my.project"` is read as pane "project" of session "my"
+# and fails with "can't find pane: project". Fold them (and spaces) out of the
+# *identifier*, but keep the original around for the status bar: it is the only
+# copy of what you actually named the thing. See @display_name near the attach.
+display_name=$session
 session=$(printf '%s' "$session" | tr ' .:' '___')
 [ -n "$session" ] || session=dev
 
@@ -194,5 +199,19 @@ if ! tmux has-session -t "=$session" 2> /dev/null; then
   # (the last pane split, which tmux leaves active).
   tmux select-pane -t "$editor"
 fi
+
+# Hand the unfolded name to the status bar. tmux-powerline's session segment
+# reads @display_name and falls back to #S when it is unset (see
+# tmux-powerline/config.sh), so this is set only when folding actually changed
+# something -- an ordinary session keeps showing plain #S and `show-options`
+# stays quiet. Done on every run rather than only at build time, so a session
+# created before this existed picks the name up on its next attach.
+#
+# The trailing ":" is not a typo. set-option takes a *target-pane*, not a
+# target-session, so "=$session" alone is rejected with "no such session" even
+# though has-session above accepts exactly that string; "=$session:" names the
+# session's current pane and keeps the "=" exact match.
+[ "$display_name" = "$session" ] ||
+  tmux set-option -t "=$session:" @display_name "$display_name"
 
 exec tmux attach-session -t "=$session"
