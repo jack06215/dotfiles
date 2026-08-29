@@ -7,7 +7,8 @@ return {
       require("telescope").load_extension("todo-comments")
     end,
     cmd = { "TodoTrouble", "TodoTelescope", "TodoQuickFix" },
-    -- Keymaps have been moved to a separate file
-    keys = require("plugins.todo-comments.keymaps"),
+    -- Keymaps live in config/keymaps/todo-comments.lua: all three collide with
+    -- a LazyVim default that which-key now binds. `cmd` above (plus the
+    -- LazyFile event from LazyVim's own spec) still lazy-loads this.
   },
 }
