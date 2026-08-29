@@ -79,7 +79,7 @@ sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "wo
     isWindows = {{ eq .chezmoi.os "windows" | toString | trim }}
     isArm = {{ eq .chezmoi.arch "arm64" | toString | trim }}
     isX86 = {{ eq .chezmoi.arch "amd64" | toString | trim }}
-[data.pypoetry]  
+[data.pypoetry]
     pypoetryDir = {{ $pypoetryDir | quote }}
     zshPythonDir = {{ $zshPythonDir | quote }}
     fwMonorepoPythonDir = {{ $fwMonorepoPythonDir | quote }}
