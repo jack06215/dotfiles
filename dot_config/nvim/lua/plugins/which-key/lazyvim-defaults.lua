@@ -23,20 +23,34 @@
 -- The trade-off you accepted: these rhs values are copied from LazyVim's source
 -- and will drift when LazyVim is upgraded. Re-derive them after a major bump.
 --
+-- Layering
+-- --------
+-- This file is the complete stock LazyVim baseline: every default is live,
+-- including the ones this config replaces. Personal overrides are applied on
+-- top afterwards, from lua/config/keymaps:
+--
+--   startup       lazy.nvim installs its lazy-load key stubs
+--   VeryLazy      LazyVim's own config.keymaps runs
+--   VeryLazy+n    which-key applies this spec  <- stock baseline lands here
+--   after that    config/keymaps applies your overrides  <- these win
+--
+-- which-key applies its spec from a vim.schedule'd callback, which is why
+-- config/keymaps.lua waits for `which-key.config`.loaded before applying (see
+-- after_which_key() there). Without that wait the baseline would clobber your
+-- overrides, not the other way round.
+--
 -- Legend
 -- ------
---   live entry        the binding. Edit or delete it here to rewind the key.
+--   live entry        the LazyVim default, applied by which-key.
 --
---   -- [taken] ...    LazyVim's default, left inert because something in this
---                     config already owns the key. The current owner is named
---                     directly underneath. Swap the comment markers to hand the
---                     key back to LazyVim.
+--   -- overridden by <file> -- "<desc>"
+--                     a live default that config/keymaps replaces afterwards.
+--                     The comment names the file that wins. Delete that
+--                     override to fall back to the default sitting right here.
 --
---   -- [yours] ...    your binding, shown for reference only. Its real home is
---                     the file named beside it and it stays there, because
---                     those lazy.nvim `keys` blocks are what lazy-load the
---                     plugin on first press. Moving it here would make those
---                     plugins load eagerly at startup.
+--   -- [yours] ...    a key LazyVim never defines, listed so this file doubles
+--                     as the full <leader> map. Its real home is named beside
+--                     it; nothing here binds it.
 --
 --   -- [removed] ...  a LazyVim default that config/keymaps/lazyvim.lua deletes
 --                     on VeryLazy.
@@ -156,17 +170,23 @@ return {
     desc = "Buffer Explorer",
   },
 
-  -- [taken] { "<leader>bb", "<cmd>e #<cr>", desc = "Switch to Other Buffer" },
-  -- [yours]   config/keymaps/buffer.lua:15 -- "Switch to Last Buffer" (b#)
+  -- overridden by config/keymaps/buffer.lua -- "Switch to Last Buffer"
+  { "<leader>bb", "<cmd>e #<cr>", desc = "Switch to Other Buffer" },
 
-  -- [taken] { "<leader>bo", function() Snacks.bufdelete.other() end, desc = "Delete Other Buffers" },
-  -- [yours]   config/keymaps/buffer.lua:4 -- "Delete Other Buffers" (%bd|e#)
+  -- overridden by config/keymaps/buffer.lua -- "Delete Other Buffers" (%bd|e#)
+  {
+    "<leader>bo",
+    function()
+      Snacks.bufdelete.other()
+    end,
+    desc = "Delete Other Buffers",
+  },
 
-  -- [taken] { "<leader>br", "<Cmd>BufferLineCloseRight<CR>", desc = "Delete Buffers to the Right" },
-  -- [yours]   config/keymaps/buffer.lua:24 -- "Delete Buffers to the Right"
+  -- overridden by config/keymaps/buffer.lua -- "Delete Buffers to the Right"
+  { "<leader>br", "<Cmd>BufferLineCloseRight<CR>", desc = "Delete Buffers to the Right" },
 
-  -- [taken] { "<leader>bl", "<Cmd>BufferLineCloseLeft<CR>", desc = "Delete Buffers to the Left" },
-  -- [yours]   config/keymaps/buffer.lua:39 -- "Delete Buffers to the Left"
+  -- overridden by config/keymaps/buffer.lua -- "Delete Buffers to the Left"
+  { "<leader>bl", "<Cmd>BufferLineCloseLeft<CR>", desc = "Delete Buffers to the Left" },
 
   -- [yours] config/keymaps/buffer.lua:8  -- <leader>bx "Delete All Buffers (Confirm)"
   -- [yours] config/keymaps/buffer.lua:19 -- <leader>b# "Current Buffer Number"
@@ -185,14 +205,21 @@ return {
   { "<leader>cm", "<cmd>Mason<cr>", desc = "Mason" },
   { "<leader>cS", "<cmd>Trouble lsp toggle<cr>", desc = "LSP references/definitions/... (Trouble)" },
 
-  -- [taken] { "<leader>cf", function() LazyVim.format({ force = true }) end, mode = { "n", "x" }, desc = "Format" },
-  -- [yours]   plugins/lspsage/keymaps.lua:4 -- "LSP Finder"
+  -- overridden by config/keymaps/lspsaga.lua -- "LSP Finder"
+  {
+    "<leader>cf",
+    function()
+      LazyVim.format({ force = true })
+    end,
+    mode = { "n", "x" },
+    desc = "Format",
+  },
 
-  -- [taken] { "<leader>cd", vim.diagnostic.open_float, desc = "Line Diagnostics" },
-  -- [yours]   plugins/lspsage/keymaps.lua:3 -- "Line Diagnostics" (Lspsaga)
+  -- overridden by config/keymaps/lspsaga.lua -- "Line Diagnostics" (Lspsaga)
+  { "<leader>cd", vim.diagnostic.open_float, desc = "Line Diagnostics" },
 
-  -- [taken] { "<leader>cs", "<cmd>Trouble symbols toggle<cr>", desc = "Symbols (Trouble)" },
-  -- [yours]   plugins/lspsage/keymaps.lua:6 -- "Signature Help"
+  -- overridden by config/keymaps/lspsaga.lua -- "Signature Help"
+  { "<leader>cs", "<cmd>Trouble symbols toggle<cr>", desc = "Symbols (Trouble)" },
 
   -- [lsp] capability-gated, attached per buffer -- see legend
   -- { "<leader>cl", function() Snacks.picker.lsp_config() end, desc = "Lsp Info" },
@@ -203,20 +230,40 @@ return {
   -- { "<leader>cD", LazyVim.lsp.action["source.fixAll.ts"], desc = "Fix all diagnostics" },              -- vtsls
   -- { "<leader>cV", function() LazyVim.lsp.execute({ title = "Select TypeScript Version", filter = "vtsls", command = "typescript.selectTypeScriptVersion" }) end, desc = "Select TS workspace version" }, -- vtsls
 
-  -- [lsp][taken] { "<leader>ca", vim.lsp.buf.code_action, mode = { "n", "x" }, desc = "Code Action" },
-  -- [yours]        plugins/lspsage/keymaps.lua:2 -- "Code Action" (Lspsaga)
-  -- [yours]        plugins/ui/config.lua:37     -- "Code Action Preview" (actions-preview)
-  --                actions-preview declares it as a lazy `keys` entry, lspsaga's
-  --                loads later, so Lspsaga is the one that ends up bound.
+  -- overridden by config/keymaps/lspsaga.lua -- "Code Action" (Lspsaga).
+  -- plugins/ui/config.lua:37 also claims <leader>ca (actions-preview, "Code
+  -- Action Preview") as a lazy `keys` entry; the config/keymaps layer runs last,
+  -- so Lspsaga wins -- which is what happened before this file existed too.
+  -- Global here, so it loses upstream's `has = "codeAction"` gate; harmless,
+  -- because the override replaces it in every buffer anyway.
+  { "<leader>ca", vim.lsp.buf.code_action, mode = { "n", "x" }, desc = "Code Action" },
 
-  -- [lsp][taken] { "<leader>cr", vim.lsp.buf.rename, desc = "Rename" },
-  -- [yours]        plugins/lspsage/keymaps.lua:5 -- "Rename" (Lspsaga)
+  -- overridden by config/keymaps/lspsaga.lua -- "Rename" (Lspsaga)
+  { "<leader>cr", vim.lsp.buf.rename, desc = "Rename" },
 
-  -- [lsp][taken] { "<leader>cR", function() Snacks.rename.rename_file() end, desc = "Rename File" },
-  -- [yours]        config/keymaps/typescript.lua:23 -- "Rename File" (TSToolsRenameFile, buffer-local)
+  -- overridden by config/keymaps/typescript.lua -- "Rename File" (TSToolsRenameFile).
+  -- That override is buffer-local to TS buffers, so this global copy stays
+  -- reachable elsewhere. Verified safe: Snacks.rename.rename_file() works with
+  -- no LSP client attached.
+  {
+    "<leader>cR",
+    function()
+      Snacks.rename.rename_file()
+    end,
+    desc = "Rename File",
+  },
 
-  -- [lsp][taken] { "<leader>co", LazyVim.lsp.action["source.organizeImports"], desc = "Organize Imports" },
-  -- [yours]        config/keymaps/typescript.lua:17 -- "Organize Imports" (TSToolsOrganizeImports, buffer-local)
+  -- overridden by config/keymaps/typescript.lua -- "Organize Imports"
+  -- (TSToolsOrganizeImports). Buffer-local to TS buffers, so this global copy
+  -- stays reachable elsewhere. Verified safe: with no LSP client attached the
+  -- code action resolves to a no-op rather than an error.
+  {
+    "<leader>co",
+    function()
+      LazyVim.lsp.action["source.organizeImports"]()
+    end,
+    desc = "Organize Imports",
+  },
 
   -- ╭──────────────────────────────────────────────────────────────────────╮
   -- │ <leader>d -- debug / profiler                                        │
@@ -297,26 +344,62 @@ return {
     desc = "Explorer NeoTree (cwd)",
   },
 
-  -- [taken] { "<leader>ff", function() LazyVim.pick.open("files") end, desc = "Find Files (Root Dir)" },
-  -- [yours]   plugins/telescope/keymaps.lua:12 -- "Find files"
+  -- overridden by config/keymaps/telescope.lua -- "Find files"
+  {
+    "<leader>ff",
+    function()
+      LazyVim.pick.open("files")
+    end,
+    desc = "Find Files (Root Dir)",
+  },
 
-  -- [taken] { "<leader>fb", function() Snacks.picker.buffers() end, desc = "Buffers" },
-  -- [yours]   plugins/telescope/keymaps.lua:11 -- "Find buffers"
+  -- overridden by config/keymaps/telescope.lua -- "Find buffers"
+  {
+    "<leader>fb",
+    function()
+      Snacks.picker.buffers()
+    end,
+    desc = "Buffers",
+  },
 
-  -- [taken] { "<leader>fg", function() Snacks.picker.git_files() end, desc = "Find Files (git-files)" },
-  -- [yours]   plugins/telescope/keymaps.lua:13 -- "Live grep"
+  -- overridden by config/keymaps/telescope.lua -- "Live grep"
+  {
+    "<leader>fg",
+    function()
+      Snacks.picker.git_files()
+    end,
+    desc = "Find Files (git-files)",
+  },
 
-  -- [taken] { "<leader>fr", function() LazyVim.pick.open("oldfiles") end, desc = "Recent" },
-  -- [yours]   plugins/telescope/keymaps.lua:17 -- "Resume last search"
+  -- overridden by config/keymaps/telescope.lua -- "Resume last search"
+  {
+    "<leader>fr",
+    function()
+      LazyVim.pick.open("oldfiles")
+    end,
+    desc = "Recent",
+  },
 
-  -- [taken] { "<leader>ft", function() Snacks.terminal(nil, { cwd = LazyVim.root() }) end, desc = "Terminal (Root Dir)" },
-  -- [yours]   plugins/telescope/keymaps.lua:20 -- "Treesitter symbols"
+  -- overridden by config/keymaps/telescope.lua -- "Treesitter symbols"
+  {
+    "<leader>ft",
+    function()
+      Snacks.terminal(nil, { cwd = LazyVim.root() })
+    end,
+    desc = "Terminal (Root Dir)",
+  },
 
-  -- [taken] { "<leader>fp", function() Snacks.picker.projects() end, desc = "Projects" },
-  -- [yours]   config/keymaps/general.lua:8 -- "Copy Relative Path to Clipboard"
-  --           three-way collision: telescope/keymaps.lua:3 also claims <leader>fp
-  --           ("Find Plugin File"), but general.lua runs on VeryLazy and so
-  --           overwrites both the snacks and the telescope binding.
+  -- overridden by config/keymaps/general.lua -- "Copy Relative Path to Clipboard".
+  -- Three-way collision: plugins/telescope/keymaps.lua:3 also claims <leader>fp
+  -- ("Find Plugin File"), but the config/keymaps layer runs last and wins, so
+  -- that telescope entry is dead code -- it was already dead before this file.
+  {
+    "<leader>fp",
+    function()
+      Snacks.picker.projects()
+    end,
+    desc = "Projects",
+  },
 
   -- [yours] plugins/telescope/keymaps.lua:14 -- <leader>fh "Help tags"
   -- [yours] plugins/telescope/keymaps.lua:15 -- <leader>fk "Keymaps"
@@ -509,8 +592,14 @@ return {
     desc = "Diff This ~",
   },
 
-  -- [taken] { "<leader>gg", function() Snacks.lazygit({ cwd = LazyVim.root.git() }) end, desc = "Lazygit (Root Dir)" },
-  -- [yours]   config/keymaps/neogit.lua:4 -- "Open Neogit"
+  -- overridden by config/keymaps/neogit.lua -- "Open Neogit"
+  {
+    "<leader>gg",
+    function()
+      Snacks.lazygit({ cwd = LazyVim.root.git() })
+    end,
+    desc = "Lazygit (Root Dir)",
+  },
 
   -- [removed] deleted by config/keymaps/lazyvim.lua:11
   -- { "<leader>gG", function() Snacks.lazygit() end, desc = "Lazygit (cwd)" },
@@ -783,8 +872,14 @@ return {
     desc = "Noice Picker (Telescope/FzfLua)",
   },
 
-  -- [taken] { "<leader>st", function() Snacks.picker.todo_comments() end, desc = "Todo" },
-  -- [yours]   plugins/todo-comments/keymaps.lua:4 -- "Todo (Telescope)"
+  -- overridden by config/keymaps/todo-comments.lua -- "Todo (Telescope)"
+  {
+    "<leader>st",
+    function()
+      Snacks.picker.todo_comments()
+    end,
+    desc = "Todo",
+  },
 
   -- [lsp] capability-gated, attached per buffer -- see legend
   -- { "<leader>ss", function() Snacks.picker.lsp_symbols({ filter = LazyVim.config.kind_filter }) end, desc = "LSP Symbols" },            -- has = "documentSymbol"
@@ -968,8 +1063,14 @@ return {
     desc = "Colorschemes",
   },
 
-  -- [taken] { "<leader>ul", function() Snacks.toggle.line_number():toggle() end, desc = "Toggle Line Number" },
-  -- [yours]   config/keymaps/general.lua:4 -- "Toggle Relative Line Numbers"
+  -- overridden by config/keymaps/general.lua -- "Toggle Relative Line Numbers"
+  {
+    "<leader>ul",
+    function()
+      Snacks.toggle.line_number():toggle()
+    end,
+    desc = "Toggle Line Number",
+  },
 
   -- [yours] config/keymaps/blink.lua:37 -- <leader>uj "Toggle Japanese IM completion"
 
@@ -1028,11 +1129,15 @@ return {
   { "<leader>xL", "<cmd>Trouble loclist toggle<cr>", desc = "Location List (Trouble)" },
   { "<leader>xQ", "<cmd>Trouble qflist toggle<cr>", desc = "Quickfix List (Trouble)" },
 
-  -- [taken] { "<leader>xt", "<cmd>Trouble todo toggle<cr>", desc = "Todo (Trouble)" },
-  -- [yours]   plugins/todo-comments/keymaps.lua:2 -- "Todo (Trouble)" (TodoTrouble)
+  -- overridden by config/keymaps/todo-comments.lua -- "Todo (Trouble)" (TodoTrouble)
+  { "<leader>xt", "<cmd>Trouble todo toggle<cr>", desc = "Todo (Trouble)" },
 
-  -- [taken] { "<leader>xT", "<cmd>Trouble todo toggle filter = {tag = {TODO,FIX,FIXME}}<cr>", desc = "Todo/Fix/Fixme (Trouble)" },
-  -- [yours]   plugins/todo-comments/keymaps.lua:3 -- "Todo/Fix/Fixme (Trouble)" (TodoTrouble)
+  -- overridden by config/keymaps/todo-comments.lua -- "Todo/Fix/Fixme (Trouble)"
+  {
+    "<leader>xT",
+    "<cmd>Trouble todo toggle filter = {tag = {TODO,FIX,FIXME}}<cr>",
+    desc = "Todo/Fix/Fixme (Trouble)",
+  },
 
   -- ╭──────────────────────────────────────────────────────────────────────╮
   -- │ Yours only -- no LazyVim default on these prefixes                   │
