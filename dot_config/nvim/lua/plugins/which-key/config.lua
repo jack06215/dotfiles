@@ -10,7 +10,7 @@ return {
   "folke/which-key.nvim",
   opts = {
     spec = vim.list_extend({
-      -- Bufferi
+      -- Buffer
       { "<leader>b", group = "Buffer" },
       -- Python
       { "<leader>py", group = "Python" },
