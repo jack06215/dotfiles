@@ -15,5 +15,17 @@ open <file=data.csv>
 | select name email score
 | sort-by score --reverse
 | to yaml"""
-    description = "nu: filter CSV rows and write them out as YAML"
+    description = "filter CSV rows and write them out as YAML"
     tag = ["nu", "csv", "yaml", "filter"]
+[[snippets]]
+    # The query body is too big for a `<param>` placeholder, so vipe carries it
+    # instead. With nothing piped in, vipe sees a tty on stdin and skips the
+    # read, so $EDITOR opens on an empty .sql buffer - write the query there,
+    # save, and vipe hands it back on stdout, where the subexpression captures
+    # it into $sql. (vipe reopens the editor's own stdin/stdout on /dev/tty,
+    # which is why it still works with its stdout captured.)
+    command = """
+let sql = (vipe --suffix sql)
+open <db=~/.local/share/atuin/history.db> | query db $sql"""
+    description = "run SQL query against atuin DB."
+    tag = ["nu", "sqlite", "vipe", "atuin", "query"]
