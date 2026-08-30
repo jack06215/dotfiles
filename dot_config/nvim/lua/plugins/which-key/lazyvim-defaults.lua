@@ -170,7 +170,7 @@ return {
   },
 
   -- overridden by config/keymaps/buffer.lua -- "Switch to Last Buffer"
-  { "<leader>bb", "<cmd>e #<cr>", desc = "Switch to Other Buffer" },
+  -- { "<leader>bb", "<cmd>e #<cr>", desc = "Switch to Other Buffer" },
 
   -- overridden by config/keymaps/buffer.lua -- "Delete Other Buffers" (%bd|e#)
   {
@@ -182,10 +182,10 @@ return {
   },
 
   -- overridden by config/keymaps/buffer.lua -- "Delete Buffers to the Right"
-  { "<leader>br", "<Cmd>BufferLineCloseRight<CR>", desc = "Delete Buffers to the Right" },
+  -- { "<leader>br", "<Cmd>BufferLineCloseRight<CR>", desc = "Delete Buffers to the Right" },
 
   -- overridden by config/keymaps/buffer.lua -- "Delete Buffers to the Left"
-  { "<leader>bl", "<Cmd>BufferLineCloseLeft<CR>", desc = "Delete Buffers to the Left" },
+  -- { "<leader>bl", "<Cmd>BufferLineCloseLeft<CR>", desc = "Delete Buffers to the Left" },
 
   -- [yours] config/keymaps/buffer.lua:8  -- <leader>bx "Delete All Buffers (Confirm)"
   -- [yours] config/keymaps/buffer.lua:19 -- <leader>b# "Current Buffer Number"
@@ -205,20 +205,20 @@ return {
   { "<leader>cS", "<cmd>Trouble lsp toggle<cr>", desc = "LSP references/definitions/... (Trouble)" },
 
   -- overridden by config/keymaps/lspsaga.lua -- "LSP Finder"
-  {
-    "<leader>cf",
-    function()
-      LazyVim.format({ force = true })
-    end,
-    mode = { "n", "x" },
-    desc = "Format",
-  },
+  -- {
+  --   "<leader>cf",
+  --   function()
+  --     LazyVim.format({ force = true })
+  --   end,
+  --   mode = { "n", "x" },
+  --   desc = "Format",
+  -- },
 
   -- overridden by config/keymaps/lspsaga.lua -- "Line Diagnostics" (Lspsaga)
-  { "<leader>cd", vim.diagnostic.open_float, desc = "Line Diagnostics" },
+  -- { "<leader>cd", vim.diagnostic.open_float, desc = "Line Diagnostics" },
 
   -- overridden by config/keymaps/lspsaga.lua -- "Signature Help"
-  { "<leader>cs", "<cmd>Trouble symbols toggle<cr>", desc = "Symbols (Trouble)" },
+  -- { "<leader>cs", "<cmd>Trouble symbols toggle<cr>", desc = "Symbols (Trouble)" },
 
   -- [lsp] capability-gated, attached per buffer -- see legend
   -- { "<leader>cl", function() Snacks.picker.lsp_config() end, desc = "Lsp Info" },
@@ -235,22 +235,22 @@ return {
   -- so Lspsaga wins -- which is what happened before this file existed too.
   -- Global here, so it loses upstream's `has = "codeAction"` gate; harmless,
   -- because the override replaces it in every buffer anyway.
-  { "<leader>ca", vim.lsp.buf.code_action, mode = { "n", "x" }, desc = "Code Action" },
+  -- { "<leader>ca", vim.lsp.buf.code_action, mode = { "n", "x" }, desc = "Code Action" },
 
   -- overridden by config/keymaps/lspsaga.lua -- "Rename" (Lspsaga)
-  { "<leader>cr", vim.lsp.buf.rename, desc = "Rename" },
+  -- { "<leader>cr", vim.lsp.buf.rename, desc = "Rename" },
 
   -- overridden by config/keymaps/typescript.lua -- "Rename File" (TSToolsRenameFile).
   -- That override is buffer-local to TS buffers, so this global copy stays
   -- reachable elsewhere. Verified safe: Snacks.rename.rename_file() works with
   -- no LSP client attached.
-  {
-    "<leader>cR",
-    function()
-      Snacks.rename.rename_file()
-    end,
-    desc = "Rename File",
-  },
+  -- {
+  --   "<leader>cR",
+  --   function()
+  --     Snacks.rename.rename_file()
+  --   end,
+  --   desc = "Rename File",
+  -- },
 
   -- overridden by config/keymaps/typescript.lua -- "Organize Imports"
   -- (TSToolsOrganizeImports). Buffer-local to TS buffers, so this global copy
@@ -344,61 +344,61 @@ return {
   },
 
   -- overridden by config/keymaps/telescope.lua -- "Find files"
-  {
-    "<leader>ff",
-    function()
-      LazyVim.pick.open("files")
-    end,
-    desc = "Find Files (Root Dir)",
-  },
+  -- {
+  --   "<leader>ff",
+  --   function()
+  --     LazyVim.pick.open("files")
+  --   end,
+  --   desc = "Find Files (Root Dir)",
+  -- },
 
   -- overridden by config/keymaps/telescope.lua -- "Find buffers"
-  {
-    "<leader>fb",
-    function()
-      Snacks.picker.buffers()
-    end,
-    desc = "Buffers",
-  },
+  -- {
+  --   "<leader>fb",
+  --   function()
+  --     Snacks.picker.buffers()
+  --   end,
+  --   desc = "Buffers",
+  -- },
 
   -- overridden by config/keymaps/telescope.lua -- "Live grep"
-  {
-    "<leader>fg",
-    function()
-      Snacks.picker.git_files()
-    end,
-    desc = "Find Files (git-files)",
-  },
+  -- {
+  --   "<leader>fg",
+  --   function()
+  --     Snacks.picker.git_files()
+  --   end,
+  --   desc = "Find Files (git-files)",
+  -- },
 
   -- overridden by config/keymaps/telescope.lua -- "Resume last search"
-  {
-    "<leader>fr",
-    function()
-      LazyVim.pick.open("oldfiles")
-    end,
-    desc = "Recent",
-  },
+  -- {
+  --   "<leader>fr",
+  --   function()
+  --     LazyVim.pick.open("oldfiles")
+  --   end,
+  --   desc = "Recent",
+  -- },
 
   -- overridden by config/keymaps/telescope.lua -- "Treesitter symbols"
-  {
-    "<leader>ft",
-    function()
-      Snacks.terminal(nil, { cwd = LazyVim.root() })
-    end,
-    desc = "Terminal (Root Dir)",
-  },
+  -- {
+  --   "<leader>ft",
+  --   function()
+  --     Snacks.terminal(nil, { cwd = LazyVim.root() })
+  --   end,
+  --   desc = "Terminal (Root Dir)",
+  -- },
 
   -- overridden by config/keymaps/general.lua -- "Copy Relative Path to Clipboard".
   -- Three-way collision: plugins/telescope/keymaps.lua:3 also claims <leader>fp
   -- ("Find Plugin File"), but the config/keymaps layer runs last and wins, so
   -- that telescope entry is dead code -- it was already dead before this file.
-  {
-    "<leader>fp",
-    function()
-      Snacks.picker.projects()
-    end,
-    desc = "Projects",
-  },
+  -- {
+  --   "<leader>fp",
+  --   function()
+  --     Snacks.picker.projects()
+  --   end,
+  --   desc = "Projects",
+  -- },
 
   -- [yours] plugins/telescope/keymaps.lua:14 -- <leader>fh "Help tags"
   -- [yours] plugins/telescope/keymaps.lua:15 -- <leader>fk "Keymaps"
@@ -877,13 +877,13 @@ return {
   },
 
   -- overridden by config/keymaps/todo-comments.lua -- "Todo (Telescope)"
-  {
-    "<leader>st",
-    function()
-      Snacks.picker.todo_comments()
-    end,
-    desc = "Todo",
-  },
+  -- {
+  --   "<leader>st",
+  --   function()
+  --     Snacks.picker.todo_comments()
+  --   end,
+  --   desc = "Todo",
+  -- },
 
   -- [lsp] capability-gated, attached per buffer -- see legend
   -- { "<leader>ss", function() Snacks.picker.lsp_symbols({ filter = LazyVim.config.kind_filter }) end, desc = "LSP Symbols" },            -- has = "documentSymbol"
