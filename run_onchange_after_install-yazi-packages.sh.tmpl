@@ -41,11 +41,70 @@ set -euo pipefail
 # and only when, the package set changes:
 # package.toml hash: {{ include "dot_config/yazi/package.toml.tmpl" | sha256sum }}
 
+# init.lua calls require() on these, and yazi hard-errors at startup if one is
+# missing - so every failure below is loud rather than silently swallowed.
+#
+# Loud specifically means a non-zero exit, which is what buys the retry:
+# chezmoi writes a script's entry into scriptState only after it *succeeds*, so
+# a failure both aborts the apply with the message on screen and leaves the
+# script pending (`chezmoi status` keeps showing `R`) for the next one.
+#
+# Exiting 0 on a missing `ya` did the opposite, and that is the bug this
+# replaces. It recorded success, and run_onchange reruns only when this
+# script's own rendered text changes - which is precisely why the package.toml
+# hash is embedded above, to fold that file's changes into this one's. Neither
+# changes when yazi is installed later, so the skip was permanent rather than
+# deferred: the plugins stayed missing through every subsequent apply, and the
+# first symptom was yazi refusing to start.
+{{ if ne .chezmoi.os "windows" -}}
+if ! command -v ya > /dev/null 2>&1; then
+  echo "yazi: 'ya' not found, but yazi is in brew-formula-{{ if .myComputer.isDarwin }}macos{{ else }}wsl2{{ end }}.txt and its" >&2
+  echo "      config has just been applied - so this is a broken install, not a" >&2
+  echo "      machine that opted out. Install it and re-apply:" >&2
+  echo "" >&2
+  echo "        brew install yazi && chezmoi apply" >&2
+  exit 1
+fi
+
+ya pkg install
+
+# `ya pkg install` reports per-package status but still exits 0 when a clone
+# is skipped, so confirm what actually landed rather than trusting the exit
+# code. Reading the rendered package.toml (already applied - this is a
+# run_onchange_after_ script) keeps the check honest about the OS conditional
+# that drops mactag off non-darwin.
+config_dir="${YAZI_CONFIG_HOME:-${XDG_CONFIG_HOME:-$HOME/.config}/yazi}"
+manifest="$config_dir/package.toml"
+
+if [[ -r "$manifest" ]]; then
+  missing=()
+  while IFS= read -r dir; do
+    [[ -d "$config_dir/$dir" ]] || missing+=("$dir")
+  done < <(awk '
+    /^\[\[plugin\.deps\]\]/ { kind = "plugins"; next }
+    /^\[\[flavor\.deps\]\]/ { kind = "flavors"; next }
+    kind != "" && /^[[:space:]]*use[[:space:]]*=/ {
+      if (match($0, /:[^"]+/)) print kind "/" substr($0, RSTART + 1, RLENGTH - 1) ".yazi"
+    }
+  ' "$manifest")
+
+  if ((${#missing[@]})); then
+    echo "yazi: 'ya pkg install' exited 0 but these are still missing under $config_dir:" >&2
+    printf '        %s\n' "${missing[@]}" >&2
+    echo "      init.lua require()s them, so yazi will not start. Check the fetch" >&2
+    echo "      output above, then retry: ya pkg install" >&2
+    exit 1
+  fi
+fi
+{{ else -}}
+# Windows is the one target where a missing `ya` is not an error: neither
+# brew-formula list covers it, so nothing here provisions yazi. The config
+# still gets applied (dot_config/yazi has no OS guard), but an absent binary
+# means nothing will read it.
 if ! command -v ya > /dev/null 2>&1; then
   echo "yazi: 'ya' not installed, skipping plugin install" >&2
   exit 0
 fi
 
-# init.lua calls require() on these, and yazi hard-errors at startup if one is
-# missing - so a failure here must be loud rather than silently swallowed.
 ya pkg install
+{{ end -}}
