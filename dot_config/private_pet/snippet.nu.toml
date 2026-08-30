@@ -1,12 +1,3 @@
-# Nushell snippets, added with `pet new` from nushell.
-#
-# Managed like snippet.toml, so `chezmoi re-add` after adding one keeps it in
-# the repo. pet 1.0.1 refuses to start when SnippetFile is missing, which is
-# why this file exists even while empty.
-#
-# Multiline commands are fine: pet escapes the newlines to a literal \n when it
-# feeds fzf (one row per snippet) and restores them in the selection, so the
-# whole pipeline lands in the nushell buffer.
 [[snippets]]
     command = """
 open <file=data.csv>
@@ -18,12 +9,6 @@ open <file=data.csv>
     description = "filter CSV rows and write them out as YAML"
     tag = ["nu", "csv", "yaml", "filter"]
 [[snippets]]
-    # The query body is too big for a `<param>` placeholder, so vipe carries it
-    # instead. With nothing piped in, vipe sees a tty on stdin and skips the
-    # read, so $EDITOR opens on an empty .sql buffer - write the query there,
-    # save, and vipe hands it back on stdout, where the subexpression captures
-    # it into $sql. (vipe reopens the editor's own stdin/stdout on /dev/tty,
-    # which is why it still works with its stdout captured.)
     command = """
 let sql = (vipe --suffix sql)
 open <db=~/.local/share/atuin/history.db> | query db $sql"""
