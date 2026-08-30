@@ -106,27 +106,8 @@ end
 -- =============================================================
 local is_maximized = false
 
--- The "opal" tab is disabled: tmux-opal covers the same workspace, and running
--- both meant two copies of every long-lived process. Kept here (with its layout
--- helper below) so it can be restored by uncommenting both blocks.
---
--- The "opal" layout, applied to the tab owning `pane`: a large main pane, a
--- two-pane column down the right, and a short three-pane strip along the
--- bottom — six panes in total.
--- local function build_opal_layout(pane)
---   local bottom = pane:split({ direction = "Bottom", size = 0.1 })
---   local right = pane:split({ direction = "Right", size = 0.15 })
---   right:split({ direction = "Bottom", size = 0.5 })
---   bottom:split({ direction = "Right", size = 0.15 })
---   bottom:split({ direction = "Left", size = 0.15 })
--- end
-
 wezterm.on("gui-startup", function(cmd)
-  -- The first tab is one WezTerm pane running tmux, which builds its own
-  -- four-pane cockpit layout (editor / agent / shell / srv). Splitting in
-  -- WezTerm here as well would nest two pane managers in one tab, so every tmux
-  -- binding would apply to a quarter of the screen. Skipped on Windows (no
-  -- tmux) and when `wezterm start -- <cmd>` asked for something specific.
+  -- The first tab is one WezTerm pane running tmux
   local spawn_tmux = cmd == nil and not tmpl.is_true("myComputer.isWindows")
   local spawn_args = cmd or {}
   if spawn_tmux then
@@ -138,7 +119,7 @@ wezterm.on("gui-startup", function(cmd)
 
   local tab1, _pane1, window1 = mux.spawn_window(spawn_args)
   if spawn_tmux then
-    tab1:set_title("tmux-opal")
+    tab1:set_title("opal")
   end
   window1:gui_window():maximize()
 
@@ -150,9 +131,6 @@ wezterm.on("gui-startup", function(cmd)
     local tab2, pane2 = window1:spawn_tab({})
     tab2:set_title("ruby")
     pane2:split({ direction = "Bottom", size = 0.3 })
-
-    local tab3 = window1:spawn_tab({})
-    tab3:set_title("diamond")
 
     tab1:activate()
   end)
@@ -171,15 +149,7 @@ end)
 -- -- Config
 -- =============================================================
 local config = {
-  -- Shell & env
   default_prog = default_prog,
-  -- NOTE: no `set_environment_variables = { TERM = "wezterm" }` here. It was a
-  -- no-op (WezTerm's own `term` option, default "xterm-256color", is applied
-  -- after it and wins), and a live hazard: there is no `wezterm` terminfo entry
-  -- installed, so the moment it took effect tmux would refuse to start with
-  -- "missing or unsuitable terminal". Run `wezterm show-keys`/`infocmp wezterm`
-  -- and install the terminfo first if you ever want TERM=wezterm.
-
   -- Appearance
   color_scheme = "Catppuccin Mocha",
   font = wezterm.font("PlemolJP Console NF", { weight = "Medium", stretch = "Normal", style = "Normal" }),
