@@ -92,7 +92,7 @@ return {
     function()
       LazyVim.pick.open("grep")
     end,
-    desc = "Grep (Root Dir)",
+    desc = "Grep",
   },
   {
     "<leader>:",
@@ -101,14 +101,14 @@ return {
     end,
     desc = "Command History",
   },
-  {
-    "<leader><space>",
-    function()
-      LazyVim.pick.open("files")
-    end,
-    desc = "Find Files (Root Dir)",
-  },
-  { "<leader>`", "<cmd>e #<cr>", desc = "Switch to Other Buffer" },
+  -- {
+  --   "<leader><space>",
+  --   function()
+  --     LazyVim.pick.open("files")
+  --   end,
+  --   desc = "Find Files (Root Dir)",
+  -- },
+  -- { "<leader>`", "<cmd>e #<cr>", desc = "Switch to Other Buffer" },
   {
     "<leader>n",
     function()
@@ -121,7 +121,7 @@ return {
     function()
       require("which-key").show({ global = false })
     end,
-    desc = "Buffer Keymaps (which-key)",
+    desc = "Buffer Keymaps",
   },
   {
     "<leader>L",
@@ -135,7 +135,7 @@ return {
     function()
       require("neo-tree.command").execute({ toggle = true, dir = LazyVim.root() })
     end,
-    desc = "Explorer NeoTree (Root Dir)",
+    desc = "Explorer NeoTree",
   },
   -- [removed]
   -- { "<leader>E", "<leader>fE", desc = "Explorer NeoTree (cwd)", remap = true },

@@ -10,18 +10,24 @@ return {
   "folke/which-key.nvim",
   opts = {
     spec = vim.list_extend({
-      -- Buffer
+      { "<leader><tab>", group = "Tabs" },
       { "<leader>b", group = "Buffer" },
-      -- Python
-      { "<leader>py", group = "Python" },
-      -- package.json -- buffer-local to json buffers, see
-      -- config/keymaps/package-info.lua
-      { "<leader>pj", group = "package.json" },
-      -- AI -- avante's <leader>a* keys are deleted in
-      -- config/keymaps/avante.lua, so nothing sits under this yet
-      { "<leader>a", group = "AI" },
+      { "<leader>c", group = "Code" },
+      { "<leader>d", group = "Debug" },
+      { "<leader>f", group = "File/Find" },
+      { "<leader>g", group = "Git" },
+      { "<leader>l", group = "Linter" },
+      { "<leader>m", group = "Conform" },
       { "<leader>o", group = "Octo" },
-      { "<leader>g", group = "git" },
+      { "<leader>p", group = "Python/Packages" },
+      { "<leader>q", group = "Quit/Session" },
+      { "<leader>s", group = "Search" },
+      { "<leader>u", group = "UI" },
+      { "<leader>w", group = "Windows" },
+      { "<leader>x", group = "Diagnostics/Quickfix" },
+
+      { "<leader>pj", group = "package.json" },
+      { "<leader>py", group = "Python" },
     }, lazyvim_defaults),
   },
 }
