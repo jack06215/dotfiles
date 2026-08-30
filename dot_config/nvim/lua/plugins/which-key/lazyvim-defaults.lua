@@ -130,7 +130,13 @@ return {
     end,
     desc = "LazyVim Changelog",
   },
-  { "<leader>e", "<leader>fe", desc = "Explorer NeoTree (Root Dir)", remap = true },
+  {
+    "<leader>e",
+    function()
+      require("neo-tree.command").execute({ toggle = true, dir = LazyVim.root() })
+    end,
+    desc = "Explorer NeoTree (Root Dir)",
+  },
   -- [removed]
   -- { "<leader>E", "<leader>fE", desc = "Explorer NeoTree (cwd)", remap = true },
   { "<leader>-", "<C-W>s", desc = "Split Window Below", remap = true },
@@ -328,20 +334,22 @@ return {
     end,
     desc = "Terminal (cwd)",
   },
-  {
-    "<leader>fe",
-    function()
-      require("neo-tree.command").execute({ toggle = true, dir = LazyVim.root() })
-    end,
-    desc = "Explorer NeoTree (Root Dir)",
-  },
-  {
-    "<leader>fE",
-    function()
-      require("neo-tree.command").execute({ toggle = true, dir = vim.uv.cwd() })
-    end,
-    desc = "Explorer NeoTree (cwd)",
-  },
+  -- [removed]
+  -- {
+  --   "<leader>fe",
+  --   function()
+  --     require("neo-tree.command").execute({ toggle = true, dir = LazyVim.root() })
+  --   end,
+  --   desc = "Explorer NeoTree (Root Dir)",
+  -- },
+  -- [removed]
+  -- {
+  --   "<leader>fE",
+  --   function()
+  --     require("neo-tree.command").execute({ toggle = true, dir = vim.uv.cwd() })
+  --   end,
+  --   desc = "Explorer NeoTree (cwd)",
+  -- },
 
   -- overridden by config/keymaps/telescope.lua -- "Find files"
   -- {

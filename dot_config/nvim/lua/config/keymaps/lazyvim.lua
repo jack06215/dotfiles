@@ -11,6 +11,8 @@ M.create_keymaps = function()
     "<leader>K",
     "<leader>l",
     "<leader>E", -- neo-tree extra's alias for <leader>fE
+    "<leader>fe",
+    "<leader>fE",
   }
 
   for _, key in ipairs(keys) do
