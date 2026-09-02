@@ -45,7 +45,6 @@ end
 M.on_attach = function(client, bufnr)
   -- Keymaps
   local opts = { buffer = bufnr, silent = true }
-  vim.keymap.set("n", "gd", vim.lsp.buf.definition, opts)
   vim.keymap.set("n", "K", vim.lsp.buf.hover, opts)
 
   -- Optional: LSP formatting

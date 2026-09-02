@@ -21,9 +21,11 @@ M.create_keymaps = function()
 
   map("n", "<leader>ca", saga("code_action"), { desc = "Code Action" })
   map("n", "<leader>cd", saga("show_line_diagnostics"), { desc = "Line Diagnostics" })
-  map("n", "<leader>cf", saga("lsp_finder"), { desc = "LSP Finder" })
+  -- map("n", "<leader>cf", saga("lsp_finder"), { desc = "LSP Finder" })
   map("n", "<leader>cr", saga("rename"), { desc = "Rename" })
   map("n", "<leader>cs", saga("signature_help"), { desc = "Signature Help" })
+  map("n", "gd", saga("goto_definition"), { desc = "Goto Definition" })
+  map("n", "gh", saga("peek_definition"), { desc = "Peek Definition" })
 end
 
 return M
