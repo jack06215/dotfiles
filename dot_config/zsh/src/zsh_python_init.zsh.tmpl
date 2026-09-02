@@ -1,0 +1,25 @@
+#!/usr/bin/env zsh
+
+[[ -f "$ZDOTDIR/src/core.zsh" ]] && source "$ZDOTDIR/src/core.zsh"
+
+_ZSH_PYTHON="{{ .pypoetry.zshPythonDir }}"
+if [[ -n "$_ZSH_PYTHON" && -x "$_ZSH_PYTHON/bin/python" ]]; then
+  export ZSH_PYTHON_ROOT="$_ZSH_PYTHON"
+  export ZSH_PYTHON_BIN="$_ZSH_PYTHON/bin/python"
+  export ZSH_PIP_BIN="$_ZSH_PYTHON/bin/pip"
+
+  # python cli
+  export ALEMBIC_BIN="$ZSH_PYTHON_ROOT/bin/alembic"
+  export LLM_BIN="$ZSH_PYTHON_ROOT/bin/llm"
+  export DBT_BIN="$ZSH_PYTHON_ROOT/bin/dbt"
+  export GDOWN_BIN="$ZSH_PYTHON_ROOT/bin/gdown"
+  export RUFF_BIN="$ZSH_PYTHON_ROOT/bin/ruff"
+
+  alias zsh_python='$ZSH_PYTHON_BIN'
+  alias zsh_pip='$ZSH_PIP_BIN'
+
+  alias llm='$LLM_BIN'
+  alias alembic='$ALEMBIC_BIN'
+  alias ruff='$RUFF_BIN'
+  alias gdown='$GDOWN_BIN'
+fi
