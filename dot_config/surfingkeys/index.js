@@ -670,11 +670,11 @@ const hintsCss = `
 `;
 api.Hints.style(hintsCss);
 api.Hints.style(hintsCss, 'text');
-
+font_size = 20;
 settings.theme = `
 :root {
   --font: 'JetBrains Mono NL', monospace;
-  --font-size: 12;
+  --font-size: ${font_size}px;
   --font-weight: normal;
 
   /* Monokai */
@@ -686,6 +686,11 @@ settings.theme = `
   --accent-fg:  #E6DB74;
   --info-fg:    #A6E22E;
   --select:     #556172;
+
+  /* Focused row */
+  --focus-bg:   #3A5570;
+  --focus-fg:   #FFFFFF;
+  --focus-bar:  #F92660;
 }
 
 .sk_theme {
@@ -719,7 +724,6 @@ input { font-family: var(--font); font-weight: var(--font-weight); }
 .sk_theme .omnibar_visitcount { color: var(--accent-fg); }
 
 .sk_theme #sk_omnibarSearchResult ul li:nth-child(odd) { background: var(--bg-dark); }
-.sk_theme #sk_omnibarSearchResult ul li.focused        { background: var(--border); }
 .sk_theme #sk_omnibarSearchArea                        { border-top-color: var(--border); border-bottom-color: var(--border); }
 .sk_theme #sk_omnibarSearchArea input,
 .sk_theme #sk_omnibarSearchArea span                   { font-size: var(--font-size); }
@@ -772,5 +776,124 @@ input { font-family: var(--font); font-weight: var(--font-weight); }
   font-family: var(--font);
   font-size: var(--font-size);
   font-weight: var(--font-weight);
+}
+
+/* =========================================================================
+   OMNIBAR SIZING
+   ========================================================================= */
+
+#sk_omnibarSearchArea input,
+#sk_omnibarSearchArea span,
+#sk_omnibarSearchArea kbd {
+  font-size: var(--font-size) !important;
+  line-height: 1.5 !important;
+}
+
+#sk_omnibarSearchResult ul li {
+  font-size: var(--font-size) !important;
+  line-height: 1.45 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+#sk_omnibarSearchResult ul li .title,
+#sk_omnibarSearchResult ul li .url,
+#sk_omnibarSearchResult ul li .annotation,
+#sk_omnibarSearchResult ul li .omnibar_highlight {
+  font-size: var(--font-size) !important;
+}
+
+/* URL line slightly smaller so the title still leads the row */
+#sk_omnibarSearchResult ul li .url {
+  font-size: 0.85em !important;
+}
+
+#sk_omnibarSearchResult ul li .omnibar_timestamp,
+#sk_omnibarSearchResult ul li .omnibar_visitcount {
+  font-size: 0.8em !important;
+}
+
+/* =========================================================================
+   FOCUSED OMNIBAR ROW — must stay last so nothing above overrides it
+   ========================================================================= */
+
+#sk_omnibarSearchResult ul li.focused,
+#sk_omnibarSearchResult > ul > li.focused,
+.sk_theme #sk_omnibarSearchResult ul li.focused,
+.sk_theme #sk_omnibarSearchResult > ul > li.focused,
+#sk_omnibarSearchResult ul li:nth-child(odd).focused,
+#sk_omnibarSearchResult ul li:nth-child(even).focused {
+  background: var(--focus-bg) !important;
+  background-color: var(--focus-bg) !important;
+  box-shadow: inset 4px 0 0 0 var(--focus-bar) !important;
+}
+
+#sk_omnibarSearchResult ul li.focused,
+#sk_omnibarSearchResult ul li.focused *,
+#sk_omnibarSearchResult ul li.focused .title,
+#sk_omnibarSearchResult ul li.focused .annotation,
+#sk_omnibarSearchResult ul li.focused .omnibar_highlight,
+#sk_omnibarSearchResult ul li.focused b,
+#sk_omnibarSearchResult ul li.focused strong,
+#sk_omnibarSearchResult ul li.focused em {
+  color: var(--focus-fg) !important;
+}
+
+#sk_omnibarSearchResult ul li.focused .url,
+#sk_omnibarSearchResult ul li.focused .omnibar_timestamp,
+#sk_omnibarSearchResult ul li.focused .omnibar_visitcount {
+  color: var(--info-fg) !important;
+}
+/* =========================================================================
+   HELP / USAGE PANEL  (? key) and POPUP (;h)
+   ========================================================================= */
+
+#sk_usage,
+#sk_usage * {
+  font-size: var(--font-size) !important;
+  line-height: 1.5 !important;
+}
+
+#sk_usage {
+  max-height: 85% !important;
+  overflow-y: auto !important;
+}
+
+#sk_usage .feature_name,
+#sk_usage .feature_name span {
+  font-size: calc(var(--font-size) + 2px) !important;
+  color: var(--main-fg) !important;
+  font-weight: bold !important;
+}
+
+#sk_usage kbd,
+#sk_usage kbd * {
+  font-size: var(--font-size) !important;
+  background: var(--bg-dark) !important;
+  border-color: var(--border) !important;
+  color: var(--accent-fg) !important;
+  padding: 2px 6px !important;
+}
+
+#sk_usage .annotation {
+  font-size: var(--font-size) !important;
+  color: var(--fg) !important;
+}
+
+#sk_usage .kbd-span {
+  font-size: var(--font-size) !important;
+}
+
+/* ;h site-help popup */
+#sk_popup,
+#sk_popup * {
+  font-size: var(--font-size) !important;
+  line-height: 1.6 !important;
+  font-family: var(--font) !important;
+  color: var(--fg) !important;
+}
+#sk_popup {
+  background: var(--bg) !important;
+  border-color: var(--border) !important;
 }
 `;
