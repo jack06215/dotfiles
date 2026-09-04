@@ -20,46 +20,58 @@ settings.cursorAtEndOfInput = false;
 api.Hints.setCharacters('asdfwerxcvuionm');
 
 // -- Utilities --
-const unmapKeys   = (keys) => keys.forEach((key) => api.unmap(key));
-const iunmapKeys  = (keys) => keys.forEach((key) => api.iunmap(key));
+function unmapKeys(keys) {
+  keys.forEach((key) => api.unmap(key));
+}
+
+function iunmapKeys(keys) {
+  keys.forEach((key) => api.iunmap(key));
+}
 
 const escapeMap = {
   '&': '&amp;', '<': '&lt;', '>': '&gt;',
   '"': '&quot;', "'": '&#39;', '/': '&#x2F;',
   '`': '&#x60;', '=': '&#x3D;',
 };
-const escapeForAlias = (str) =>
-  String(str).replace(/[&<>"'`=/]/g, (s) => escapeMap[s]);
 
-const createSuggestionItem = (html, props = {}) => {
+function escapeForAlias(str) {
+  return String(str).replace(/[&<>"'`=/]/g, (s) => escapeMap[s]);
+}
+
+function createSuggestionItem(html, props = {}) {
   const li = document.createElement('li');
   li.innerHTML = html;
   return { html: li.outerHTML, props };
-};
+}
 
-const padZero = (txt) => `0${txt}`.slice(-2);
-const formatDate = (date, format = 'YYYY/MM/DD hh:mm:ss') =>
-  format
+function padZero(txt) {
+  return `0${txt}`.slice(-2);
+}
+
+function formatDate(date, format = 'YYYY/MM/DD hh:mm:ss') {
+  return format
     .replace('YYYY', date.getFullYear())
     .replace('MM',   padZero(date.getMonth() + 1))
     .replace('DD',   padZero(date.getDate()))
     .replace('hh',   padZero(date.getHours()))
     .replace('mm',   padZero(date.getMinutes()))
     .replace('ss',   padZero(date.getSeconds()));
+}
 
-const tabOpenBackground = (url) =>
-  api.RUNTIME('openLink', { tab: { tabbed: true, active: false }, url });
+function tabOpenBackground(url) {
+  return api.RUNTIME('openLink', { tab: { tabbed: true, active: false }, url });
+}
 
 // Copy page title + URL in various formats
-const copyTitleAndUrl = (format) => {
+function copyTitleAndUrl(format) {
   const text = format
     .replace('%TITLE%', document.title)
     .replace('%URL%',   location.href);
   api.Clipboard.write(text);
-};
+}
 
 // Copy as rich HTML link (paste into Gmail, Notion, etc.)
-const copyHtmlLink = async () => {
+async function copyHtmlLink() {
   const title = document.title;
   const url   = location.href;
   const html  = `<a href="${url}">${escapeForAlias(title)}</a>`;
@@ -76,7 +88,7 @@ const copyHtmlLink = async () => {
     console.error('Copy failed', err);
     api.Front.showBanner('Copy failed: ' + err.message);
   }
-};
+}
 
 // =============================================================================
 // Inline Readability — strips boilerplate, extracts article body
@@ -97,18 +109,21 @@ const copyHtmlLink = async () => {
 
 // Pure-JS fallback HTML→Markdown converter (no external deps, covers common cases)
 // Used automatically when the inlined libraries above are not present.
-const htmlToMarkdownFallback = (html) => {
+function htmlToMarkdownFallback(html) {
   const el = document.createElement('div');
   el.innerHTML = html;
 
-  const walk = (node, ctx = '') => {
+  function walk(node, ctx = '') {
     if (node.nodeType === Node.TEXT_NODE) {
       return node.textContent.replace(/\n{3,}/g, '\n\n');
     }
     if (node.nodeType !== Node.ELEMENT_NODE) return '';
 
-    const tag      = node.tagName.toLowerCase();
-    const children = () => Array.from(node.childNodes).map((n) => walk(n, ctx)).join('');
+    const tag = node.tagName.toLowerCase();
+
+    function children() {
+      return Array.from(node.childNodes).map((n) => walk(n, ctx)).join('');
+    }
 
     // Block elements
     if (['script', 'style', 'noscript', 'nav', 'footer', 'aside'].includes(tag)) return '';
@@ -135,7 +150,9 @@ const htmlToMarkdownFallback = (html) => {
     if (tag === 'table') {
       const rows = Array.from(node.querySelectorAll('tr'));
       if (!rows.length) return '';
-      const toRow = (r) => '| ' + Array.from(r.querySelectorAll('th,td')).map((c) => c.textContent.trim()).join(' | ') + ' |';
+      function toRow(r) {
+        return '| ' + Array.from(r.querySelectorAll('th,td')).map((c) => c.textContent.trim()).join(' | ') + ' |';
+      }
       const header = toRow(rows[0]);
       const sep    = header.replace(/[^|]/g, '-').replace(/--/g, '--');
       return '\n' + [header, sep, ...rows.slice(1).map(toRow)].join('\n') + '\n';
@@ -161,15 +178,15 @@ const htmlToMarkdownFallback = (html) => {
     }
 
     return children();
-  };
+  }
 
   return walk(el)
     .replace(/\n{3,}/g, '\n\n')
     .trim();
-};
+}
 
 // Copy entire page as Markdown (Readability content extraction + Turndown or fallback converter)
-const pageToMarkdown = () => {
+function pageToMarkdown() {
   let content, title;
 
   // Try Readability first (strips nav/sidebars/ads)
@@ -200,9 +217,9 @@ const pageToMarkdown = () => {
   const output = `# ${title}\n\n> Source: ${location.href}\n\n${md}`;
   api.Clipboard.write(output);
   api.Front.showBanner(`Copied as Markdown: ${title}`);
-};
+}
 
-const googleTranslateTo = (lang = 'ja') => {
+function googleTranslateTo(lang = 'ja') {
   const selection = window.getSelection().toString();
   const baseUrl   = 'https://translate.google.com';
   if (selection === '') {
@@ -210,7 +227,7 @@ const googleTranslateTo = (lang = 'ja') => {
   } else {
     api.tabOpenLink(`${baseUrl}/?sl=auto&tl=${lang}&text=${encodeURIComponent(selection)}`);
   }
-};
+}
 
 // ---- PassThrough mode ----
 api.mapkey('p', '#0Enter ephemeral PassThrough mode (1.5s)', function () {
@@ -221,31 +238,35 @@ api.mapkey('p', '#0Enter ephemeral PassThrough mode (1.5s)', function () {
 // Site Helpers
 // =============================================================================
 
-const clickElm = (selector) => () => document.querySelector(selector)?.click();
+function clickElm(selector) {
+  return () => document.querySelector(selector)?.click();
+}
 
-const clickInIframe = (iframeSelector, targetSelector) => () => {
-  const iframe    = document.querySelector(iframeSelector);
-  const iframeDoc = iframe?.contentWindow?.document;
-  iframeDoc?.querySelector(targetSelector)?.click();
-};
+function clickInIframe(iframeSelector, targetSelector) {
+  return () => {
+    const iframe    = document.querySelector(iframeSelector);
+    const iframeDoc = iframe?.contentWindow?.document;
+    iframeDoc?.querySelector(targetSelector)?.click();
+  };
+}
 
 /**
  * Run fn only when the current URL matches pattern.
  * @param {RegExp} pattern
  * @param {function} fn
  */
-const siteMapkey = (pattern, fn) => {
+function siteMapkey(pattern, fn) {
   if (pattern.test(location.href)) fn();
-};
+}
 
 /**
  * Unmap an array of keys only on matching URLs.
  * @param {RegExp} pattern
  * @param {string[]} keys
  */
-const unmapIfMatch = (pattern, keys) => {
+function unmapIfMatch(pattern, keys) {
   if (pattern.test(location.href)) unmapKeys(keys);
-};
+}
 
 // =============================================================================
 // Key Remaps
@@ -529,14 +550,16 @@ siteMapkey(/www\.amazon\.co\.jp/, () => {
 
 // Hatena Bookmark hotentry — date navigation
 siteMapkey(/^https:\/\/b\.hatena\.ne\.jp\/.*\/hotentry\?date/, () => {
-  const moveDate = (diff) => () => {
-    const url     = new URL(location.href);
-    const dateTxt = url.searchParams.get('date');
-    const [, yyyy, mm, dd] = dateTxt.match(/(....)(..)(..)/);
-    const date = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd) + diff);
-    url.searchParams.set('date', formatDate(date, 'YYYYMMDD'));
-    location.href = url.href;
-  };
+  function moveDate(diff) {
+    return () => {
+      const url     = new URL(location.href);
+      const dateTxt = url.searchParams.get('date');
+      const [, yyyy, mm, dd] = dateTxt.match(/(....)(..)(..)/);
+      const date = new Date(parseInt(yyyy), parseInt(mm) - 1, parseInt(dd) + diff);
+      url.searchParams.set('date', formatDate(date, 'YYYYMMDD'));
+      location.href = url.href;
+    };
+  }
   api.mapkey(']]', 'Next date', moveDate(1));
   api.mapkey('[[', 'Prev date', moveDate(-1));
 });
@@ -624,7 +647,9 @@ api.mapkey(';h', '#00Show site-specific help', () => {
 
 // Show current date/time
 api.mapkey(';dd', 'Display current date and time', function () {
-  const p     = (n) => String(n).padStart(2, '0');
+  function p(n) {
+    return String(n).padStart(2, '0');
+  }
   const today = new Date();
   const month = p(today.getMonth() + 1);
   const date  = p(today.getDate());
@@ -670,11 +695,11 @@ const hintsCss = `
 `;
 api.Hints.style(hintsCss);
 api.Hints.style(hintsCss, 'text');
-
+font_size = 20;
 settings.theme = `
 :root {
   --font: 'JetBrains Mono NL', monospace;
-  --font-size: 12;
+  --font-size: ${font_size}px;
   --font-weight: normal;
 
   /* Monokai */
@@ -686,6 +711,11 @@ settings.theme = `
   --accent-fg:  #E6DB74;
   --info-fg:    #A6E22E;
   --select:     #556172;
+
+  /* Focused row */
+  --focus-bg:   #3A5570;
+  --focus-fg:   #FFFFFF;
+  --focus-bar:  #F92660;
 }
 
 .sk_theme {
@@ -719,7 +749,6 @@ input { font-family: var(--font); font-weight: var(--font-weight); }
 .sk_theme .omnibar_visitcount { color: var(--accent-fg); }
 
 .sk_theme #sk_omnibarSearchResult ul li:nth-child(odd) { background: var(--bg-dark); }
-.sk_theme #sk_omnibarSearchResult ul li.focused        { background: var(--border); }
 .sk_theme #sk_omnibarSearchArea                        { border-top-color: var(--border); border-bottom-color: var(--border); }
 .sk_theme #sk_omnibarSearchArea input,
 .sk_theme #sk_omnibarSearchArea span                   { font-size: var(--font-size); }
@@ -772,5 +801,124 @@ input { font-family: var(--font); font-weight: var(--font-weight); }
   font-family: var(--font);
   font-size: var(--font-size);
   font-weight: var(--font-weight);
+}
+
+/* =========================================================================
+   OMNIBAR SIZING
+   ========================================================================= */
+
+#sk_omnibarSearchArea input,
+#sk_omnibarSearchArea span,
+#sk_omnibarSearchArea kbd {
+  font-size: var(--font-size) !important;
+  line-height: 1.5 !important;
+}
+
+#sk_omnibarSearchResult ul li {
+  font-size: var(--font-size) !important;
+  line-height: 1.45 !important;
+  padding-top: 4px !important;
+  padding-bottom: 4px !important;
+}
+
+#sk_omnibarSearchResult ul li .title,
+#sk_omnibarSearchResult ul li .url,
+#sk_omnibarSearchResult ul li .annotation,
+#sk_omnibarSearchResult ul li .omnibar_highlight {
+  font-size: var(--font-size) !important;
+}
+
+/* URL line slightly smaller so the title still leads the row */
+#sk_omnibarSearchResult ul li .url {
+  font-size: 0.85em !important;
+}
+
+#sk_omnibarSearchResult ul li .omnibar_timestamp,
+#sk_omnibarSearchResult ul li .omnibar_visitcount {
+  font-size: 0.8em !important;
+}
+
+/* =========================================================================
+   FOCUSED OMNIBAR ROW — must stay last so nothing above overrides it
+   ========================================================================= */
+
+#sk_omnibarSearchResult ul li.focused,
+#sk_omnibarSearchResult > ul > li.focused,
+.sk_theme #sk_omnibarSearchResult ul li.focused,
+.sk_theme #sk_omnibarSearchResult > ul > li.focused,
+#sk_omnibarSearchResult ul li:nth-child(odd).focused,
+#sk_omnibarSearchResult ul li:nth-child(even).focused {
+  background: var(--focus-bg) !important;
+  background-color: var(--focus-bg) !important;
+  box-shadow: inset 4px 0 0 0 var(--focus-bar) !important;
+}
+
+#sk_omnibarSearchResult ul li.focused,
+#sk_omnibarSearchResult ul li.focused *,
+#sk_omnibarSearchResult ul li.focused .title,
+#sk_omnibarSearchResult ul li.focused .annotation,
+#sk_omnibarSearchResult ul li.focused .omnibar_highlight,
+#sk_omnibarSearchResult ul li.focused b,
+#sk_omnibarSearchResult ul li.focused strong,
+#sk_omnibarSearchResult ul li.focused em {
+  color: var(--focus-fg) !important;
+}
+
+#sk_omnibarSearchResult ul li.focused .url,
+#sk_omnibarSearchResult ul li.focused .omnibar_timestamp,
+#sk_omnibarSearchResult ul li.focused .omnibar_visitcount {
+  color: var(--info-fg) !important;
+}
+/* =========================================================================
+   HELP / USAGE PANEL  (? key) and POPUP (;h)
+   ========================================================================= */
+
+#sk_usage,
+#sk_usage * {
+  font-size: var(--font-size) !important;
+  line-height: 1.5 !important;
+}
+
+#sk_usage {
+  max-height: 85% !important;
+  overflow-y: auto !important;
+}
+
+#sk_usage .feature_name,
+#sk_usage .feature_name span {
+  font-size: calc(var(--font-size) + 2px) !important;
+  color: var(--main-fg) !important;
+  font-weight: bold !important;
+}
+
+#sk_usage kbd,
+#sk_usage kbd * {
+  font-size: var(--font-size) !important;
+  background: var(--bg-dark) !important;
+  border-color: var(--border) !important;
+  color: var(--accent-fg) !important;
+  padding: 2px 6px !important;
+}
+
+#sk_usage .annotation {
+  font-size: var(--font-size) !important;
+  color: var(--fg) !important;
+}
+
+#sk_usage .kbd-span {
+  font-size: var(--font-size) !important;
+}
+
+/* ;h site-help popup */
+#sk_popup,
+#sk_popup * {
+  font-size: var(--font-size) !important;
+  line-height: 1.6 !important;
+  font-family: var(--font) !important;
+  color: var(--fg) !important;
+}
+#sk_popup {
+  background: var(--bg) !important;
+  border-color: var(--border) !important;
 }
 `;

@@ -1,5 +1,4 @@
 disableStartupPopups: true
-
 gui:
   nerdFontsVersion: "3"
   filterMode: "fuzzy"
@@ -7,19 +6,16 @@ gui:
   showCommandLog: false
   language: "en"
   showDivergenceFromBaseBranch: arrowAndNumber
-
 git:
   overrideGpg: true
   parseEmoji: false
   localBranchSortOrder: recency
   autoForwardBranches: allBranches
-  pagers:
+  diffRenderers:
     - colorArg: always
-      pager: delta --paging=never
-
+      command: delta --paging=never
 os:
   editPreset: nvim
-
 customCommands:
   - key: "c"
     # yamllint disable rule:line-length
@@ -70,7 +66,6 @@ customCommands:
       - type: "input"
         title: "Enter a scope (optional)."
         key: "Scope"
-
   - key: "U"
     context: "files"
     description: "amend all changes into last commit"
@@ -79,7 +74,6 @@ customCommands:
       - type: "confirm"
         title: "Amend all changes?"
         body: "Stage all changes and amend them into the last commit."
-
   - key: "T"
     context: "files"
     description: "WIP checkpoint commit and push"
@@ -90,7 +84,6 @@ customCommands:
         title: "Push WIP checkpoint?"
         # yamllint disable-line rule:line-length
         body: "Stage all changes, commit as WIP (skips hooks via skipHookPrefix), and push immediately."
-
   - key: "D"
     context: "localBranches"
     description: "delete local branches merged into the default branch"
@@ -101,13 +94,11 @@ customCommands:
         title: "Delete merged branches?"
         # yamllint disable-line rule:line-length
         body: "Delete every local branch already merged into the repo's default branch (origin/HEAD)."
-
   - key: "w"
     context: "localBranches"
     description: "watch CI checks for this branch's PR"
     command: "gh pr checks --watch"
     output: terminal
-
   - key: "B"
     context: "localBranches"
     description: "create PR against a chosen base branch"
@@ -121,13 +112,12 @@ customCommands:
         labelFormat: "{{ .group_1 | cyan }}"
     command: "gh pr create --web --base {{.Form.Base}}"
     output: popup
-
   - key: "u"
     context: "commits"
     description: "find PR containing this commit"
     # yamllint disable rule:line-length
     command: >
-      gh pr list --search "{{.SelectedCommit.Hash}}" --state all --json number,title,url
-      --jq '.[] | "#\(.number) \(.title)\n\(.url)"'
+      gh pr list --search "{{.SelectedCommit.Hash}}" --state all --json number,title,url --jq '.[] | "#\(.number) \(.title)\n\(.url)"'
+
     # yamllint enable rule:line-length
     output: popup
