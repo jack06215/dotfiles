@@ -77,7 +77,7 @@ Highlights under `src/`:
 | `zinit.zsh` | plugin manager bootstrap; `fzf-tab`, `fast-syntax-highlighting`, `zsh-autosuggestions`, `zsh-completions` |
 | `functions.zsh` | `fman`, `mkcd`, `topcmds`, `csv2json`, `ls_stats`, Poetry venv activate/deactivate, `send_notification` |
 | `notify.zsh` | cross-platform `notify()` (terminal-notifier on macOS, BurntToast over `pwsh` on WSL) |
-| `gh.zsh` | `gh`-based PR helpers: `ghpr` (fzf picker + gum action menu), CI watchers (`ghpr_watch`, `ghpr_checks_watch`), draft PR creation |
+| `gh.zsh` | `gh`-based PR helpers: `ghpr` (fzf picker + gum action menu; fetches nothing until you type, then searches GitHub across every PR state — `#1234` for one PR, `ctrl-r` for the newest N; rows and preview come from `myscripts/ghpr-index`), CI watchers (`ghpr_watch`, `ghpr_checks_watch`), draft PR creation |
 | `git.zsh` | git helper functions |
 | `jira.zsh` | `jira_workitem` (via `acli`, rendered through `myscripts/jira_render.py`), `jira_project_list` |
 | `chezmoi.zsh` | `chezmoi-data`: fzf browser over `chezmoi data` output |
@@ -89,7 +89,7 @@ Highlights under `src/`:
 | `aws.zsh`, `bazel.zsh`, `k8s.zsh`, `mysql.zsh`, `dart.zsh` | domain-specific shortcuts |
 | `zsh_python_init.zsh` | resolves the Poetry-managed venv under `python` per OS and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN`, `DBT_BIN`, `GDOWN_BIN` + aliases |
 | `executable_sleep.zsh` / `executable_wakeup.zsh` | sleepwatcher hooks (macOS); skip weekends, gate on `sleepwatcher.should_run`, drive a Teamspirit clock-in/out script |
-| `myscripts/` | standalone executables: `fzf-listprojects`, `fetch-blob`, `whisper-mic`, `transcribe-yt`, `convert-mp3-to-aiff`, AWS role listing, sleepwatcher enable/disable, etc. |
+| `myscripts/` | standalone executables: `fzf-listprojects`, `fetch-blob`, `whisper-mic`, `transcribe-yt`, `convert-mp3-to-aiff`, `ghpr-index` (rows + preview for the `ghpr` picker), AWS role listing, sleepwatcher enable/disable, etc. |
 | `installed/` | Homebrew bundle manifests (`brew-formula-macos.txt`, `brew-cask-macos.txt`, `brew-wsl2-formula.txt`) and Termux setup |
 | `prompt_repository/`, `template/` | reusable prompt/PR templates |
 

@@ -2,8 +2,6 @@
 # shellcheck disable=SC1091
 # filetype=sh
 
-# Callers must use `_check_gum_cmd || return 1`: on its own the call reports
-# the problem but does not stop the caller from running on without gum.
 source "$ZDOTDIR/src/functions.zsh"
 
 function gh_pr_list() {
@@ -18,40 +16,50 @@ function gh_pr_list() {
   gh pr list --limit "$limit" "$@"
 }
 
-# Pick a pull request and print its number. Any arguments are passed through to
-# `gh pr list`, so `ghpr --author @me` narrows the list before the picker opens.
-#
-# fzf rather than gum filter: the preview pane renders the title, head branch
-# and body of whichever PR is under the cursor, and gum's pickers have no
-# preview pane at all.
 function _ghpr_fzf_pick() {
-  gh pr list "$@" --limit 500 \
-    --json number,title,author,state,url \
-    | jq -r '.[] | "\(.number)\tPR #\(.number) | \(.state) | \(.author.login) | \(.title)"' \
+  local limit="${GHPR_LIMIT:-200}"
+  [[ $limit == <-> ]] || limit=200
+
+  if [[ $1 == <-> ]]; then
+    limit="$1"
+    shift
+  fi
+
+  local ms="${GHPR_SEARCH_DEBOUNCE_MS:-400}"
+  [[ $ms == <-> ]] || ms=400
+
+  # The debounce is the sleep, not a timer: fzf kills the running reload the
+  # moment the next keystroke arrives, so a burst of typing leaves only the
+  # last sleep alive to reach the search API. reload-sync rather than reload
+  # for the same reason - a search is a round trip, and plain reload empties
+  # the list for the duration of it.
+  local debounce
+  debounce=$(printf '%.3f' $((ms / 1000.0)))
+
+  # fzf runs reload and preview through `sh -c`, so the passthrough has to
+  # survive a second round of word splitting - hence ${(q)}. The trailing `--`
+  # is what ghpr-index splits its own flags from gh's on.
+  local passthrough='--'
+  (($#)) && passthrough="-- ${(j: :)${(q)@}}"
+
+  # `hint` makes no network call - it is one row of static text, so the picker
+  # is on screen before gh could have finished authenticating.
+  ghpr-index hint \
     | fzf \
+      --ansi \
+      --disabled \
       --delimiter='\t' \
       --with-nth=2.. \
       --prompt='PR> ' \
-      --preview='sh -c '"'"'
-        gh pr view "$1" --json title,body,headRefName \
-          --jq "[
-            \"# \" + .title,
-            \"\",
-            \"Branch: \" + .headRefName,
-            \"\",
-            .body
-          ] | join(\"\\n\")"
-      '"'"' sh {1}' \
+      --header="GitHub search / ctrl-r = $limit newest" \
+      --bind="change:reload-sync:sleep $debounce; ghpr-index search --query {q} --limit $limit $passthrough || true" \
+      --bind="ctrl-r:reload-sync:ghpr-index recent --limit $limit $passthrough" \
+      --preview="ghpr-index preview {1} $passthrough" \
       --preview-window=right:60%:wrap \
     | awk -F'\t' '{print $1}'
 }
 
 # Pick a PR once, then act on it repeatedly from a menu.
-#
-# This replaces ghpr_view / ghpr_url / ghpr_open / ghpr_fzf_open / ghpr_fzf_view
-# and the --pbcopy flag they each parsed separately. That flag was really an
-# answer to "what do you want out of this PR?", which is a menu rather than a
-# flag - and as a menu the answer can change without re-picking the PR.
 function ghpr() {
   _check_gum_cmd || return 1
 

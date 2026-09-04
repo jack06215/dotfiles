@@ -1,0 +1,372 @@
+#!/usr/bin/env python3
+"""Backend data provider for the `ghpr` fzf picker.
+
+Outputs tab-delimited PR records (<number>\t<display>) or markdown previews for fzf.
+
+Usage:
+  ghpr-index hint
+  ghpr-index recent  [--limit N] [-- GH_ARGS...]
+  ghpr-index search  --query Q [--limit N] [-- GH_ARGS...]
+  ghpr-index preview NUMBER [-- GH_ARGS...]
+"""
+
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from typing import Any
+
+# isDraft is fetched separately from state because gh reports a draft as OPEN.
+LIST_FIELDS: str = "number,title,author,state,isDraft,createdAt"
+VIEW_FIELDS: str = LIST_FIELDS + ",headRefName,baseRefName,url,body"
+
+DEFAULT_LIMIT: int = 200
+
+# Below this, typing is still in flight - searching on a single letter costs a
+# round trip to return half the repo. Digits are exempt: `7` is a real PR.
+MIN_CHARS: int = 2
+
+HINT: str = "type to search on title, body, status, or PR number."
+
+AUTHOR_WIDTH: int = 16
+
+# A merged PR body can run to hundreds of lines; the preview pane only ever
+# shows the top of it, and fzf pays to render the whole thing.
+BODY_LINES: int = 400
+
+# GitHub's own state colours, so the picker reads the way the web UI does:
+# green open, purple merged, red closed, grey draft.
+STATE_COLOR: dict[str, str] = {
+    "OPEN": "32",
+    "MERGED": "35",
+    "CLOSED": "31",
+    "DRAFT": "90",
+}
+
+STATUS_MAP: dict[str, str] = {
+    "open": "is:open",
+    "closed": "is:closed",
+    "merged": "is:merged",
+    "draft": "is:draft",
+    "unmerged": "is:unmerged",
+}
+
+USE_COLOR: bool = "NO_COLOR" not in os.environ
+
+
+def paint(text: str, code: str) -> str:
+    if not USE_COLOR or not code:
+        return text
+    return f"\033[{code}m{text}\033[0m"
+
+
+def run_gh(args: list[str]) -> tuple[Any, str | None]:
+    """Run gh and parse its JSON. Returns (payload, error_message)."""
+    try:
+        proc = subprocess.run(
+            ["gh", *args], capture_output=True, text=True, check=False
+        )
+    except FileNotFoundError:
+        return None, "gh is not installed"
+
+    if proc.returncode != 0:
+        detail = next(
+            (line.strip() for line in proc.stderr.splitlines() if line.strip()),
+            f"gh exited {proc.returncode}",
+        )
+        return None, detail.removeprefix("error: ")
+
+    try:
+        return json.loads(proc.stdout or "[]"), None
+    except json.JSONDecodeError:
+        return None, "gh returned output that is not JSON"
+
+
+def repo_args(gh_args: list[str]) -> list[str]:
+    """Keep only `-R/--repo` out of the passthrough."""
+    kept: list[str] = []
+    index = 0
+    while index < len(gh_args):
+        token = gh_args[index]
+        if token in ("-R", "--repo") and index + 1 < len(gh_args):
+            kept += [token, gh_args[index + 1]]
+            index += 2
+            continue
+        if token.startswith("--repo="):
+            kept.append(token)
+        index += 1
+    return kept
+
+
+def state_of(pr: dict[str, Any]) -> str:
+    if pr.get("isDraft") and pr.get("state") == "OPEN":
+        return "DRAFT"
+    return str(pr.get("state") or "?")
+
+
+def login_of(pr: dict[str, Any]) -> str:
+    author = pr.get("author") or {}
+    if isinstance(author, dict):
+        return str(author.get("login") or "ghost")
+    return "ghost"
+
+
+def local_date(stamp: str | None) -> str:
+    if not stamp:
+        return "-" * 10
+    try:
+        moment = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+    except ValueError:
+        return "-" * 10
+    return moment.astimezone().strftime("%Y-%m-%d")
+
+
+def clip(text: str, width: int) -> str:
+    return text if len(text) <= width else text[: width - 1] + "…"
+
+
+def row(pr: dict[str, Any]) -> str:
+    number = pr.get("number")
+    state = state_of(pr)
+    title = re.sub(r"\s+", " ", str(pr.get("title") or "")).strip()
+    cells = [
+        paint(f"#{number}".ljust(6), "36"),
+        paint(state.ljust(6), STATE_COLOR.get(state, "")),
+        paint(local_date(pr.get("createdAt")), "90"),
+        paint(clip(login_of(pr), AUTHOR_WIDTH).ljust(AUTHOR_WIDTH), "90"),
+        title,
+    ]
+    return f"{number}\t{'  '.join(cells)}"
+
+
+def note(message: str) -> str:
+    return f"\t{paint(f'⚠ {message}', '33')}"
+
+
+def hint(message: str) -> str:
+    return f"\t{paint(message, '90')}"
+
+
+def emit(rows: list[str]) -> int:
+    print("\n".join(rows))
+    return 0
+
+
+def list_prs(
+    limit: int, gh_args: list[str], search: str | None = None
+) -> tuple[Any, str | None]:
+    args = ["pr", "list", "--state", "all", "--limit", str(limit)]
+    if search is not None:
+        args += ["--search", search]
+    return run_gh([*args, "--json", LIST_FIELDS, *gh_args])
+
+
+def cmd_recent(limit: int, gh_args: list[str]) -> int:
+    prs, error = list_prs(limit, gh_args)
+    if error:
+        return emit([note(error)])
+    if not prs:
+        return emit([note("no pull requests found")])
+    return emit([row(pr) for pr in prs])
+
+
+def search_terms(query: str) -> str:
+    """Turn what was typed into a GitHub search query.
+
+    Qualifiers pass through untouched (`is:merged author:@me label:bug`).
+    Bare status keywords (`draft`, `open`, `closed`, `merged`, `unmerged`)
+    and `status:` / `state:` qualifiers are automatically mapped to `is:<state>`.
+    """
+    terms = query.strip()
+
+    # Normalize `status:<state>` or `state:<state>` to `is:<state>`
+    terms = re.sub(
+        r"\b(?:status|state):(open|closed|merged|draft|unmerged)\b",
+        lambda m: STATUS_MAP[m.group(1).lower()],
+        terms,
+        flags=re.IGNORECASE,
+    )
+
+    # Translate bare status keywords to `is:<state>` qualifiers
+    tokens = terms.split()
+    new_tokens = []
+    for token in tokens:
+        token_lower = token.lower()
+        if token_lower in STATUS_MAP and not re.search(r"^\w+:", token):
+            new_tokens.append(STATUS_MAP[token_lower])
+        else:
+            new_tokens.append(token)
+
+    terms = " ".join(new_tokens)
+
+    # Check if any plain text search terms remain
+    has_words = bool(re.sub(r"(?:^|\s)[A-Za-z-]+:\S*", "", terms).strip())
+    if has_words and not re.search(r"(?:^|\s)in:", terms, flags=re.IGNORECASE):
+        terms += " in:title,body"
+    if not re.search(r"(?:^|\s)sort:", terms, flags=re.IGNORECASE):
+        terms += " sort:created-desc"
+    return terms
+
+
+def lookup(number: int, gh_args: list[str]) -> dict[str, Any] | None:
+    pr, error = run_gh(
+        ["pr", "view", str(number), "--json", LIST_FIELDS, *repo_args(gh_args)]
+    )
+    return None if error or not isinstance(pr, dict) else pr
+
+
+def cmd_search(query: str, limit: int, gh_args: list[str]) -> int:
+    query = (query or "").strip()
+    exact = re.fullmatch(r"#?(\d+)", query)
+
+    if not exact and len(query) < MIN_CHARS:
+        return emit([hint(HINT)])
+
+    if exact:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            hit = pool.submit(lookup, int(exact.group(1)), gh_args)
+            found = pool.submit(list_prs, limit, gh_args, search_terms(query))
+            pinned, (prs, error) = hit.result(), found.result()
+    else:
+        pinned = None
+        prs, error = list_prs(limit, gh_args, search_terms(query))
+
+    rows: list[str] = []
+    seen: set[Any] = set()
+    if pinned:
+        rows.append(row(pinned))
+        seen.add(pinned.get("number"))
+    for pr in prs or []:
+        if pr.get("number") not in seen:
+            rows.append(row(pr))
+
+    if rows:
+        return emit(rows)
+    if error:
+        return emit([note(error)])
+    return emit([note(f"nothing matched {query!r}")])
+
+
+def cmd_preview(number: str, gh_args: list[str]) -> int:
+    if not number or not number.isdigit():
+        return 0
+
+    pr, error = run_gh(
+        ["pr", "view", number, "--json", VIEW_FIELDS, *repo_args(gh_args)]
+    )
+    if error or not isinstance(pr, dict):
+        if error:
+            print(paint(error, "33"))
+        return 0
+
+    state = state_of(pr)
+    head, base = pr.get("headRefName", "?"), pr.get("baseRefName", "?")
+    body = str(pr.get("body") or "").replace("\r\n", "\n").rstrip()
+
+    lines = [
+        paint(str(pr.get("title") or "(no title)"), "1"),
+        "",
+        "  ".join(
+            [
+                paint(f"#{pr.get('number')}", "36"),
+                paint(state, STATE_COLOR.get(state, "")),
+                paint(f"opened {local_date(pr.get('createdAt'))}", "90"),
+                paint(f"by {login_of(pr)}", "90"),
+            ]
+        ),
+        paint(f"{head} → {base}", "90"),
+        paint(str(pr.get("url") or ""), "90"),
+        "",
+    ]
+    lines += (body or paint("(no description)", "90")).split("\n")[:BODY_LINES]
+    print("\n".join(lines))
+    return 0
+
+
+def split_gh_args(argv: list[str]) -> tuple[list[str], list[str]]:
+    if "--" in argv:
+        cut = argv.index("--")
+        return argv[:cut], argv[cut + 1 :]
+    return argv, []
+
+
+def normalize_query_arg(args: list[str]) -> list[str]:
+    normalized: list[str] = []
+    index = 0
+    while index < len(args):
+        if args[index] == "--query" and index + 1 < len(args):
+            normalized.append(f"--query={args[index + 1]}")
+            index += 2
+            continue
+        normalized.append(args[index])
+        index += 1
+    return normalized
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="ghpr-index",
+        description="Backend data provider for the ghpr fzf picker.",
+    )
+    subparsers = parser.add_subparsers(dest="command", required=True)
+
+    subparsers.add_parser("hint", help="Output static picker hint")
+
+    recent_parser = subparsers.add_parser("recent", help="List recent PRs")
+    recent_parser.add_argument(
+        "--limit", type=int, default=DEFAULT_LIMIT, help="Max PR count"
+    )
+
+    search_parser = subparsers.add_parser("search", help="Search PRs")
+    search_parser.add_argument(
+        "--query", type=str, default="", help="Search query string"
+    )
+    search_parser.add_argument(
+        "--limit", type=int, default=DEFAULT_LIMIT, help="Max PR count"
+    )
+
+    preview_parser = subparsers.add_parser("preview", help="Render PR markdown preview")
+    preview_parser.add_argument(
+        "number", nargs="?", default="", help="PR number to preview"
+    )
+
+    return parser
+
+
+def main(argv: list[str]) -> int:
+    if not argv:
+        sys.exit((__doc__ or "").strip())
+
+    main_args, gh_args = split_gh_args(argv)
+    main_args = normalize_query_arg(main_args)
+
+    parser = build_parser()
+    args = parser.parse_args(main_args)
+
+    limit = getattr(args, "limit", DEFAULT_LIMIT)
+    if limit <= 0:
+        limit = DEFAULT_LIMIT
+
+    if args.command == "hint":
+        return emit([hint(HINT)])
+    if args.command == "recent":
+        return cmd_recent(limit, gh_args)
+    if args.command == "search":
+        return cmd_search(args.query, limit, gh_args)
+    if args.command == "preview":
+        return cmd_preview(args.number, gh_args)
+
+    sys.exit(f"ghpr-index: unknown command {args.command!r}")
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main(sys.argv[1:]))
+    except KeyboardInterrupt:
+        sys.exit(130)
+    except BrokenPipeError:
+        os._exit(0)
