@@ -27,6 +27,12 @@ history.txt
 **/*flywheel*
 **/*flywheel*/**
 
+# Claude Code skills live at the repo root so they stay easy to edit and share.
+# They reach ~/.config/claude/skills through the symlink_skills.tmpl link, so
+# chezmoi must not also splat a copy of them into ~/skills.
+skills
+skills/**
+
 {{ if ne .chezmoi.os "windows" }}
 AppData/**
 .glzr/zebar

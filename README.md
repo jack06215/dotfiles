@@ -36,7 +36,7 @@ dot_tool-versions           → ~/.tool-versions (asdf-managed toolchain)
 dot_config/
   zsh/                      → shell config (see below)
   chezmoi/                  → chezmoi.toml.tmpl (prompt/data source)
-  claude/                   → Claude Code settings + skills
+  claude/                   → Claude Code settings; skills/ symlinks to ../../skills
   git/, gh-dash/, lazygit/  → git tooling
   starship/                 → prompt theme (Nord palette)
   tock/                     → time tracker (tock.yaml; SQLite db under XDG_DATA_HOME)
@@ -262,10 +262,15 @@ merge helpers for unmerged files).
 
 ## Claude Code
 
-`dot_config/claude/settings.json` sets theme/editor mode; project skills
-live under `dot_config/claude/skills/` (currently `commit-writer`, a
-Conventional Commits-based commit skill). `myscripts/set_mcp_server_claude_desktop.py`
-patches Claude Desktop's MCP server config on disk.
+`dot_config/claude/settings.json` sets theme/editor mode. Skills live at the
+repo root under `skills/` (currently `commit-writer`, a Conventional
+Commits-based commit skill, and `youtube-transcribe`), kept out of the chezmoi
+target tree by `.chezmoiignore` and surfaced to Claude Code by
+`dot_config/claude/symlink_skills.tmpl`, which points `~/.config/claude/skills`
+at them with a relative symlink. Editing a skill in the repo takes effect
+immediately — no `chezmoi apply` needed.
+`myscripts/set_mcp_server_claude_desktop.py` patches Claude Desktop's MCP
+server config on disk.
 
 ## Snippets & scripts
 
