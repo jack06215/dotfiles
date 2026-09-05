@@ -80,6 +80,9 @@ fi
 # =============================================================================
 # Zinit and its plugins
 # =============================================================================
+# Before zinit.zsh, not after: zsh-vi-mode reads its ZVM_* options while the
+# plugin is being sourced, so the settings have to already be in place.
+[ -f "$ZDOTDIR/src/vi_mode.zsh" ] && source "$ZDOTDIR/src/vi_mode.zsh"
 [ -f "$ZDOTDIR/src/zinit.zsh" ] && source "$ZDOTDIR/src/zinit.zsh"
 
 # =============================================================================

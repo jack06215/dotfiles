@@ -62,19 +62,25 @@ present, then hands off to `src/init.zsh`.
 `src/init.zsh` sources everything else in a fixed, commented order —
 private credentials → core shell options → OS pre-init
 (`darwin_pre_init` / `wsl_pre_init` / `termux_pre_init`) → asdf/rbenv →
-functions → zinit plugins → history/PATH → completion (compinit then
-carapace) → prompt tools (atuin, fzf, starship, zoxide) → domain modules
-(aws, bazel, chezmoi, gh, git, jira, k8s, mysql, notify, pet, search,
-tock) →
-aliases/keybinds → OS post-init (last). Set `ZSH_DEBUG_INIT=1` or
-`ZSH_PROFILE_STARTUP=1` to trace/profile startup.
+functions → vi-mode settings + zinit plugins → history/PATH →
+completion (compinit then carapace) → prompt tools (atuin, fzf,
+starship, zoxide) → domain modules (aws, bazel, chezmoi, gh, git, jira,
+k8s, mysql, notify, pet, search, tock) → aliases/keybinds → OS post-init
+(last). Set `ZSH_DEBUG_INIT=1` or `ZSH_PROFILE_STARTUP=1` to
+trace/profile startup.
+
+The order is load-bearing for keybindings: `zsh-vi-mode` initializes
+while `zinit.zsh` sources it, and every module after that point (atuin,
+fzf, pet, `keybinds.zsh`) binds on top of it. Moving one of them above
+`zinit.zsh` silently hands its keys back to the plugin.
 
 Highlights under `src/`:
 
 | File | Purpose |
 | --- | --- |
-| `core.zsh` | history opts, vi keybindings, `is_macos`/`is_wsl`/`is_termux` predicates |
-| `zinit.zsh` | plugin manager bootstrap; `fzf-tab`, `fast-syntax-highlighting`, `zsh-autosuggestions`, `zsh-completions` |
+| `core.zsh` | history opts, fallback `bindkey -v`, `is_macos`/`is_wsl`/`is_termux` predicates |
+| `vi_mode.zsh` | settings for `zsh-vi-mode` (text objects, surround, `^A`/`^X` keyword switching, per-mode cursor, fast `<ESC>`); sourced before `zinit.zsh` because the plugin reads its `ZVM_*` options at source time. `ZVM_INIT_MODE=sourcing` + `ZVM_LAZY_KEYBINDINGS=false` are what stop it from clobbering the atuin/fzf/pet/keybinds bindings made later in `init.zsh`. Also points `vv` (visual-mode `v`, edit the line in an editor) at nvim, copies yanks to the system clipboard with per-platform commands for WSL/termux, and themes the visual selection to Catppuccin Mocha |
+| `zinit.zsh` | plugin manager bootstrap; `zsh-vi-mode` (must stay first), `fzf-tab`, `fast-syntax-highlighting`, `zsh-autosuggestions`, `zsh-completions` |
 | `functions.zsh` | `fman`, `mkcd`, `topcmds`, `csv2json`, `ls_stats`, Poetry venv activate/deactivate, `send_notification` |
 | `notify.zsh` | cross-platform `notify()` (terminal-notifier on macOS, BurntToast over `pwsh` on WSL) |
 | `gh.zsh` | `gh`-based PR helpers: `ghpr` (fzf picker + gum action menu; fetches nothing until you type, then searches GitHub across every PR state — `#1234` for one PR, `ctrl-r` for the newest N; rows and preview come from `myscripts/ghpr-index`), CI watchers (`ghpr_watch`, `ghpr_checks_watch`), draft PR creation |
