@@ -26,10 +26,6 @@
     "command": "${XDG_CONFIG_HOME}/claude/statusline_command.sh",
     "padding": 2
   },
-  "subagentStatusLine": {
-    "type": "command",
-    "command": "${XDG_CONFIG_HOME}/claude/statusline_command.sh"
-  },
   "enabledPlugins": {
     "pyright-lsp@claude-plugins-official": true,
     "clangd-lsp@claude-plugins-official": true
@@ -109,13 +105,11 @@
   "env": {
     "BASH_DEFAULT_TIMEOUT_MS": "300000",
     "BASH_MAX_TIMEOUT_MS": "1800000",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
-    "TASK_MAX_OUTPUT_LENGTH": "80000"
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
   },
   "attribution": {
     "sessionUrl": false
   },
-  "teammateMode": "auto",
   "tui": "fullscreen",
   "skipWorkflowUsageWarning": true,
   "model": {{ $model | quote }},

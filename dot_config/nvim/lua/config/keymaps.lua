@@ -68,6 +68,7 @@ local function apply_keymaps()
   require("config.keymaps.telescope").create_keymaps()
   require("config.keymaps.lspsaga").create_keymaps()
   require("config.keymaps.todo-comments").create_keymaps()
+  require("config.keymaps.nvim-hlslens").create_keymaps()
 end
 
 after_which_key(apply_keymaps)
