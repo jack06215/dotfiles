@@ -1,3 +1,23 @@
+{{- /* the company machine has the 1M-context Opus entitlement; personal doesn't */ -}}
+{{- $model :=
+      includeTemplate "lookup" (dict
+        "chezmoi" .chezmoi
+        "default" "opus"
+        "table" (dict
+          "darwin/A0229/jack.cho" "opus[1m]"
+          "darwin/jack06215/nacho" "opus"
+        )
+      )
+-}}
+{{- /* read scope outside the cwd; empty on machines without that checkout */ -}}
+{{- $monorepo :=
+      includeTemplate "lookup" (dict
+        "chezmoi" .chezmoi
+        "table" (dict
+          "darwin/jack06215/nacho" (joinPath .chezmoi.homeDir "workspace/jack06215/monorepo")
+        )
+      )
+-}}
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "preferredNotifChannel": "terminal_bell",
@@ -5,6 +25,10 @@
     "type": "command",
     "command": "${XDG_CONFIG_HOME}/claude/statusline_command.sh",
     "padding": 2
+  },
+  "subagentStatusLine": {
+    "type": "command",
+    "command": "${XDG_CONFIG_HOME}/claude/statusline_command.sh"
   },
   "enabledPlugins": {
     "pyright-lsp@claude-plugins-official": true,
@@ -40,7 +64,19 @@
       "Bash(poetry run ruff:*)"
     ],
     "deny": [
-      "Bash(git add -A *)"
+      "Bash(git add -A)",
+      "Bash(git add -A *)",
+      "Bash(git add --all)",
+      "Bash(git add --all *)",
+      "Bash(git add .)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.aws/credentials)",
+      "Read(**/*.pem)"
     ],
     "ask": [
       "Bash(gh api *-X*)",
@@ -51,57 +87,42 @@
       "Bash(gh api *--raw-field*)",
       "Bash(gh api *--input*)"
     ],
+{{- if $monorepo }}
+    "additionalDirectories": [{{ $monorepo | quote }}],
+{{- end }}
     "defaultMode": "default"
   },
-  "hooks": {
-    "UserPromptSubmit": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$XDG_DATA_HOME/tmux/plugins/tmux-claude-session-manager/scripts/state.sh working"
-          }
-        ]
-      }
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "excludedCommands": [
+      "bazel",
+      "chezmoi",
+      "docker",
+      "gh",
+      "git"
     ],
-    "Notification": [
-      {
-        "matcher": "permission_prompt",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$XDG_DATA_HOME/tmux/plugins/tmux-claude-session-manager/scripts/state.sh waiting"
-          }
-        ]
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "AskUserQuestion",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$XDG_DATA_HOME/tmux/plugins/tmux-claude-session-manager/scripts/state.sh waiting"
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "matcher": "",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$XDG_DATA_HOME/tmux/plugins/tmux-claude-session-manager/scripts/state.sh idle"
-          }
-        ]
-      }
-    ]
+    "network": {
+      "allowLocalBinding": true
+    }
   },
+  "env": {
+    "BASH_DEFAULT_TIMEOUT_MS": "300000",
+    "BASH_MAX_TIMEOUT_MS": "1800000",
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "TASK_MAX_OUTPUT_LENGTH": "80000"
+  },
+  "attribution": {
+    "sessionUrl": false
+  },
+  "teammateMode": "auto",
   "tui": "fullscreen",
   "skipWorkflowUsageWarning": true,
-  "model": "opus",
+  "model": {{ $model | quote }},
+  "fallbackModel": [
+    "opus",
+    "sonnet"
+  ],
   "theme": "dark",
   "effortLevel": "xhigh"
 }
