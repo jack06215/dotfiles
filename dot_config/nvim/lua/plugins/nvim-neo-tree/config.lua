@@ -14,22 +14,91 @@ M.copy_path = function(path)
   vim.notify(path, vim.log.levels.INFO, { title = "Copied path" })
 end
 
----Replaces the popup's "Press <Escape>..." footer with one that documents `cp`.
+---@class neotree.FileDetailAction
+---@field key string The key to press inside the popup, e.g. "cp"
+---@field label string Shown in the popup footer next to the key
+---@field handler fun(node: NuiTree.Node) Receives the node the popup describes
+---@field keep_open boolean? Leave the popup open afterwards (default: close it)
+---@field hint_only boolean? Only render the hint row, do not bind the key
+
+---Extra keys bound inside the File Details popup.
+---@type neotree.FileDetailAction[]
+M.file_detail_actions = {
+  {
+    key = "cp",
+    label = "copy_path",
+    handler = function(node)
+      M.copy_path(node.path)
+    end,
+  },
+  -- {
+  --   key = "pr",
+  --   label = "print('hello')",
+  --   handler = function(node)
+  --     vim.notify("hello", vim.log.levels.INFO, { title = "Print Hello" })
+  --   end,
+  --   keep_open = true,
+  -- },
+  {
+    -- NOTE: already handled by neo-tree -- popups.alert() maps <Esc> and <CR> to
+    -- close the popup itself
+    key = "<Esc>/<CR>",
+    label = "close",
+    hint_only = true,
+    handler = function() end,
+  },
+}
+
+---Binds `M.file_detail_actions` in the popup and rewrites its footer to match.
 ---@param bufnr integer The popup buffer
-local set_popup_footer = function(bufnr)
+---@param node NuiTree.Node The node the popup describes
+local show_file_detail_apply_actions = function(bufnr, node)
+  -- pad the key column so every `->` lines up
+  local key_width = 0
+  for _, action in ipairs(M.file_detail_actions) do
+    key_width = math.max(key_width, vim.fn.strdisplaywidth(action.key))
+  end
+  local function row(key, label)
+    local padding = string.rep(" ", key_width - vim.fn.strdisplaywidth(key))
+    return " " .. key .. padding .. " -> " .. label
+  end
+
+  local hints = { " Custom Actions:" }
+  for _, action in ipairs(M.file_detail_actions) do
+    hints[#hints + 1] = row(action.key, action.label)
+    if not action.hint_only then
+      vim.keymap.set("n", action.key, function()
+        action.handler(node)
+        if not action.keep_open then
+          pcall(vim.api.nvim_win_close, 0, true)
+        end
+      end, { buffer = bufnr, nowait = true, desc = action.label })
+    end
+  end
+
+  -- swap the single "Press <Escape>..." line for the header plus one line per action
   for i, line in ipairs(vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)) do
     if line:match("Press <Escape>") then
-      pcall(vim.api.nvim_buf_set_lines, bufnr, i - 1, i, false, { " cp copy path  <Esc>/<CR> close" })
-      return
+      pcall(vim.api.nvim_buf_set_lines, bufnr, i - 1, i, false, hints)
+      break
     end
+  end
+
+  -- the popup sized itself around the single footer line it started with, so it is
+  -- now both too short and possibly too narrow for the rows we just wrote
+  local winid = vim.fn.bufwinid(bufnr)
+  if winid ~= -1 then
+    local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
+    local width = 0
+    for _, line in ipairs(lines) do
+      width = math.max(width, vim.fn.strdisplaywidth(line))
+    end
+    pcall(vim.api.nvim_win_set_width, winid, math.max(vim.api.nvim_win_get_width(winid), width + 2))
+    pcall(vim.api.nvim_win_set_height, winid, #lines)
   end
 end
 
----Shows neo-tree's File Details popup with `cp` bound to copy the node's path.
----
----`popups.alert()` leaves the popup as the current window when it returns, so the
----mapping can be attached right afterwards. The popup buffer is bufhidden=delete,
----so the mapping is torn down along with it.
+---Shows neo-tree's File Details popup with `M.file_detail_actions` bound inside it.
 ---@param state neotree.StateWithTree
 M.show_file_details = function(state)
   local node = state.tree:get_node()
@@ -40,11 +109,8 @@ M.show_file_details = function(state)
   if vim.bo.filetype ~= "neo-tree-popup" then
     return -- popup did not open; don't map into the tree buffer
   end
-  set_popup_footer(0)
-  vim.keymap.set("n", "cp", function()
-    M.copy_path(node.path)
-    pcall(vim.api.nvim_win_close, 0, true)
-  end, { buffer = 0, nowait = true, desc = "Copy absolute path" })
+  -- Append actions list hints
+  show_file_detail_apply_actions(vim.api.nvim_get_current_buf(), node)
 end
 
 ---Copies the current node's path without opening the details popup.
