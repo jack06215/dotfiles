@@ -82,6 +82,7 @@ libwmf
 lima
 llvm
 luarocks
+lynx
 markdownlint-cli
 marksman
 media-info

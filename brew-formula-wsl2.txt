@@ -47,6 +47,7 @@ libssh
 libvidstab
 libxv
 luarocks
+lynx
 markdownlint-cli
 media-info
 mpv

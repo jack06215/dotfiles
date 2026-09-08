@@ -1,0 +1,175 @@
+# vim: ft=conf
+#
+# lynx(1) — personal settings. Reached via $LYNX_CFG (dot_zshenv.tmpl); the
+# colour scheme lives beside this file and is reached via $LYNX_LSS.
+#
+# This file lists ONLY what differs from stock lynx. The INCLUDE below pulls
+# in the system lynx.cfg, and every line after it overrides what that file
+# set — lynx applies config lines in order and the last one wins (verified
+# against lynx 2.9.3).
+#
+# The previous version of this file was a vendored copy of the *entire*
+# lynx 2.8.9 (July 2018) lynx.cfg: 3838 lines, of which about 40 were real
+# settings and the rest upstream documentation. Against the installed 2.9.3
+# it had already drifted past zstd support, IDNA_MODE, COOKIE_VERSION,
+# NO_TABLE_CENTER, REDIRECTION_LIMIT, UPDATE_TERM_TITLE and LIST_DECODED.
+# Keeping only the deltas means a `brew upgrade lynx` brings new upstream
+# defaults along for free instead of widening that gap.
+#
+# A bare filename makes lynx search $LYNX_CFG_PATH and then the directory of
+# its own compiled-in default config, so this one line resolves correctly on
+# both machines — /opt/homebrew/etc/lynx.cfg here, /etc/lynx/lynx.cfg on a
+# Debian-ish WSL2 box — without hardcoding either prefix.
+#
+# Two things to know about it: lynx does NOT warn when an INCLUDE target is
+# missing, it just silently falls back to built-in defaults; and putting
+# ~/.config/lynx on $LYNX_CFG_PATH would make this line include itself.
+INCLUDE:lynx.cfg
+
+# ── Entry points ─────────────────────────────────────────────────────────
+# Was https://rwx.gg, which came along with the config this was copied from.
+# DuckDuckGo's lite endpoint is server-rendered HTML with no JS, so it is one
+# of the few search pages that genuinely works in a text browser.
+STARTFILE:https://duckduckgo.com/lite
+DEFAULT_INDEX_FILE:https://duckduckgo.com/lite
+
+# ── Character set ────────────────────────────────────────────────────────
+# Was iso-8859-1. LOCALE_CHARSET reads the real value out of $LANG, which
+# rescued it interactively, but anything that runs without a locale — cron,
+# a script, a `lynx -dump` in a pipeline — got Latin-1 and mojibake. Set the
+# honest default and keep the locale override on top of it.
+CHARACTER_SET:utf-8
+LOCALE_CHARSET:TRUE
+PREFERRED_LANGUAGE:en
+
+# Charset to assume for documents that declare none. Stock still guesses
+# iso-8859-1; utf-8 is the better bet for an unlabelled page today.
+ASSUME_CHARSET:utf-8
+
+# Show source (`\`) as the document actually came off the wire, without lynx
+# prepending a synthesised charset line.
+PREPEND_CHARSET_TO_SOURCE:FALSE
+
+# ── Files ────────────────────────────────────────────────────────────────
+# Was ./dotfiles/static/lynx/lynx_bookmarks.html — a *relative* path into a
+# directory this repo does not have, so `a` and `v` wrote into whatever
+# directory lynx happened to start in. XDG path instead; the directory is
+# created by dot_local/share/lynx/.keep, because lynx will not mkdir it.
+DEFAULT_BOOKMARK_FILE:{{ .xdg.dataHome }}/lynx/bookmarks.html
+
+# SSL_CERT_FILE is deliberately NOT set. It used to point at
+# /etc/ssl/certs/ca-certificates.crt, a Debian path that does not exist on
+# macOS. Homebrew's lynx links openssl@4, whose OPENSSLDIR is
+# /opt/homebrew/etc/openssl@4 with cert.pem symlinked to the ca-certificates
+# formula — so leaving this unset finds the right bundle and keeps working
+# across brew upgrades and prefix changes. Only override it if verification
+# actually starts failing.
+
+# ── Cookies ──────────────────────────────────────────────────────────────
+# Accept cookies without prompting so logins and paywalled docs work, but
+# keep them in memory only — nothing survives the process. This replaces
+# PERSISTENT_COOKIES:TRUE plus a ~/.cache/lynx/lynx_cookies file that lynx
+# could not create the directory for anyway.
+SET_COOKIES:TRUE
+ACCEPT_ALL_COOKIES:TRUE
+PERSISTENT_COOKIES:FALSE
+
+# Never send a cookie marked Secure back over plain http.
+FORCE_SSL_COOKIES_SECURE:TRUE
+
+# NO_FROM_HEADER, NO_FILE_REFERER and REFERER_WITH_QUERY:DROP are not set
+# here: all three are already the stock defaults, so the old file was only
+# restating them.
+
+# Belt and braces — lynx only logs URLs when built with syslog support, but
+# being explicit costs nothing and documents the intent.
+SYSLOG_REQUESTED_URLS:FALSE
+
+# ── Interface ────────────────────────────────────────────────────────────
+DEFAULT_USER_MODE:ADVANCED
+SHOW_CURSOR:TRUE
+SCROLLBAR:TRUE
+SHOW_KB_RATE:TRUE
+
+# Skip the "press any key" pauses on informational messages.
+NO_PAUSE:TRUE
+
+# New in 2.9.x and supported by wezterm: keep the terminal/tab title in sync
+# with the page being read.
+UPDATE_TERM_TITLE:TRUE
+
+# lynx's nested-table rendering makes layout-table sites worse, not better.
+NESTED_TABLES:false
+
+# Note this grabs mouse events inside tmux, so terminal text selection needs
+# Shift held down while it is on. Drop the line if that trade stops being
+# worth it.
+USE_MOUSE:TRUE
+
+# ── Keyboard ─────────────────────────────────────────────────────────────
+VI_KEYS_ALWAYS_ON:TRUE
+DEFAULT_KEYPAD_MODE:LINKS_AND_FIELDS_ARE_NUMBERED
+
+# Required with vi keys on: without it, moving onto a text field swallows
+# j/k/h/l as typed characters instead of navigation.
+TEXTFIELDS_NEED_ACTIVATION:TRUE
+
+# Show dotfiles when browsing local directories.
+NO_DOT_FILES:FALSE
+
+# Half-page scroll. These were bound backwards (d up, u down) *and* the u
+# binding was then shadowed by a later `KEYMAP:u:ECGOTO` line, which left
+# DOWN_HALF reachable only via `)`. Vim order, and ECGOTO moved to U.
+KEYMAP:d:DOWN_HALF
+KEYMAP:u:UP_HALF
+KEYMAP:U:ECGOTO
+
+# d's stock binding, displaced by the line above.
+KEYMAP:W:DOWNLOAD
+
+# g/G as top/bottom, which costs us stock g:GOTO — the "open a URL" prompt.
+# Rebound to `:` (0x3A, written in hex so the colon is not read as a field
+# separator), which is where a vim user reaches for it anyway.
+KEYMAP:g:HOME
+KEYMAP:G:END
+KEYMAP:0x3A:GOTO
+
+# Page info on `i` rather than stock `=`.
+KEYMAP:i:INFO
+
+# `q` quits outright instead of stock q:QUIT + confirmation prompt. Kept from
+# the old config, but worth knowing it is a single unguarded keystroke.
+KEYMAP:q:ABORT
+
+# The old file also rebound ^U, space, -, (, ), o, /, n, e, a and v. Every
+# one of those was already the stock binding, so they are gone.
+
+# ── External programs ────────────────────────────────────────────────────
+DEFAULT_EDITOR:nvim
+
+{{ if .myComputer.isDarwin -}}
+# `,` / `.` hand the current page or link to the desktop browser. The old
+# config only had an http entry, so https — i.e. nearly everything — had no
+# external opener at all.
+EXTERNAL:https:open %s &:TRUE
+EXTERNAL:http:open %s &:TRUE
+XLOADIMAGE_COMMAND:open %s &
+{{- else if .myComputer.isWSL2 -}}
+# wslview (wslu) hands the URL to the Windows default browser; xdg-open is
+# the fallback if wslu is not installed.
+EXTERNAL:https:wslview %s || xdg-open %s &:TRUE
+EXTERNAL:http:wslview %s || xdg-open %s &:TRUE
+XLOADIMAGE_COMMAND:wslview %s || xdg-open %s &
+{{- else -}}
+EXTERNAL:https:xdg-open %s &:TRUE
+EXTERNAL:http:xdg-open %s &:TRUE
+XLOADIMAGE_COMMAND:xdg-open %s &
+{{- end }}
+
+# ── Network timeouts ─────────────────────────────────────────────────────
+# Upstream's own comment on the 18000-second (five hour) defaults is "rather
+# huge". That is survivable interactively, where ^C works, but a `lynx -dump`
+# in a script or an nvim job hitting a black-holed host would hang until it
+# was noticed. These are long enough for a slow site and short enough to fail.
+CONNECT_TIMEOUT:15
+READ_TIMEOUT:60
