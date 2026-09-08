@@ -651,20 +651,26 @@ Claude rings after sitting idle this long. The default is 60000 — a minute,
 by which point you have usually looked anyway. `0` rings the moment a turn ends.
 
 > ⚠️ `~/.config/claude/settings.json` is chezmoi-managed too
-> (`dot_config/claude/settings.json` in this repo). Same rule as `tmux.conf`:
-> edit the source, then `chezmoi apply`. `.claude.json` is *not* managed —
-> Claude Code rewrites it constantly, so edit that one in place.
+> (`dot_config/claude/settings.json.tmpl` in this repo). Same rule as
+> `tmux.conf`: edit the source, then `chezmoi apply`. `.claude.json` is
+> *not* managed — Claude Code rewrites it constantly, so edit that one in
+> place.
 
 Set `@claude_forward_bell 'off'` in `tmux.conf` if you would rather have no
 bells at all.
 
-> **Stale hooks, worth cleaning up.** Your `settings.json` still has four hooks
-> (`UserPromptSubmit`, `Notification`, `PreToolUse`, `Stop`) calling
-> `tmux-claude-session-manager/scripts/state.sh`. That script no longer exists —
-> the plugin dropped it when it switched to reading `claude agents --json`, which
-> is why status now needs no setup. The hooks fail silently on every prompt and
-> every turn end. They are harmless but dead; deleting the `hooks` block from
-> `dot_config/claude/settings.json` costs you nothing.
+> **Why there is no `hooks` block — and why status still works.** An older
+> version of this plugin drove the picker's status from Claude Code hooks, and
+> `settings.json` used to carry four of them (`UserPromptSubmit`,
+> `Notification`, `PreToolUse`, `Stop`) calling
+> `tmux-claude-session-manager/scripts/state.sh`. The plugin dropped that script
+> once Claude Code started publishing status itself: every session writes its own
+> state to disk, a supervisor daemon aggregates it, and `claude agents --json`
+> hands the picker the `working` / `waiting` / `idle` you see. The four hooks
+> outlived the script they called and failed silently on every prompt and on
+> every turn end, so they were deleted from the template. Nothing was lost: the
+> states they set by hand are exactly what the picker reads for free. If a
+> `hooks` block pointing at `state.sh` ever reappears, it is stale — delete it.
 
 #### Options
 

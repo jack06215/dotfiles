@@ -120,6 +120,11 @@ zle -N _atuin_up_search_widget _atuin_up_search
 
 # bindkey -M emacs '^r' atuin-search
 # bindkey -M viins '^r' atuin-search-viins
+#
+# The vicmd bindings below depend on ZVM_LAZY_KEYBINDINGS=false in
+# vi_mode.zsh: with zsh-vi-mode's lazy default the vicmd keymap is not bound
+# at init but on the first <ESC>, which would overwrite `/` and `k` here the
+# first time normal mode is entered.
 bindkey -M vicmd '/' atuin-search
 bindkey -M emacs '^[[A' atuin-up-search
 bindkey -M vicmd '^[[A' atuin-up-search-vicmd

@@ -1,0 +1,122 @@
+# lynx colour style. Reached via $LYNX_LSS (dot_zshenv.tmpl).
+#
+# Syntax is  <element>:<attributes>:<foreground>[:<background>]
+# Attributes combine with '+':  normal bold dim underline reverse blink
+# Colours are the 16 ANSI names only — lynx has no truecolour:
+#   black red green brown blue magenta cyan lightgray
+#   gray  brightred brightgreen yellow brightblue brightmagenta brightcyan white
+# plus `default`, meaning "whatever the terminal is already using".
+#
+# `normal:` and `default:` are deliberately left undefined so lynx inherits
+# the terminal's own foreground and background instead of painting its own.
+# Everything below names an ANSI slot rather than a colour, so the palette
+# comes from wezterm (Catppuccin Mocha) and this file stays correct if that
+# theme ever changes. Backgrounds are `default` except where a block is meant
+# to read as a highlight.
+#
+# This replaces the upstream sample file, which was ~70% demonstration rules
+# for classes no real page emits (ul.red, li.blue, tr.baone, strong.debug,
+# font.letter, link.green.toc and friends).
+
+# ── Headings ─────────────────────────────────────────────────────────────
+# Descending prominence, so page structure is visible while scrolling.
+h1:		bold:			brightmagenta
+h2:		bold:			magenta
+h3:		bold:			brightcyan
+h4:		bold:			cyan
+h5:		bold:			default
+h6:		bold:			default
+title:		bold:			brightmagenta
+
+# ── Links ────────────────────────────────────────────────────────────────
+# Underlined so links stay distinguishable from headings, which also carry
+# colour. `alink` is the one under the cursor and is the single most useful
+# highlight in the whole file — it gets an inverted block.
+a:		underline:		brightblue
+link:		underline:		brightblue
+alink:		bold:			black:		yellow
+
+# ── Emphasis ─────────────────────────────────────────────────────────────
+em:		bold:			yellow
+i:		normal:			yellow
+strong:		bold:			brightred
+b:		bold:			brightred
+u:		underline:		default
+
+# ── Code and monospace ───────────────────────────────────────────────────
+code:		normal:			brightgreen
+tt:		normal:			brightgreen
+samp:		normal:			brightgreen
+kbd:		bold:			brightgreen
+pre:		normal:			default
+var:		normal:			brightmagenta
+
+# ── Quotations and asides ────────────────────────────────────────────────
+blockquote:	normal:			lightgray
+q:		normal:			lightgray
+cite:		normal:			brightmagenta
+address:	normal:			brightmagenta
+small:		dim:			default
+big:		bold:			default
+sup:		normal:			cyan
+sub:		normal:			cyan
+
+# ── Lists, tables, rules ─────────────────────────────────────────────────
+ul:		normal:			default
+ol:		normal:			default
+li:		normal:			brown
+dl:		normal:			default
+dt:		bold:			default
+dd:		normal:			default
+table:		normal:			default
+tr:		normal:			default
+td:		normal:			default
+th:		bold:			default
+caption:	bold:			lightgray
+hr:		dim:			gray
+br:		normal:			default
+
+# ── Images ───────────────────────────────────────────────────────────────
+# Alt text and image placeholders are noise; keep them recessive.
+img:		dim:			gray
+fig:		dim:			gray
+
+# ── Form controls ────────────────────────────────────────────────────────
+input:		bold:			brightcyan
+select:		bold:			brightcyan
+textarea:	bold:			brightcyan
+label:		normal:			cyan
+form:		normal:			default
+
+# ── Chrome ───────────────────────────────────────────────────────────────
+# These four are lynx's own UI rather than page content, so they get solid
+# backgrounds and stay visually separate from everything above.
+#   status  - the bottom status/prompt line
+#   alert   - status line when the message begins "Alert"
+#   whereis - matches highlighted by `/` search
+status:		normal:			black:		brightblue
+alert:		bold:			white:		red
+whereis:	bold:			black:		brightmagenta
+forwbackw.arrow: reverse
+hot.paste:	normal:			black:		brightgreen
+
+# ── Options menu (`o`) ───────────────────────────────────────────────────
+menu.bg:	normal:			black:		lightgray
+menu.frame:	normal:			black:		lightgray
+menu.entry:	normal:			black:		lightgray
+menu.n:		bold:			red:		lightgray
+menu.active:	bold:			black:		yellow
+menu.sb:	normal:			brightred:	lightgray
+
+# ── View-source highlighting (`\`, i.e. -prettysrc) ──────────────────────
+span.htmlsrc_abracket:		dim:		gray
+span.htmlsrc_tag:		bold:		brightblue
+span.htmlsrc_attrib:		normal:		brightcyan
+span.htmlsrc_attrval:		normal:		yellow
+span.htmlsrc_href:		underline:	brightmagenta
+span.htmlsrc_entity:		normal:		brightgreen
+span.htmlsrc_comment:		dim:		gray
+span.htmlsrc_sgmlspecial:	normal:		brown
+span.htmlsrc_badseq:		bold:		white:		red
+span.htmlsrc_badtag:		bold:		white:		red
+span.htmlsrc_badattr:		bold:		white:		red
