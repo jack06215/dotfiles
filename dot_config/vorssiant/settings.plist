@@ -273,7 +273,7 @@
 		<key>hasOnboarded</key>
 		<true/>
 		<key>hotkeyEnabled</key>
-		<true/>
+		<false/>
 		<key>includeBetaUpdates</key>
 		<false/>
 		<key>keepAwakeActiveIcon</key>
@@ -327,7 +327,7 @@
 		<key>launchAtLoginWanted</key>
 		<true/>
 		<key>liquidGlassEnabled</key>
-		<true/>
+		<false/>
 		<key>mediaGIFEnd</key>
 		<real>0.0</real>
 		<key>mediaGIFFPS</key>
@@ -731,7 +731,7 @@
 		<key>quitProtectionCloseDoubleIntervalMs</key>
 		<real>600</real>
 		<key>quitProtectionCloseEnabled</key>
-		<false/>
+		<true/>
 		<key>quitProtectionCloseExceptions</key>
 		<array/>
 		<key>quitProtectionCloseExtraModifier</key>
@@ -796,7 +796,7 @@
 		<key>recorderSaveFolder</key>
 		<string></string>
 		<key>recorderSharingEnabled</key>
-		<true/>
+		<false/>
 		<key>recorderShortcut</key>
 		<string>control+option+command:23</string>
 		<key>recorderShortcutEnabled</key>
