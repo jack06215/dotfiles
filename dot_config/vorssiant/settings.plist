@@ -25,7 +25,7 @@
 		<key>batteryLimitPercent</key>
 		<integer>10</integer>
 		<key>bluetoothSleepEnabled</key>
-		<false/>
+		<true/>
 		<key>bluetoothSleepRestoreOnWake</key>
 		<true/>
 		<key>brightnessControlEnabled</key>
@@ -211,7 +211,7 @@
 		<key>featureAvailable.mouseNavigation</key>
 		<false/>
 		<key>featureAvailable.musicBlock</key>
-		<false/>
+		<true/>
 		<key>featureAvailable.pastePlain</key>
 		<true/>
 		<key>featureAvailable.quickLauncher</key>
@@ -233,7 +233,7 @@
 		<key>featureAvailable.scrollInverter</key>
 		<false/>
 		<key>featureAvailable.shelf</key>
-		<false/>
+		<true/>
 		<key>featureAvailable.smoothScroll</key>
 		<false/>
 		<key>featureAvailable.soundOutputSwitcher</key>
@@ -251,7 +251,7 @@
 		<key>featureAvailable.windowLayout</key>
 		<false/>
 		<key>featureAvailable.windowMaximizer</key>
-		<false/>
+		<true/>
 		<key>featuresOnboardingVersion</key>
 		<integer>4</integer>
 		<key>finderCutPasteEnabled</key>
@@ -406,6 +406,8 @@
 		<real>0.0</real>
 		<key>mediaVideoTargetMegabytes</key>
 		<integer>20</integer>
+		<key>menuBarBattery</key>
+		<false/>
 		<key>menuBarBatteryTemperature</key>
 		<false/>
 		<key>menuBarBatteryTime</key>
@@ -434,9 +436,13 @@
 		<string>cpu,cpuTemperature,gpu,gpuTemperature,memory,battery,batteryTime,batteryTemperature,peripheralBattery,network,diskUsage,diskActivity,power,fanSpeed</string>
 		<key>menuBarMetricSpacing</key>
 		<string>compact</string>
+		<key>menuBarNetwork</key>
+		<false/>
 		<key>menuBarNetworkUploadFirst</key>
 		<false/>
 		<key>menuBarPeripheralBattery</key>
+		<false/>
+		<key>menuBarPower</key>
 		<false/>
 		<key>menuBarPreset</key>
 		<string>dense</string>
@@ -593,7 +599,7 @@
 		<key>mouseSpacesGestureFollowsDrag</key>
 		<false/>
 		<key>musicBlockEnabled</key>
-		<false/>
+		<true/>
 		<key>musicBlockReplacementPath</key>
 		<string></string>
 		<key>onboardingStep</key>
@@ -645,7 +651,7 @@
 		<key>panelControlWindowMaximize</key>
 		<true/>
 		<key>panelControlWindowsExpanded</key>
-		<false/>
+		<true/>
 		<key>panelNavigationEnabled</key>
 		<true/>
 		<key>panelShowBrightness</key>
@@ -737,7 +743,7 @@
 		<key>quitProtectionCloseExtraModifier</key>
 		<string>shift</string>
 		<key>quitProtectionCloseHoldDurationMs</key>
-		<real>800</real>
+		<real>250</real>
 		<key>quitProtectionCloseMode</key>
 		<string>hold</string>
 		<key>quitProtectionCloseScope</key>
@@ -753,7 +759,7 @@
 		<key>quitProtectionQuitExtraModifier</key>
 		<string>shift</string>
 		<key>quitProtectionQuitHoldDurationMs</key>
-		<real>800</real>
+		<real>1000</real>
 		<key>quitProtectionQuitMode</key>
 		<string>hold</string>
 		<key>quitProtectionQuitScope</key>
@@ -914,17 +920,19 @@
 		<key>shelfClearOnClose</key>
 		<false/>
 		<key>shelfCloseAfterDrop</key>
-		<false/>
+		<true/>
 		<key>shelfDropZoneEnabled</key>
 		<true/>
 		<key>shelfEdgeDragEnabled</key>
 		<false/>
+		<key>shelfEnabled</key>
+		<true/>
 		<key>shelfRemoveAfterDrop</key>
 		<true/>
 		<key>shelfShakeToOpen</key>
 		<true/>
 		<key>shelfShortcut</key>
-		<string>control+option+command:2</string>
+		<string>option:2</string>
 		<key>shelfShortcutEnabled</key>
 		<true/>
 		<key>showCountdownInMenuBar</key>
@@ -964,7 +972,7 @@
 		<key>switcherCurrentSpaceOnly</key>
 		<false/>
 		<key>switcherEnabled</key>
-		<true/>
+		<false/>
 		<key>switcherIconRowMode</key>
 		<false/>
 		<key>switcherMergeTabs</key>
@@ -974,7 +982,7 @@
 		<key>switcherScreenPlacement</key>
 		<string>pointer</string>
 		<key>switcherSearchPinEnabled</key>
-		<false/>
+		<true/>
 		<key>switcherShortcut</key>
 		<string>command:48</string>
 		<key>switcherShowFullscreenWindows</key>
@@ -1104,7 +1112,7 @@
 		<key>windowLayoutWindowGap</key>
 		<integer>0</integer>
 		<key>windowMaximizeEnabled</key>
-		<false/>
+		<true/>
 		<key>windowPreviewExcludedApps</key>
 		<array/>
 	</dict>

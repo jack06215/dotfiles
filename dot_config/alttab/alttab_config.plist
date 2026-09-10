@@ -5,17 +5,35 @@
 	<key>appearanceSize</key>
 	<string>3</string>
 	<key>appearanceStyle</key>
-	<string>0</string>
-	<key>appearanceStyleOverride</key>
 	<string>2</string>
-	<key>appearanceStyleOverride2</key>
-	<string>0</string>
 	<key>appsToShow</key>
 	<string>0</string>
+	<key>arrowKeysEnabled</key>
+	<string>false</string>
 	<key>crashPolicy</key>
 	<string>1</string>
 	<key>cursorFollowFocus</key>
 	<integer>1</integer>
+	<key>fadeOutAnimation</key>
+	<string>false</string>
+	<key>hideShowAppShortcut</key>
+	<dict>
+		<key>secureData</key>
+		<data>
+		YnBsaXN0MDDUAQIDBAUGBwpYJHZlcnNpb25ZJGFyY2hpdmVyVCR0b3BYJG9i
+		amVjdHMSAAGGoF8QD05TS2V5ZWRBcmNoaXZlctEICVRyb290gAGlCwwZGhtV
+		JG51bGzWDQ4PEBESExQVFBcUXW1vZGlmaWVyRmxhZ3NfEBtjaGFyYWN0ZXJz
+		SWdub3JpbmdNb2RpZmllcnNWJGNsYXNzWmNoYXJhY3RlcnNXa2V5Q29kZVd2
+		ZXJzaW9ugAOAAIAEgACAAoAAEf//EADSHB0eH1okY2xhc3NuYW1lWCRjbGFz
+		c2VzWlNSU2hvcnRjdXSiHiBYTlNPYmplY3QIERokKTI3SUxRU1lfbHqYn6qy
+		ury+wMLExsnL0Nvk7/IAAAAAAAABAQAAAAAAAAAhAAAAAAAAAAAAAAAAAAAA
+		+w==
+		</data>
+		<key>string</key>
+		<string></string>
+	</dict>
+	<key>hideStatusIcons</key>
+	<string>false</string>
 	<key>holdShortcut</key>
 	<dict>
 		<key>secureData</key>
@@ -37,19 +55,19 @@
 		<key>secureData</key>
 		<data>
 		YnBsaXN0MDDUAQIDBAUGBwpYJHZlcnNpb25ZJGFyY2hpdmVyVCR0b3BYJG9i
-		amVjdHMSAAGGoF8QD05TS2V5ZWRBcmNoaXZlctEICVRyb290gAGmCwwZGhsc
-		VSRudWxs1g0ODxAREhMUFRQXGF1tb2RpZmllckZsYWdzXxAbY2hhcmFjdGVy
-		c0lnbm9yaW5nTW9kaWZpZXJzViRjbGFzc1pjaGFyYWN0ZXJzV2tleUNvZGVX
-		dmVyc2lvboAEgACABYAAgAOAAlExEf//EgAIAADSHR4fIFokY2xhc3NuYW1l
-		WCRjbGFzc2VzWlNSU2hvcnRjdXSiHyFYTlNPYmplY3QACAARABoAJAApADIA
-		NwBJAEwAUQBTAFoAYABtAHsAmQCgAKsAswC7AL0AvwDBAMMAxQDHAMkAzADR
-		ANYA4QDqAPUA+AAAAAAAAAIBAAAAAAAAACIAAAAAAAAAAAAAAAAAAAEB
+		amVjdHMSAAGGoF8QD05TS2V5ZWRBcmNoaXZlctEICVRyb290gAGlCwwZGhtV
+		JG51bGzWDQ4PEBESExQVFBcUXW1vZGlmaWVyRmxhZ3NfEBtjaGFyYWN0ZXJz
+		SWdub3JpbmdNb2RpZmllcnNWJGNsYXNzWmNoYXJhY3RlcnNXa2V5Q29kZVd2
+		ZXJzaW9ugAOAAIAEgACAAoAAEf//EgAQAADSHB0eH1okY2xhc3NuYW1lWCRj
+		bGFzc2VzWlNSU2hvcnRjdXSiHiBYTlNPYmplY3QIERokKTI3SUxRU1lfbHqY
+		n6qyury+wMLExsnO097n8vUAAAAAAAABAQAAAAAAAAAhAAAAAAAAAAAAAAAA
+		AAAA/g==
 		</data>
 		<key>string</key>
-		<string>⌥</string>
+		<string>⌘</string>
 	</dict>
 	<key>language</key>
-	<string>0</string>
+	<string>3</string>
 	<key>menubarIconShown</key>
 	<string>false</string>
 	<key>nextWindowShortcut2</key>
@@ -57,20 +75,18 @@
 		<key>secureData</key>
 		<data>
 		YnBsaXN0MDDUAQIDBAUGBwpYJHZlcnNpb25ZJGFyY2hpdmVyVCR0b3BYJG9i
-		amVjdHMSAAGGoF8QD05TS2V5ZWRBcmNoaXZlctEICVRyb290gAGnCwwZGhsc
-		HVUkbnVsbNYNDg8QERITFBUUFxhdbW9kaWZpZXJGbGFnc18QG2NoYXJhY3Rl
-		cnNJZ25vcmluZ01vZGlmaWVyc1YkY2xhc3NaY2hhcmFjdGVyc1drZXlDb2Rl
-		V3ZlcnNpb26ABIAFgAaABYADgAJRMRAwEABRCdIeHyAhWiRjbGFzc25hbWVY
-		JGNsYXNzZXNaU1JTaG9ydGN1dKIgIlhOU09iamVjdAAIABEAGgAkACkAMgA3
-		AEkATABRAFMAWwBhAG4AfACaAKEArAC0ALwAvgDAAMIAxADGAMgAygDMAM4A
-		0ADVAOAA6QD0APcAAAAAAAACAQAAAAAAAAAjAAAAAAAAAAAAAAAAAAABAA==
+		amVjdHMSAAGGoF8QD05TS2V5ZWRBcmNoaXZlctEICVRyb290gAGmCwwZGhsc
+		VSRudWxs1g0ODxAREhMUFRQXGF1tb2RpZmllckZsYWdzXxAbY2hhcmFjdGVy
+		c0lnbm9yaW5nTW9kaWZpZXJzViRjbGFzc1pjaGFyYWN0ZXJzV2tleUNvZGVX
+		dmVyc2lvboADgASABYAEgAKAABAyEABRYNIdHh8gWiRjbGFzc25hbWVYJGNs
+		YXNzZXNaU1JTaG9ydGN1dKIfIVhOU09iamVjdAgRGiQpMjdJTFFTWmBte5mg
+		q7O7vb/Bw8XHycvN0t3m8fQAAAAAAAABAQAAAAAAAAAiAAAAAAAAAAAAAAAA
+		AAAA/Q==
 		</data>
 		<key>string</key>
-		<string>⇥</string>
+		<string>`</string>
 	</dict>
 	<key>previewFocusedWindow</key>
-	<string>false</string>
-	<key>previewFocusedWindowOverride</key>
 	<string>true</string>
 	<key>screensToShow</key>
 	<string>0</string>
@@ -78,6 +94,8 @@
 	<string>true</string>
 	<key>shortcutStyle</key>
 	<string>2</string>
+	<key>showAppsOrWindows</key>
+	<string>1</string>
 	<key>showHiddenWindows</key>
 	<string>0</string>
 	<key>showHiddenWindows2</key>
@@ -86,11 +104,23 @@
 	<string>1</string>
 	<key>showMinimizedWindows2</key>
 	<string>1</string>
+	<key>showOnScreen</key>
+	<string>0</string>
+	<key>showTabsAsWindows</key>
+	<string>1</string>
+	<key>showTitles</key>
+	<string>2</string>
 	<key>spacesToShow</key>
 	<string>0</string>
+	<key>titleTruncation</key>
+	<string>2</string>
 	<key>updatePolicy</key>
 	<string>1</string>
 	<key>vimKeysEnabled</key>
-	<string>false</string>
+	<string>true</string>
+	<key>windowDisplayDelay</key>
+	<string>100</string>
+	<key>windowOrder</key>
+	<string>2</string>
 </dict>
 </plist>
