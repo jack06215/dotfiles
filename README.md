@@ -97,6 +97,7 @@ Highlights under `src/`:
 | `zsh_python_init.zsh` | resolves the Poetry-managed venv under `python` per OS and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN`, `DBT_BIN`, `GDOWN_BIN` + aliases |
 | `executable_sleep.zsh` / `executable_wakeup.zsh` | sleepwatcher hooks (macOS); skip weekends, gate on `sleepwatcher.should_run`, drive a Teamspirit clock-in/out script |
 | `myscripts/` | standalone executables: `fzf-listprojects`, `fetch-blob`, `whisper-mic`, `transcribe-yt`, `convert-mp3-to-aiff`, `ghpr-index` (rows + preview for the `ghpr` picker), AWS role listing, sleepwatcher enable/disable, etc. |
+| `BUILD.bazel`, `MODULE.bazel` | Bazel entry points for repo maintenance tasks — `bazel run //:export_brewfile_macos` regenerates `brewfiles/darwin`. Not a build system for the dotfiles themselves; `.bazelrc` sets `--symlink_prefix=/` so no `bazel-*` symlinks appear in a chezmoi source tree |
 | `brewfiles/` | per-OS Homebrew manifests (`darwin`, `wsl2`) carrying taps + formulae + casks + tap trust; `Brewfile.tmpl` renders the matching one to `~/Brewfile` for `brew bundle install`, and `generate-brewfile.sh` regenerates the one for the machine you are on |
 | `prompt_repository/`, `template/` | reusable prompt/PR templates |
 

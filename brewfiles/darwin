@@ -302,18 +302,6 @@ brew "atlassian/acli/acli"
 brew "cockroachdb/tap/cockroach"
 # Terraform
 brew "hashicorp/tap/terraform"
-# Perl lib for reading and writing EXIF metadata
-brew "exiftool"
-# Text-based web browser
-brew "lynx"
-# Unified display of technical and tag data for audio/video
-brew "media-info"
-# Media player based on MPlayer and mplayer2
-brew "mpv"
-# 7-Zip is a file archiver with a high compression ratio
-brew "sevenzip"
-# Lexical database for the English language
-brew "wordnet"
 # Command-line interface for 1Password
 cask "1password-cli"
 # AeroSpace is an i3-like tiling window manager for macOS
@@ -341,5 +329,3 @@ cask "visual-studio-code"
 cask "vorssaint/tap/vorssaint", trusted: true
 # GPU-accelerated cross-platform terminal emulator and multiplexer
 cask "wezterm@nightly"
-# (SnowSQL) Command-line client for connecting to Snowflake
-cask "snowflake-snowsql"

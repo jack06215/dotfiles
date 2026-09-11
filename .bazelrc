@@ -1,0 +1,5 @@
+# No bazel-out/bazel-bin/... symlinks in the workspace root. This repo is a
+# chezmoi source tree: every root entry that is not ignored becomes a target in
+# $HOME, and convenience symlinks pointing into the build cache are the last
+# thing that should land there. Bazel prints the output paths instead.
+build --symlink_prefix=/

@@ -1,0 +1,14 @@
+"""Build tooling for the dotfiles repo.
+
+This repo is a chezmoi source tree, not an application: Bazel is here to give
+the maintenance tasks a uniform, discoverable entry point (`bazel run //:...`)
+rather than to compile anything. Keep the dependency list minimal.
+"""
+
+# sh_binary is no longer a native rule in Bazel 9; it has to come from here.
+bazel_dep(name = "rules_shell", version = "0.8.0")
+
+# For @platforms//os:macos in target_compatible_with. It arrives transitively
+# via rules_shell, but a transitive dep is not visible under its own name from
+# the main repo, so it has to be declared here to be referenced by label.
+bazel_dep(name = "platforms", version = "1.0.0")

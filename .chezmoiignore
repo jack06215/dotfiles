@@ -27,6 +27,15 @@ history.txt
 **/*flywheel*
 **/*flywheel*/**
 
+# Bazel workspace files. `bazel run //:export_brewfile_macos` is repo tooling;
+# none of it belongs in $HOME. .bazelrc and .bazelversion need no entry here --
+# chezmoi already skips source entries whose names start with a dot. Build
+# symlinks are handled by --symlink_prefix=/ in .bazelrc, so there are no
+# bazel-* roots to ignore either.
+MODULE.bazel
+MODULE.bazel.lock
+BUILD.bazel
+
 # Per-OS Brewfile manifests. Brewfile.tmpl `include`s the right one into
 # ~/Brewfile, so the sources themselves must not also land in the target tree.
 brewfiles

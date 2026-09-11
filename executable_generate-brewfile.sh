@@ -1,7 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail -o posix
 
-source_dir={{ .chezmoi.sourceDir | quote }}
+# Resolved at runtime rather than templated in, so this file needs no chezmoi
+# rendering and can be both the ~/generate-brewfile.sh target and the src of
+# //:export_brewfile_macos. `bazel run` exports BUILD_WORKSPACE_DIRECTORY as the
+# workspace root; outside bazel, ask chezmoi where its source directory is.
+# Either way the manifest is written into the checkout, never into a build
+# sandbox or the target tree.
+source_dir="${BUILD_WORKSPACE_DIRECTORY:-$(chezmoi source-path)}"
 
 case "$(uname -s)" in
   Darwin) manifest="${source_dir}/brewfiles/darwin" ;;

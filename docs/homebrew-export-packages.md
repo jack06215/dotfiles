@@ -14,12 +14,20 @@ Since Homebrew 6.0, any non-official binary built need to perform tap trust to b
 ## Generating the Brewfile
 
 The jq recipes above are the manual way to read out `name`/`tap` pairs.
-`generate-brewfile.sh` at the repo root does the whole export in one step and
-writes `Brewfile` next to it:
+`generate-brewfile.sh` at the repo root does the whole export in one step:
 
 ```sh
-~/generate-brewfile.sh          # writes brewfiles/darwin or brewfiles/wsl2
+bazel run //:export_brewfile_macos   # from the repo (macOS only)
+~/generate-brewfile.sh               # anywhere; picks the manifest by uname
 ```
+
+Both run the same script. It is plain bash rather than a chezmoi template so
+that it can be the `srcs` of the Bazel target and the `~/generate-brewfile.sh`
+file at once; it finds the repo through `BUILD_WORKSPACE_DIRECTORY` under
+`bazel run` and `chezmoi source-path` otherwise. The Bazel target is
+`target_compatible_with = ["@platforms//os:macos"]`, so on Linux it refuses to
+run rather than writing a Mac's package list into `brewfiles/wsl2`; use the
+script directly there.
 
 It wraps `brew bundle dump --formula --cask --tap`, which is worth preferring
 over the jq recipes because it records **tap trust inline**:
