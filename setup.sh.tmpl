@@ -99,19 +99,23 @@ function install_homebrew() {
 
 function upgrade_homebrew_packages() {
   local source_dir={{ .chezmoi.sourceDir | quote }}
-  local os_suffix={{ if .myComputer.isDarwin }}"macos"{{ else if .myComputer.isLinux }}"wsl2"{{ else }}""{{ end }}
+{{- if .myComputer.isDarwin }}
+
+  # The Brewfile carries taps, formulae, casks and — since Homebrew 6.0 — the
+  # tap trust state in one file, and `brew bundle install` applies that trust
+  # before it loads any entry and installs taps ahead of what lives in them. So
+  # this one call replaces the brew-formula-macos.txt / brew-cask-macos.txt
+  # pair and the separate tap-trust pass. Regenerate it with
+  # generate-brewfile.sh; see docs/homebrew-export-packages.md.
+  brew bundle install --file="${source_dir}/Brewfile"
+{{- else }}
+  local os_suffix={{ if .myComputer.isLinux }}"wsl2"{{ else }}""{{ end }}
 
   local formula_file="${source_dir}/brew-formula-${os_suffix}.txt"
   if [[ -s "${formula_file}" ]]; then
     xargs -a "${formula_file}" brew install
   fi
-
-  {{- if .myComputer.isDarwin }}
-  local cask_file="${source_dir}/brew-cask-${os_suffix}.txt"
-  if [[ -s "${cask_file}" ]]; then
-    xargs -a "${cask_file}" brew install --cask
-  fi
-  {{- end }}
+{{- end }}
 
   brew upgrade
   brew cleanup
@@ -178,10 +182,10 @@ function setup_macos() {
 
   section 'Installing Homebrew'
   install_homebrew
-  
-  section 'Tap trust non-official Homebrew repositories'
-  brew_trust_taps
 
+  # No brew_trust_taps step here: `brew bundle install` trusts the taps the
+  # Brewfile marks `trusted: true` before installing from them. setup_debian
+  # still needs it, since the Linux path installs from brew-formula-wsl2.txt.
   section 'Upgrading Homebrew packages'
   upgrade_homebrew_packages
 
