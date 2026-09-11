@@ -1,0 +1,48 @@
+# Machine-specific lookup tables, fed to the `lookup` / `lookupPath` templates
+# in .chezmoitemplates by dot_config/chezmoi/chezmoi.toml.tmpl.
+#
+# ---------------------------------------------------------------- poetry ----
+
+[lookups.pypoetryDir]
+  default = ""
+[lookups.pypoetryDir.table]
+  "darwin/jack06215/nacho" = ".cache/pypoetry/virtualenvs"
+  "darwin/A0229/jack.cho" = "Library/Caches/pypoetry/virtualenvs"
+
+# poetry venv directory names are per-machine hashes, so these key on the
+# username too. Joined onto the resolved pypoetryDir above.
+[lookups.zshPythonVenv]
+  default = ""
+[lookups.zshPythonVenv.table]
+  "darwin/jack06215/nacho" = "monorepo-e2o0ZM2H-py3.14"
+  "darwin/A0229/jack.cho" = "monorepo-kcQbGqAg-py3.14"
+
+[lookups.fwMonorepoPythonVenv]
+  default = ""
+[lookups.fwMonorepoPythonVenv.table]
+  "darwin/A0229/jack.cho" = "monorepo-XYqwb38J-py3.13"
+
+# --------------------------------------------------------------- firefox ----
+
+[lookups.firefoxProfilesDir]
+  default = ""
+[lookups.firefoxProfilesDir.table]
+  darwin = "Library/Application Support/Firefox/Profiles"
+  linux = ".mozilla/firefox"
+  windows = "AppData/Roaming/Mozilla/Firefox/Profiles"
+
+# The "<random>.<name>" profile directory inside the folder above. Not a path,
+# so it is looked up directly rather than through lookupPath.
+[lookups.firefoxProfileId]
+  default = "vfop1w54.default"
+[lookups.firefoxProfileId.table]
+  windows = "au24w27m.MinimalistDark"
+
+# ---------------------------------------------------------------- vscode ----
+
+[lookups.vscodeUserDir]
+  default = ""
+[lookups.vscodeUserDir.table]
+  darwin = "Library/Application Support/Code/User"
+  linux = ".config/Code/User"
+  windows = "AppData/Roaming/Code/User"

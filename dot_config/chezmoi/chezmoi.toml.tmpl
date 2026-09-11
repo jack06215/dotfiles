@@ -1,70 +1,69 @@
+{{- /*
+    Machine-specific values come from .chezmoidata/lookups.toml. The tables
+    there hold paths relative to a base dir, because .chezmoidata files are
+    plain TOML and cannot call joinPath; `lookupPath` does the join and returns
+    "" when the machine has no entry.
+*/ -}}
+{{- $home := .chezmoi.homeDir -}}
+
 {{- $pypoetryDir :=
-      includeTemplate "lookup" (dict
+      includeTemplate "lookupPath" (dict
         "chezmoi" .chezmoi
-        "table" (dict
-          "darwin/jack06215/nacho" (joinPath .chezmoi.homeDir ".cache/pypoetry/virtualenvs")
-          "darwin/A0229/jack.cho"  (joinPath .chezmoi.homeDir "Library/Caches/pypoetry/virtualenvs")
-        )
+        "base"    $home
+        "table"   .lookups.pypoetryDir.table
+        "default" .lookups.pypoetryDir.default
       )
 -}}
 
 {{- $firefoxProfilesDir :=
-      includeTemplate "lookup" (dict
+      includeTemplate "lookupPath" (dict
         "chezmoi" .chezmoi
-        "table" (dict
-          "darwin"  (joinPath .chezmoi.homeDir "Library/Application Support/Firefox/Profiles")
-          "linux"   (joinPath .chezmoi.homeDir ".mozilla/firefox")
-          "windows" (joinPath .chezmoi.homeDir "AppData/Roaming/Mozilla/Firefox/Profiles")
-        )
+        "base"    $home
+        "table"   .lookups.firefoxProfilesDir.table
+        "default" .lookups.firefoxProfilesDir.default
       )
 -}}
 
+{{- /* a profile id, not a path, so it goes through `lookup` directly */ -}}
 {{- $firefoxProfileId :=
       includeTemplate "lookup" (dict
         "chezmoi" .chezmoi
-        "default" "vfop1w54.default"
-        "table" (dict
-          "windows" "au24w27m.MinimalistDark"
-        )
+        "table"   .lookups.firefoxProfileId.table
+        "default" .lookups.firefoxProfileId.default
       )
 -}}
 
 {{- $vscodeUserDir :=
-      includeTemplate "lookup" (dict
+      includeTemplate "lookupPath" (dict
         "chezmoi" .chezmoi
-        "table" (dict
-          "darwin"  (joinPath .chezmoi.homeDir "Library/Application Support/Code/User")
-          "linux"   (joinPath .chezmoi.homeDir ".config/Code/User")
-          "windows" (joinPath .chezmoi.homeDir "AppData/Roaming/Code/User")
-        )
+        "base"    $home
+        "table"   .lookups.vscodeUserDir.table
+        "default" .lookups.vscodeUserDir.default
       )
 -}}
 
-{{- /* poetry venv names are per-machine hashes, so these key on the username too */ -}}
+{{- /* poetry venv names are per-machine hashes, so these key on the username
+       too; they hang off the resolved pypoetryDir rather than $home */ -}}
 {{- $zshPythonDir :=
-      includeTemplate "lookup" (dict
+      includeTemplate "lookupPath" (dict
         "chezmoi" .chezmoi
-        "table" (dict
-          "darwin/jack06215/nacho" (joinPath $pypoetryDir "monorepo-e2o0ZM2H-py3.14")
-          "darwin/A0229/jack.cho"  (joinPath $pypoetryDir "monorepo-kcQbGqAg-py3.14")
-        )
+        "base"    $pypoetryDir
+        "table"   .lookups.zshPythonVenv.table
+        "default" .lookups.zshPythonVenv.default
       )
 -}}
 
 {{- $fwMonorepoPythonDir :=
-      includeTemplate "lookup" (dict
+      includeTemplate "lookupPath" (dict
         "chezmoi" .chezmoi
-        "table" (dict
-          "darwin/A0229/jack.cho" (joinPath $pypoetryDir "monorepo-XYqwb38J-py3.13")
-        )
+        "base"    $pypoetryDir
+        "table"   .lookups.fwMonorepoPythonVenv.table
+        "default" .lookups.fwMonorepoPythonVenv.default
       )
 -}}
 
 sourceDir = {{ env "CHEZMOI_SOURCE_DIR" | default (joinPath .chezmoi.homeDir "workspace/jack06215/dotfiles") | quote }}
 
-[data.git]
-    name = "Jack Cho"
-    email = "jack06215@gmail.com"
 [data]
     shell = {{ output "sh" "-c" "echo $SHELL" | trim | quote }}
 [data.myComputer]

@@ -1,0 +1,32 @@
+{{- /*
+    lookupPath — lookup a machine-specific *relative* path and join it onto a
+    base directory.
+
+    Wraps `lookup` for the common case where the table holds paths. The tables
+    themselves live in .chezmoidata/lookups.toml, which is plain TOML and so
+    cannot call joinPath; this is where the join happens instead.
+
+    Arguments (a dict):
+      chezmoi  the caller's .chezmoi variable, passed through to lookup
+      table    dict of key -> path relative to `base`
+      base     directory the matched value is joined onto
+      default  optional: relative path used when no key matches
+
+    Returns "" when the lookup misses OR when `base` is itself empty — never a
+    bare `base`, and never a bare relative path. Both would be silently wrong
+    directories that exist, so callers can keep testing the result for
+    emptiness to mean "not configured for this machine".
+
+    Usage:
+      {{ includeTemplate "lookupPath" (dict
+           "chezmoi" .chezmoi
+           "base"    .chezmoi.homeDir
+           "table"   .lookups.vscodeUserDir.table) }}
+*/ -}}
+{{- $rel := includeTemplate "lookup" (dict
+      "chezmoi" .chezmoi
+      "table"   .table
+      "default" (index . "default" | default "")) -}}
+{{- if and $rel .base -}}
+{{-   joinPath .base $rel -}}
+{{- end -}}
