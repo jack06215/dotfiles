@@ -31,6 +31,7 @@ Everything follows the [XDG base directory spec](https://specifications.freedesk
 `$HOME` stays clean.
 
 ```
+.chezmoiscripts/            → run_ scripts (executed, never placed in ~)
 dot_zshenv                  → ~/.zshenv (XDG + tool env vars, ZDOTDIR)
 dot_tool-versions           → ~/.tool-versions (asdf-managed toolchain)
 dot_config/

@@ -60,6 +60,24 @@ run_[once_|onchange_][before_|after_]<description>.sh[.tmpl]
   chezmoi skips running the script — the standard way to make a script
   conditional on OS/host.
 
+### Where they live: `.chezmoiscripts/`
+
+A `run_` script anywhere in the source tree works, but this repo keeps them
+all in [`.chezmoiscripts/`](https://www.chezmoi.io/reference/special-directories/chezmoiscripts/),
+a special directory chezmoi executes without creating a matching directory
+in the target tree — so `~/.chezmoiscripts` is never written. The `run_`
+prefix is still required; the directory only groups them.
+
+Two things stay true after the move:
+
+- `include "dot_config/..."` resolves relative to the **source root**, not
+  to the script's own directory, so embedded-hash recipes are unaffected.
+- Run order is unchanged (`before_`/`after_` plus alphabetical), because the
+  directory contributes nothing to the target path the ordering is based on.
+
+The one cost is a one-time rerun: `onchange_` state is keyed by target path,
+so moving a script makes chezmoi treat it as new and run it once more.
+
 ## The general recipe
 
 Say you have some managed content (a config file, a pair of files, a whole
