@@ -1,0 +1,14 @@
+{{- /*
+    Rendered to ~/Brewfile, which setup.sh feeds to `brew bundle install`.
+
+    The per-OS manifests live in brewfiles/ as plain Brewfiles rather than
+    inline blocks here, so generate-brewfile.sh can overwrite the one for the
+    machine it runs on wholesale — no splicing around template markers, and the
+    other OS's manifest is never touched. brewfiles/ is .chezmoiignore'd; only
+    this rendered file reaches the target tree.
+*/ -}}
+{{ if eq .chezmoi.os "darwin" -}}
+{{ include "brewfiles/darwin" -}}
+{{ else if eq .chezmoi.os "linux" -}}
+{{ include "brewfiles/wsl2" -}}
+{{ end -}}

@@ -1,29 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail -o posix
 
-# Regenerate the repo's macOS Brewfile from what this Mac currently has
-# installed. Run it after adding or removing packages, then commit the diff.
-#
-# `brew bundle dump` is the exporter rather than the `brew info --json | jq`
-# recipe in docs/homebrew-export-packages.md: it emits tap/brew/cask lines with
-# descriptions and, since Homebrew 6.0, records tap trust inline as
-# `trusted: true` (https://docs.brew.sh/Tap-Trust). That means the Brewfile
-# alone carries everything `brew bundle install` needs on a fresh machine —
-# including the trust state that brew-trust-taps.txt tracks separately.
-#
-# macOS only. brew-formula-wsl2.txt still covers WSL2, and setup.sh still
-# installs from the brew-*.txt lists; this Brewfile is a parallel, richer
-# snapshot, not (yet) their replacement.
-
 source_dir={{ .chezmoi.sourceDir | quote }}
-brewfile="${source_dir}/Brewfile"
 
-function require_macos() {
-  if [[ "$(uname -s)" != 'Darwin' ]]; then
-    echo 'generate-brewfile: macOS only (brew-formula-wsl2.txt covers WSL2).' >&2
+case "$(uname -s)" in
+  Darwin) manifest="${source_dir}/brewfiles/darwin" ;;
+  Linux) manifest="${source_dir}/brewfiles/wsl2" ;;
+  *)
+    echo "generate-brewfile: no Brewfile manifest for $(uname -s)." >&2
     exit 1
-  fi
-}
+    ;;
+esac
 
 function require_brew() {
   if command -v brew &> /dev/null; then
@@ -31,7 +18,8 @@ function require_brew() {
   fi
 
   local candidate
-  for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+  for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew \
+    /home/linuxbrew/.linuxbrew/bin/brew; do
     if [[ -x "${candidate}" ]]; then
       eval "$("${candidate}" shellenv)"
       return 0
@@ -42,17 +30,10 @@ function require_brew() {
   exit 1
 }
 
-# tap/brew/cask lines reduced to "<type> <name>", sorted, for set comparison.
 function entries_of() {
   sed -nE 's/^(tap|brew|cask) "([^"]+)".*/\1 \2/p' "$1" | sort -u
 }
 
-# `brew bundle dump` only emits what Homebrew has recorded as installed *on
-# request*, so anything the old Brewfile asked for that is not currently
-# installed silently disappears from the new one. That is how packages get lost:
-# uninstall something locally, regenerate, and the intent is gone from the repo
-# with no diff to notice. Report it instead, and let the caller decide whether
-# to reinstall the package or restore the line by hand.
 function warn_dropped() {
   local old_file="$1" new_file="$2"
   [[ -f "${old_file}" ]] || return 0
@@ -78,35 +59,32 @@ function dump_brewfile() {
   # shellcheck disable=SC2064
   trap "rm -f '${tmpfile}'" EXIT
 
-  # Dump to a temp file and move it into place so an interrupted or failed run
-  # leaves the committed Brewfile untouched instead of half-written.
-  #
-  # `brew bundle dump` shells out to `brew services list`, which hard-refuses
-  # to run under tmux ("Error: `brew services` cannot run under tmux!"). None
-  # of the dumped state depends on the tmux session, so drop $TMUX for the call
-  # rather than making the script unusable from inside a pane.
+  local -a dump_args=(--formula --tap)
+  if [[ "$(uname -s)" == 'Darwin' ]]; then
+    dump_args+=(--cask)
+  fi
+
   env -u TMUX brew bundle dump \
-    --formula --cask --tap \
+    "${dump_args[@]}" \
     --file="${tmpfile}" \
     --force
 
-  warn_dropped "${brewfile}" "${tmpfile}"
+  warn_dropped "${manifest}" "${tmpfile}"
 
-  mv "${tmpfile}" "${brewfile}"
+  mv "${tmpfile}" "${manifest}"
   trap - EXIT
 }
 
 function report() {
   local taps formulae casks
-  taps="$(grep -c '^tap ' "${brewfile}" || true)"
-  formulae="$(grep -c '^brew ' "${brewfile}" || true)"
-  casks="$(grep -c '^cask ' "${brewfile}" || true)"
+  taps="$(grep -c '^tap ' "${manifest}" || true)"
+  formulae="$(grep -c '^brew ' "${manifest}" || true)"
+  casks="$(grep -c '^cask ' "${manifest}" || true)"
 
   printf 'Wrote %s\n  %s taps, %s formulae, %s casks\n' \
-    "${brewfile}" "${taps}" "${formulae}" "${casks}"
+    "${manifest}" "${taps}" "${formulae}" "${casks}"
 }
 
-require_macos
 require_brew
 dump_brewfile
 report

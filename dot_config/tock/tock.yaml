@@ -82,7 +82,7 @@ time_format: "24"
 weekly_target: "40h"
 
 # Off, for two reasons. Homebrew owns this binary (`brew upgrade` runs from
-# setup.sh, and tock is listed in brew-formula-macos.txt), so an in-band nag
+# setup.sh, and tock is listed in brewfiles/darwin), so an in-band nag
 # cannot act on anything. More practically the notice goes to stderr on *every*
 # invocation, and the status bar segment invokes tock several times a minute -
 # `brew outdated` is where a version check belongs.

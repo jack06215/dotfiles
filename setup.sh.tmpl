@@ -98,24 +98,14 @@ function install_homebrew() {
 }
 
 function upgrade_homebrew_packages() {
-  local source_dir={{ .chezmoi.sourceDir | quote }}
-{{- if .myComputer.isDarwin }}
-
-  # The Brewfile carries taps, formulae, casks and — since Homebrew 6.0 — the
-  # tap trust state in one file, and `brew bundle install` applies that trust
-  # before it loads any entry and installs taps ahead of what lives in them. So
-  # this one call replaces the brew-formula-macos.txt / brew-cask-macos.txt
-  # pair and the separate tap-trust pass. Regenerate it with
-  # generate-brewfile.sh; see docs/homebrew-export-packages.md.
-  brew bundle install --file="${source_dir}/Brewfile"
-{{- else }}
-  local os_suffix={{ if .myComputer.isLinux }}"wsl2"{{ else }}""{{ end }}
-
-  local formula_file="${source_dir}/brew-formula-${os_suffix}.txt"
-  if [[ -s "${formula_file}" ]]; then
-    xargs -a "${formula_file}" brew install
-  fi
-{{- end }}
+  # ~/Brewfile is rendered from Brewfile.tmpl, which picks the manifest under
+  # brewfiles/ matching this OS: taps + formulae + casks on macOS, taps +
+  # formulae on Linux. It also carries the Homebrew 6.0 tap-trust state, and
+  # `brew bundle install` applies that trust before it loads any entry and
+  # installs taps ahead of what lives in them — which is why there is no longer
+  # a separate tap/trust pass. Regenerate a manifest with generate-brewfile.sh;
+  # see docs/homebrew-export-packages.md.
+  brew bundle install --file="${HOME}/Brewfile"
 
   brew upgrade
   brew cleanup
@@ -183,9 +173,6 @@ function setup_macos() {
   section 'Installing Homebrew'
   install_homebrew
 
-  # No brew_trust_taps step here: `brew bundle install` trusts the taps the
-  # Brewfile marks `trusted: true` before installing from them. setup_debian
-  # still needs it, since the Linux path installs from brew-formula-wsl2.txt.
   section 'Upgrading Homebrew packages'
   upgrade_homebrew_packages
 
@@ -199,9 +186,6 @@ function setup_macos() {
 function setup_debian() {
   section 'Installing Homebrew'
   install_homebrew
-
-  section 'Tap trust non-official Homebrew repositories'
-  brew_trust_taps
 
   section 'Upgrading Homebrew packages'
   upgrade_homebrew_packages
@@ -222,52 +206,6 @@ function is_wsl() {
 function setup_wsl2() {
   echo 'WSL2 is not yet supported.'
   return 1
-}
-
-function brew_trust_taps() {
-  local source_dir={{ .chezmoi.sourceDir | quote }}
-  local taps_file="${source_dir}/brew-trust-taps.txt"
-
-  local taps=()
-  if [[ -s "${taps_file}" ]]; then
-    local tap
-    while IFS= read -r tap; do
-      [[ -n "${tap}" ]] && taps+=("${tap}")
-    done < "${taps_file}"
-  fi
-
-  # This runs before upgrade_homebrew_packages, which is what installs gum, so
-  # on a first run run_step takes its plain fallback path. The spinner is for
-  # reruns and for machines where gum is already present.
-  local failed=()
-  if (( ${#taps[@]} )); then
-    local tap
-    for tap in "${taps[@]}"; do
-      if ! run_step "Tapping ${tap}..." brew tap "${tap}"; then
-        failed+=("${tap}")
-        continue
-      fi
-
-      if ! run_step "Trusting ${tap}..." brew trust "${tap}"; then
-        failed+=("${tap}")
-      fi
-    done
-  fi
-
-  if (( ${#failed[@]} )); then
-    if command -v gum &> /dev/null; then
-      gum style --foreground=196 --bold "Failed to tap/trust: ${failed[*]}" >&2
-    else
-      printf '\nFailed to tap/trust: %s\n' "${failed[*]}" >&2
-    fi
-    return 1
-  fi
-
-  if command -v gum &> /dev/null; then
-    gum style --foreground=42 'All taps added and trusted.'
-  else
-    printf '\nAll taps added and trusted.\n'
-  fi
 }
 
 {{ if and .myComputer.isDarwin -}}

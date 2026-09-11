@@ -24,7 +24,7 @@ words=$(mktemp)
 trap 'rm -f "$raw" "$words"' EXIT
 
 # wordnet is the fallback that makes WSL2 work without apt: it is already in
-# brew-formula-wsl2.txt for `wn`, which blink-cmp-dictionary shells out to for
+# brewfiles/wsl2 for `wn`, which blink-cmp-dictionary shells out to for
 # the definitions it shows alongside each word, and the same package ships the
 # index files read below.
 wn_share=""

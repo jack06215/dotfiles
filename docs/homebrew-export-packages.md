@@ -18,7 +18,7 @@ The jq recipes above are the manual way to read out `name`/`tap` pairs.
 writes `Brewfile` next to it:
 
 ```sh
-~/generate-brewfile.sh          # or: bash generate-brewfile.sh from the repo
+~/generate-brewfile.sh          # writes brewfiles/darwin or brewfiles/wsl2
 ```
 
 It wraps `brew bundle dump --formula --cask --tap`, which is worth preferring
@@ -30,9 +30,9 @@ tap "dbcli/tap"
 cask "vorssaint/tap/vorssaint", trusted: true
 ```
 
-So the Brewfile carries the Tap-Trust state that `brew-trust-taps.txt` tracks
-separately, and `brew bundle install` can reproduce it on a fresh machine
-without a second list.
+So the manifest carries the Tap-Trust state directly, and `brew bundle install`
+can reproduce it on a fresh machine without the separate tap/trust list this
+replaced.
 
 Two things the script handles that a bare `brew bundle dump` does not:
 
@@ -42,13 +42,21 @@ Two things the script handles that a bare `brew bundle dump` does not:
 - **Partial writes.** It dumps to a temp file and moves it into place, so a
   failed run leaves the committed Brewfile alone.
 
-macOS only. `setup.sh` installs from this Brewfile on macOS
-(`brew bundle install --file=Brewfile`), which retired
-`brew-formula-macos.txt` and `brew-cask-macos.txt`. It also retired the
-separate tap-trust pass on that path: `brew bundle install` applies every
+### One manifest per OS
+
+The script writes `brewfiles/<darwin|wsl2>`, not `Brewfile`. `Brewfile.tmpl`
+`include`s the manifest matching `.chezmoi.os` and renders it to `~/Brewfile`,
+which is what `setup.sh` feeds to `brew bundle install` on both macOS and
+Linux. Keeping the manifests as plain files rather than inline template blocks
+means regenerating on a Mac rewrites one whole file and cannot touch the WSL2
+list. `brewfiles/` is `.chezmoiignore`'d, so only the rendered `~/Brewfile`
+reaches the target tree.
+
+This retired all four lists — `brew-formula-macos.txt`, `brew-cask-macos.txt`,
+`brew-formula-wsl2.txt` and `brew-trust-taps.txt` — along with the separate
+tap-trust pass in `setup.sh`: `brew bundle install` applies every
 `trusted: true` option *before* it loads any entry, and installs taps ahead of
-what lives in them. The Linux path still uses `brew-formula-wsl2.txt` plus
-`brew-trust-taps.txt`, so both of those stay.
+what lives in them.
 
 ### Regenerating drops what is not installed
 
