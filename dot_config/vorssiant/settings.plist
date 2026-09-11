@@ -932,7 +932,7 @@
 		<key>shelfShakeToOpen</key>
 		<true/>
 		<key>shelfShortcut</key>
-		<string>option:2</string>
+		<string>control+option+command:2</string>
 		<key>shelfShortcutEnabled</key>
 		<true/>
 		<key>showCountdownInMenuBar</key>
