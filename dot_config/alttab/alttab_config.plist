@@ -121,6 +121,6 @@
 	<key>windowDisplayDelay</key>
 	<string>100</string>
 	<key>windowOrder</key>
-	<string>2</string>
+	<string>0</string>
 </dict>
 </plist>
