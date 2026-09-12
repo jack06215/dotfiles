@@ -726,4 +726,7 @@ const CONFIG_DIR = (["~", ".config"] | path join)
 
 source function.nu
 source compare_dir_diff.nu
+source lsz.nu
+source tojson.nu
+source tocsv.nu
 

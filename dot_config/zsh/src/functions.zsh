@@ -219,11 +219,11 @@ function _csv2() {
     e:=o_enc -encoding:=o_enc \
     s:=o_sep -separator:=o_sep \
     -flexible=o_flexible 2> /dev/null || {
-      # zparseopts names the offending flag, but prefixes it with `_csv2`, which
-      # is not a name the caller typed.
-      print -u2 "$caller: unknown option; try '$caller --help'"
-      return 2
-    }
+    # zparseopts names the offending flag, but prefixes it with `_csv2`, which
+    # is not a name the caller typed.
+    print -u2 "$caller: unknown option; try '$caller --help'"
+    return 2
+  }
 
   ((${#o_help})) && {
     _csv2_usage "$caller"
@@ -366,9 +366,9 @@ function jsonl2csv() {
     b=o_bom -bom=o_bom \
     s:=o_sep -separator:=o_sep \
     n=o_noheader -no-header=o_noheader 2> /dev/null || {
-      print -u2 "$caller: unknown option; try '$caller --help'"
-      return 2
-    }
+    print -u2 "$caller: unknown option; try '$caller --help'"
+    return 2
+  }
 
   ((${#o_help})) && {
     _jsonl2csv_usage
@@ -536,9 +536,9 @@ function yml2jsonl() {
     h=o_help -help=o_help \
     p:=o_path -path:=o_path \
     e:=o_enc -encoding:=o_enc 2> /dev/null || {
-      print -u2 "$caller: unknown option; try '$caller --help'"
-      return 2
-    }
+    print -u2 "$caller: unknown option; try '$caller --help'"
+    return 2
+  }
 
   ((${#o_help})) && {
     _yml2jsonl_usage
@@ -660,4 +660,42 @@ function export_secret {
   export "${var_name}"
 
   print -u2 "Exported: ${var_name}=***"
+}
+
+# nushell's `lsz` (directories sized by everything under them, largest first),
+# drawn by gum. The listing and the CSV both come from the same .nu files
+# config.nu sources, so the two shells cannot drift apart.
+function lsz {
+  _check_nu_cmd || return 1
+  _check_gum_cmd || return 1
+
+  (($# > 1)) && {
+    print -u2 'usage: lsz [dir]'
+    return 2
+  }
+
+  # `source` resolves its path at parse time, so it cannot come from $env - but
+  # $nu.default-config-dir is a constant, and it names the directory config.nu
+  # sources these files from. The directory being listed does travel in the
+  # environment, for the reason _csv2's file path does.
+  #
+  # `to csv` writes a datetime as "Wed, 9 Sep 2026 17:39:54 +0900 (3 days ago)",
+  # which would be the widest column, so it is shortened first. An empty
+  # directory would come out as a lone `""`, which gum draws as an empty box.
+  local -a script=(
+    'source ($nu.default-config-dir | path join lsz.nu)'
+    'source ($nu.default-config-dir | path join tocsv.nu)'
+    'let rows = (lsz $env.__LSZ_DIR)'
+    'if ($rows | is-empty) { "" } else {'
+    '  $rows | update modified { format date "%Y-%m-%d %H:%M" } | tocsv'
+    '}'
+  )
+
+  # Captured rather than piped, so a missing directory ends with nu's error
+  # instead of gum's "unable to parse columns" after it.
+  local csv
+  csv=$(__LSZ_DIR=${1:-.} nu -n -c "${(F)script}") || return
+  [[ -n $csv ]] || return 0
+
+  gum table --print <<< "$csv"
 }
