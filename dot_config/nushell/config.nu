@@ -729,4 +729,8 @@ source compare_dir_diff.nu
 source lsz.nu
 source tojson.nu
 source tocsv.nu
+source csv2.nu
+source jsonl2csv.nu
+source jsonl2yml.nu
+source yml2jsonl.nu
 

@@ -273,56 +273,19 @@ function _csv2() {
   if [[ -n $file ]]; then
     source_expr='open --raw $env.__CSV2_FILE'
   else
-    # nu hands stdin over already decoded as text whenever the bytes happen to
-    # be valid UTF-8; going back to bytes lets `decode` apply --encoding
-    # uniformly, whichever way the input arrived.
     nu_args=(-n --stdin -c)
-    source_expr='$in | into binary'
+    source_expr='$in'
   fi
 
-  local csv_flags=' --separator $env.__CSV2_SEP'
-  ((${#o_noheader})) && csv_flags+=' --noheaders'
-  ((${#o_infer})) || csv_flags+=' --no-infer'
-  ((${#o_flexible})) && csv_flags+=' --flexible'
-
-  # A CRLF file keeps its CR inside multi-line quoted cells, so a two-line
-  # address arrives as "...\r\n...". Drop it: a YAML block scalar cannot hold a
-  # CR anyway, and normalising here is what keeps the yaml and json output
-  # describing the same string.
-  local normalize=' | update cells {|v| if ($v | describe) == "string" { $v | str replace --all "\r\n" "\n" | str replace --all "\r" "\n" } else { $v } }'
-
-  local emit
-  case $format in
-    json) emit=' | to json' ;;
-    jsonl) emit=' | each {|row| $row | to json --raw } | to text' ;;
-    yaml) emit=' | to yaml' ;;
-  esac
+  local flags=''
+  ((${#o_noheader})) && flags+=' --noheaders'
+  ((${#o_infer})) && flags+=' --infer'
+  ((${#o_flexible})) && flags+=' --flexible'
 
   local -a script=(
-    "let rows = (${source_expr} | decode \$env.__CSV2_ENC | from csv${csv_flags}${normalize})"
+    'source ($nu.default-config-dir | path join csv2.nu)'
+    "${source_expr} | csv2 ${format} --columns \$env.__CSV2_COLS --encoding \$env.__CSV2_ENC --separator \$env.__CSV2_SEP${flags}"
   )
-  if [[ -z $cols ]]; then
-    script+=("\$rows${emit}")
-  elif ((${#o_noheader})); then
-    script+=("\$rows | rename ...(\$env.__CSV2_COLS | split row ',')${emit}")
-  else
-    # Left to `select`, a typo'd column reports itself against the environment
-    # block the name arrived in, which tells the caller nothing. Say which name
-    # missed and what the header actually holds - worth the detour when the
-    # headers are Japanese and a stray full-width space is invisible.
-    script+=(
-      'let want = ($env.__CSV2_COLS | split row ",")'
-      'let missing = ($want | where {|c| $c not-in ($rows | columns)})'
-      'if not ($missing | is-empty) {'
-      # The joins stay out of the interpolated string: a quote inside a `(...)`
-      # subexpression closes the string early and the script fails to parse.
-      '  let names = ($missing | str join ", ")'
-      '  let have = ($rows | columns | str join ", ")'
-      '  error make --unspanned { msg: $"no such column: ($names) -- header has: ($have)" }'
-      '}'
-      "\$rows | select ...\$want${emit}"
-    )
-  fi
 
   __CSV2_FILE=$file __CSV2_COLS=$cols __CSV2_ENC=$enc __CSV2_SEP=$sep \
     nu "${nu_args[@]}" "${(F)script}"
@@ -428,80 +391,40 @@ function jsonl2csv() {
     source_expr='open --raw $env.__J2C_FILE'
   else
     nu_args=(-n --stdin -c)
-    source_expr='$in | into binary'
+    source_expr='$in'
   fi
 
-  local csv_flags=' --separator $env.__J2C_SEP'
-  ((${#o_noheader})) && csv_flags+=' --noheaders'
+  local flags=''
+  ((${#o_noheader})) && flags+=' --noheaders'
+  ((${#o_bom})) && flags+=' --bom'
 
-  # `from json --objects` hands a line it cannot read on as a plain string rather
-  # than failing, and the type error `to csv` then raises names neither the line
-  # nor the problem. Say which line instead.
+  # Binary (--bom, or any encoding but utf-8) leaves through `save`, per the
+  # note above. `to csv` already ends in a newline; print must not add another.
   local -a script=(
-    "let rows = (${source_expr} | decode utf-8 | from json --objects | collect)"
-    'let bad = ($rows | enumerate | where {|r| not (($r.item | describe) | str starts-with "record")})'
-    'if not ($bad | is-empty) {'
-    '  let n = (($bad | first | get index) + 1)'
-    '  error make --unspanned { msg: $"line ($n) is not a JSON object -- expected one object per line" }'
-    '}'
-    # A CSV cell holds one scalar, so a nested array or object has to become text
-    # on the way out. Left alone, `to csv` fails with "can't convert list<string>
-    # to string" reported against the span of `from json` - the reader, not the
-    # column that would not fit - which says nothing about where to look. Compact
-    # JSON is the representation worth writing: it stays on one line, survives a
-    # trip through Excel, and reads back with any JSON parser.
-    'let rows = ($rows | update cells {|v|'
-    '  let t = ($v | describe)'
-    '  if (($t | str starts-with "list") or ($t | str starts-with "table") or ($t | str starts-with "record")) {'
-    '    $v | to json --raw'
-    '  } else {'
-    '    $v'
-    '  }'
-    # `update cells` hands back a lazy stream, and `to csv` streaming a table
-    # whose records do not all carry the same keys dies the moment a later row
-    # introduces a column. `collect` puts the table back together first.
-    '} | collect)'
+    'source ($nu.default-config-dir | path join jsonl2csv.nu)'
+    "let out = (${source_expr} | jsonl2csv --columns \$env.__J2C_COLS --encoding \$env.__J2C_ENC --separator \$env.__J2C_SEP${flags})"
+    'if ($out | describe) == "binary" { $out | save --raw --force /dev/stdout } else { print --no-newline $out }'
   )
-  # No records means no columns to name, so nothing at all is the honest answer -
-  # `to csv` would otherwise emit a lone `""` for an empty table.
-  if [[ -n $cols ]]; then
-    script+=(
-      'let want = ($env.__J2C_COLS | split row ",")'
-      'if not ($rows | is-empty) {'
-      '  let missing = ($want | where {|c| $c not-in ($rows | columns)})'
-      '  if not ($missing | is-empty) {'
-      '    let names = ($missing | str join ", ")'
-      '    let have = ($rows | columns | str join ", ")'
-      '    error make --unspanned { msg: $"no such column: ($names) -- record has: ($have)" }'
-      '  }'
-      '}'
-      "let out = (if (\$rows | is-empty) { '' } else { \$rows | select ...\$want | to csv${csv_flags} })"
-    )
-  else
-    script+=("let out = (if (\$rows | is-empty) { '' } else { \$rows | to csv${csv_flags} })")
-  fi
-
-  if [[ -n ${o_bom[*]} ]]; then
-    script+=('0x[EF BB BF] ++ ($out | encode utf-8) | save --raw --force /dev/stdout')
-  elif [[ $enc == utf-8 ]]; then
-    # `to csv` already ends in a newline; print must not add a second one.
-    script+=('print --no-newline $out')
-  else
-    script+=('$out | encode $env.__J2C_ENC | save --raw --force /dev/stdout')
-  fi
 
   __J2C_FILE=$file __J2C_COLS=$cols __J2C_ENC=$enc __J2C_SEP=$sep \
     nu "${nu_args[@]}" "${(F)script}"
 }
 
 function jsonl2yml() {
-  if [ "$#" -gt 0 ]; then
-    cat -- "$@" | nu -n --stdin -c 'from json --objects | to yaml'
+  local -a script=(
+    'source ($nu.default-config-dir | path join jsonl2yml.nu)'
+    '$in | jsonl2yml'
+  )
+
+  # An arithmetic test, not `[ "$#" -gt 0 ]`: shfmt's zsh mode rewrites that
+  # "$#" to "$", which silently turns every file argument into a usage error.
+  if (($# > 0)); then
+    cat -- "$@" | nu -n --stdin -c "${(F)script}"
   elif [ -t 0 ]; then
     printf 'usage: jsonl2yml [file...]   # or pipe JSONL on stdin\n' >&2
     return 2
   else
-    nu -n --stdin -c 'from json --objects | to yaml'
+    nu -n --stdin -c "${(F)script}"
   fi
 }
 
@@ -580,54 +503,13 @@ function yml2jsonl() {
   if [[ -n $file ]]; then
     source_expr='open --raw $env.__Y2J_FILE'
   else
-    # As in _csv2: nu hands stdin over already decoded as text whenever the bytes
-    # happen to be valid UTF-8, so going back to bytes is what lets `decode`
-    # apply --encoding whichever way the input arrived.
     nu_args=(-n --stdin -c)
-    source_expr='$in | into binary'
+    source_expr='$in'
   fi
 
   local -a script=(
-    "mut doc = (${source_expr} | decode \$env.__Y2J_ENC | from yaml)"
-  )
-
-  if [[ -n $keypath ]]; then
-    # Left to `get`, a key that misses reports itself against the environment
-    # block the path arrived in, naming neither the key nor what was there
-    # instead. Walk a step at a time and say where the descent stopped.
-    script+=(
-      'for k in ($env.__Y2J_PATH | split row ".") {'
-      '  let shape = ($doc | describe)'
-      '  if not ($shape | str starts-with "record") {'
-      '    error make --unspanned { msg: $"cannot look up ($k): the path reached a ($shape), not a mapping" }'
-      '  }'
-      '  if $k not-in ($doc | columns) {'
-      '    let have = ($doc | columns | str join ", ")'
-      '    error make --unspanned { msg: $"no such key: ($k) -- mapping has: ($have)" }'
-      '  }'
-      '  $doc = ($doc | get $k)'
-      '}'
-    )
-  fi
-
-  # A document that parses to a scalar is what a file that is not YAML at all
-  # looks like - `from yaml` reads plain prose as one long string - so that is
-  # worth refusing rather than emitting a quoted blob. An empty input is not an
-  # error, it just has no lines in it.
-  script+=(
-    'let shape = ($doc | describe)'
-    'let rows = (if $shape == "nothing" {'
-    '  []'
-    '} else if (($shape | str starts-with "list") or ($shape | str starts-with "table")) {'
-    '  $doc'
-    '} else if ($shape | str starts-with "record") {'
-    '  [$doc]'
-    '} else {'
-    '  error make --unspanned { msg: $"expected a mapping or a sequence, got a ($shape)" }'
-    '})'
-    # `to json --raw` keeps each record on one line and writes non-ASCII
-    # literally rather than as \uXXXX escapes, so Japanese text stays readable.
-    '$rows | each {|row| $row | to json --raw } | to text'
+    'source ($nu.default-config-dir | path join yml2jsonl.nu)'
+    "${source_expr} | yml2jsonl --path \$env.__Y2J_PATH --encoding \$env.__Y2J_ENC"
   )
 
   __Y2J_FILE=$file __Y2J_PATH=$keypath __Y2J_ENC=$enc \
@@ -674,25 +556,12 @@ function lsz {
     return 2
   }
 
-  # `source` resolves its path at parse time, so it cannot come from $env - but
-  # $nu.default-config-dir is a constant, and it names the directory config.nu
-  # sources these files from. The directory being listed does travel in the
-  # environment, for the reason _csv2's file path does.
-  #
-  # `to csv` writes a datetime as "Wed, 9 Sep 2026 17:39:54 +0900 (3 days ago)",
-  # which would be the widest column, so it is shortened first. An empty
-  # directory would come out as a lone `""`, which gum draws as an empty box.
   local -a script=(
     'source ($nu.default-config-dir | path join lsz.nu)'
     'source ($nu.default-config-dir | path join tocsv.nu)'
-    'let rows = (lsz $env.__LSZ_DIR)'
-    'if ($rows | is-empty) { "" } else {'
-    '  $rows | update modified { format date "%Y-%m-%d %H:%M" } | tocsv'
-    '}'
+    'lsz $env.__LSZ_DIR | tocsv'
   )
 
-  # Captured rather than piped, so a missing directory ends with nu's error
-  # instead of gum's "unable to parse columns" after it.
   local csv
   csv=$(__LSZ_DIR=${1:-.} nu -n -c "${(F)script}") || return
   [[ -n $csv ]] || return 0
