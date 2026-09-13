@@ -20,7 +20,9 @@ M.lsp_list = {
   "ruby_lsp",
   "sqlls",
   "terraformls",
-  "tsserver",
+  -- No tsserver/ts_ls: typescript-tools.nvim (plugins/typescript) is the
+  -- TypeScript server. Running both puts two clients on every TS buffer, and
+  -- lspsaga's peek_definition opens one float per client that answers.
   "yamlls",
 }
 

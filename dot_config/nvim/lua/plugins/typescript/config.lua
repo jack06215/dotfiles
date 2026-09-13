@@ -4,34 +4,20 @@ M.settings = {
   separate_diagnostic_server = true,
 }
 
-M.tsserver_keys = function(bufnr)
-  local map = function(mode, lhs, rhs)
-    vim.keymap.set(mode, lhs, rhs, { buffer = bufnr })
-  end
-
-  map("n", "gd", vim.lsp.buf.definition)
-  map("n", "gr", vim.lsp.buf.references)
-  map("n", "K", vim.lsp.buf.hover)
-  -- 必要に応じて追加
-end
-
 M.plugins = {
   {
     "pmizio/typescript-tools.nvim",
     ft = { "typescript", "typescriptreact", "javascript", "javascriptreact" },
     opts = {
       settings = M.settings,
-    },
-  },
-
-  {
-    "neovim/nvim-lspconfig",
-    opts = {
-      servers = {
-        tsserver = {
-          keys = M.tsserver_keys,
-        },
-      },
+      -- Deno projects belong to denols (lsp-config/settings/denols.lua); two
+      -- servers on one buffer make lspsaga's peek_definition open two floats.
+      root_dir = function(bufnr, on_dir)
+        if vim.fs.root(bufnr, { "deno.json", "deno.jsonc" }) then
+          return
+        end
+        on_dir(require("typescript-tools.utils").get_root_dir(bufnr))
+      end,
     },
   },
 

@@ -1,8 +1,8 @@
 return {
   {
     "nvimdev/lspsaga.nvim",
-    config = function()
-      require("lspsaga").setup({})
+    config = function(_, opts)
+      require("lspsaga").setup(opts)
     end,
     dependencies = {
       "nvim-treesitter/nvim-treesitter",
