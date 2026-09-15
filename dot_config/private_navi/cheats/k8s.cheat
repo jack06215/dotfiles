@@ -1,5 +1,7 @@
 ; Ported from dot_config/private_pet/snippet.toml.
 ;
 
+% k8s
+
 # kubectl with context and namespace
 kubectl --context <context> --namespace <namespace> <subcommand>
