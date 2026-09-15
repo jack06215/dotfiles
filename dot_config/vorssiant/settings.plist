@@ -57,11 +57,11 @@
 		<key>clipboardAutoClearOnDelay</key>
 		<false/>
 		<key>clipboardAutoClearOnDisplaySleep</key>
-		<false/>
+		<true/>
 		<key>clipboardAutoClearOnScreenLock</key>
-		<false/>
+		<true/>
 		<key>clipboardAutoClearOnSleep</key>
-		<false/>
+		<true/>
 		<key>clipboardHistoryEnabled</key>
 		<true/>
 		<key>clipboardHistoryIgnoredApps</key>
@@ -259,7 +259,7 @@
 		<key>finderCutPasteShowHUD</key>
 		<true/>
 		<key>finderPasteImageAsFile</key>
-		<false/>
+		<true/>
 		<key>finderRenameEnabled</key>
 		<false/>
 		<key>finderRenameShortcut</key>
@@ -721,9 +721,9 @@
 		<key>panelUtilityWindowLayout</key>
 		<true/>
 		<key>pastePlainEnabled</key>
-		<false/>
+		<true/>
 		<key>pastePlainShortcut</key>
-		<string>option+shift+command:9</string>
+		<string>option+command:9</string>
 		<key>preciseVolumeRollerEnabled</key>
 		<false/>
 		<key>previewSize</key>
@@ -806,7 +806,7 @@
 		<key>recorderShortcut</key>
 		<string>control+option+command:23</string>
 		<key>recorderShortcutEnabled</key>
-		<false/>
+		<true/>
 		<key>recorderShowCaptureMenuOnShortcut</key>
 		<true/>
 		<key>recorderSystemAudio</key>
