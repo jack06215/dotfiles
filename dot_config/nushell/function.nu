@@ -36,6 +36,37 @@ $env.config.keybindings = ($env.config.keybindings | append {
   }
 })
 
+# navi, pinned to the nushell-only cheatsheets in ~/.config/navi/cheats-nu so
+# the nu pipelines there stay out of the ../cheats directory zsh reads. Unlike
+# pet this needs no second config file - `--path` overrides only the cheatsheet
+# directories, so the fzf overrides and column widths in
+# ~/.config/navi/config.yaml still apply. `--wrapped` passes flags straight
+# through, and `--path` is accepted ahead of the subcommands too, so
+# `navi info`, `navi fn` and `navi --print` all act on the nu cheatsheets.
+def --wrapped navi [...args] {
+  ^navi --path ($nu.home-dir | path join ".config" "navi" "cheats-nu") ...$args
+}
+
+# ctrl-g -> cheat search, mirroring the _navi_widget binding in
+# dot_config/zsh/src/navi.zsh; ctrl-o stays with pet above. Same shape as
+# pet_select, including leaving a cancelled picker's line alone.
+$env.config.keybindings = ($env.config.keybindings | append {
+  name: navi_select
+  modifier: control
+  keycode: char_g
+  mode: [emacs, vi_normal, vi_insert]
+  event: {
+    send: executehostcommand
+    cmd: '
+      let picked = (navi --print --query (commandline) | complete)
+      if $picked.exit_code == 0 {
+        let cheat = ($picked.stdout | str trim)
+        if ($cheat | is-not-empty) { commandline edit --replace $cheat }
+      }
+    '
+  }
+})
+
 # fzf over the whole tree: cd into the pick if it's a directory, else open it
 # in $EDITOR. Port of ls_fzf_open in dot_config/zsh/src/ls.zsh.
 #

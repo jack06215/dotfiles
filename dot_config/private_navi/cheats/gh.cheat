@@ -1,0 +1,19 @@
+; Ported from dot_config/private_pet/snippet.toml.
+
+% GitHub, gh, Pull Request
+
+; gh_pr_review is the zsh wrapper defined in src/pycli.zsh, which dispatches to
+; the Poetry-managed python CLI - not a `gh` subcommand.
+# List PRs with reviews in a date range
+gh_pr_review --org <org> --repo <repo> --author <author> --after <after> --until <until>
+
+$ org: echo 'jack06215'
+$ repo: echo 'monorepo'
+$ author: echo 'jack06215'
+$ after: echo '2026-01-01'
+$ until: echo '2026-05-31'
+
+% GitHub, gh, workflow, jack06215
+
+# Filter workflows by path regex
+gh workflow list --json name,path,state --limit 300 | jq '[.[] | select(.path | test("<workflow_yml>")) | . + {url: ("https://github.com/jack06215/monorepo/actions/workflows/" + (.path | split("/") | last))}]'

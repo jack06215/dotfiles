@@ -24,6 +24,11 @@ history.txt
 .config/yazi/plugins/**
 .config/yazi/flavors/**
 
+# navi writes its log next to the config file, and derives that path from its
+# own default config dir rather than from $NAVI_CONFIG - so it lands here
+# whatever the config says.
+.config/navi/navi.log
+
 **/*flywheel*
 **/*flywheel*/**
 

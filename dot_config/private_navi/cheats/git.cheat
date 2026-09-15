@@ -1,0 +1,11 @@
+; Ported from dot_config/private_pet/snippet.toml.
+
+% git
+
+# Show recent commit
+git log --date=short --format="%h %ad %s" -<top_n>
+
+# Show commit messages in-between within folder
+git log --format='- %s' <from_commit>..<to_commit> -- $(git rev-parse --show-toplevel)<regex>
+
+$ regex: echo './*'

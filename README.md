@@ -49,6 +49,8 @@ dot_config/
   carapace/                 → shell completions
   npm/, pip/, pyproject/    → language package-manager config
   myscripts/, private_pet/  → misc scripts + `pet` snippet manager
+  private_navi/             → `navi` cheatsheets: config.yaml, cheats/ (zsh)
+                              and cheats-nu/ (nushell), ported from pet
 dot_glzr/
   glazewm/, zebar/          → Windows tiling WM + status bar
 AppData/                    → Windows-only app config (ignored elsewhere)
@@ -66,13 +68,13 @@ private credentials → core shell options → OS pre-init
 functions → vi-mode settings + zinit plugins → history/PATH →
 completion (compinit then carapace) → prompt tools (atuin, fzf,
 starship, zoxide) → domain modules (aws, bazel, chezmoi, gh, git, jira,
-k8s, mysql, notify, pet, search, tock) → aliases/keybinds → OS post-init
+k8s, mysql, navi, notify, pet, search, tock) → aliases/keybinds → OS post-init
 (last). Set `ZSH_DEBUG_INIT=1` or `ZSH_PROFILE_STARTUP=1` to
 trace/profile startup.
 
 The order is load-bearing for keybindings: `zsh-vi-mode` initializes
 while `zinit.zsh` sources it, and every module after that point (atuin,
-fzf, pet, `keybinds.zsh`) binds on top of it. Moving one of them above
+fzf, pet, navi, `keybinds.zsh`) binds on top of it. Moving one of them above
 `zinit.zsh` silently hands its keys back to the plugin.
 
 Highlights under `src/`:
@@ -88,7 +90,8 @@ Highlights under `src/`:
 | `git.zsh` | git helper functions |
 | `jira.zsh` | `jira_workitem` (via `acli`, rendered through `myscripts/jira_render.py`), `jira_project_list` |
 | `chezmoi.zsh` | `chezmoi-data`: fzf browser over `chezmoi data` output |
-| `pet.zsh` | binds `Ctrl-S` to `pet search` snippet lookup |
+| `pet.zsh` | binds `Ctrl-O` to `pet search` snippet lookup (`Ctrl-S` is tmux's prefix, so a `^S` binding never reaches zsh) |
+| `navi.zsh` | binds `Ctrl-G` to the `navi` widget — cheatsheet search over `dot_config/private_navi/cheats/*.cheat`, a port of pet's `snippet.toml`. Runs alongside pet rather than replacing it; `NAVI_CONFIG` in `dot_zshenv` pins the config path because navi otherwise resolves it per-platform (`~/Library/Application Support/navi` on macOS). nushell gets the same `Ctrl-G` from `dot_config/nushell/function.nu`, whose `navi` wrapper passes `--path` for `cheats-nu/` so the nu pipelines stay out of the zsh picker — the same split pet makes with `snippet.nu.toml` |
 | `tock.zsh` | time tracking: `tk` (start/switch, project inferred from the git root, prompts for tag + note), `tockpick`/`tkr` (gum picker over history, shows last note and asks for a new one), `tkn`/`tkd` + `tks`/`tkc`/`tkl`/`tkw`/`tka` |
 | `wezterm.zsh` | `wezterm_config`: gum-driven live tuning of WezTerm opacity/blur, persisted per-machine in `$XDG_STATE_HOME/wezterm/appearance.json` |
 | `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |

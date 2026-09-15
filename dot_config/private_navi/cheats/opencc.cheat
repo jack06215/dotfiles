@@ -1,0 +1,32 @@
+; Ported from dot_config/private_pet/snippet.toml. The pet originals carried a
+; leading space (zsh's hist_ignore_space, set in src/core.zsh, keeps such lines
+; out of history); dropped here, since none of these are secrets.
+
+% opencc, zh, macos
+
+# Convert zh_CN -> zh_TW from clipboard
+pbpaste | opencc -c <config> | pbcopy
+
+$ config: echo 's2twp.json'
+
+% prettify, zh
+
+# Convert zh_CN -> zh_TW from file
+f="<file>" && opencc -c <config> -i "$f" | sponge "$f"
+
+$ config: echo 's2twp.json'
+
+% opencc, zh, i18n
+
+# Convert zh_CN -> zh_TW
+echo "<text>" | opencc -c <config>
+
+$ config: echo 's2twp.json'
+
+% opencc, ja
+
+# Convert zh_Hant -> 日本新字体
+echo "<text>" | opencc -c t2jp.json
+
+# Convert 日本新字体 -> zh_Hant
+echo "<text>" | opencc -c jp2t.json

@@ -1,0 +1,38 @@
+; Ported from dot_config/private_pet/snippet.nu.toml.
+;
+; Nushell-only: these are nu pipelines, not POSIX shell, so they are kept out
+; of ../cheats (which zsh reads) the same way pet kept them out of
+; snippet.toml. The nushell `navi` wrapper in dot_config/nushell/function.nu
+; passes `--path` for this directory; zsh never sees these cheats.
+;
+; The `$ var:` suggestion lines below run under `shell.command` from
+; config.yaml, which is left at navi's default of bash - that key has no CLI or
+; environment override. Plain `echo` is portable, so it does not matter here; a
+; nu-native suggestion (`ls *.csv | get name`) would need its own config file
+; with `shell: {command: nu}`, selected via NAVI_CONFIG.
+
+% nu, csv, yaml, filter
+
+# filter CSV rows and write them out as YAML
+```nu
+open <file>
+| where status == "<status>"
+| where score >= <min_score>
+| select name email score
+| sort-by score --reverse
+| to yaml
+```
+
+$ file: echo 'data.csv'
+$ status: echo 'active'
+$ min_score: echo '80'
+
+% nu, sqlite, vipe, atuin, query
+
+# run SQL query against atuin DB.
+```nu
+let sql = (vipe --suffix sql)
+open <db> | query db $sql
+```
+
+$ db: echo '~/.local/share/atuin/history.db'

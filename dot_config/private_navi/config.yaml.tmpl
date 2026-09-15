@@ -1,0 +1,60 @@
+{{- /*
+    navi (https://github.com/denisidoro/navi) - cheatsheet launcher, running
+    alongside pet rather than replacing it: pet keeps ^O, navi takes ^G
+    (src/navi.zsh), and the cheats/ directory next to this file is a port of
+    dot_config/private_pet/snippet.toml.
+
+    Two paths are pinned explicitly here rather than left to navi's defaults:
+
+      * the config file itself - navi bakes its default config path in at
+        compile time, so dot_zshenv exports NAVI_CONFIG to point at this file.
+      * cheats.paths - navi resolves its default cheatsheet directory through
+        the directories-next crate, which is ~/Library/Application Support/navi
+        on macOS and ~/.local/share/navi/cheats elsewhere. Setting the path
+        makes both machines read the chezmoi-managed directory.
+*/ -}}
+cheats:
+    # Absolute path: navi does not expand `~` or environment variables in this
+    # list, so chezmoi renders it from .xdg.configHome at apply time.
+    paths:
+        - {{ joinPath .xdg.configHome "navi/cheats" }}
+
+finder:
+    command: fzf
+
+    # Cheat picker. FZF_DEFAULT_OPTS (src/fzf.zsh) caps fzf at 40% of the
+    # terminal, which leaves navi's preview pane two or three lines; 90% is the
+    # height pet's SelectCmd used. navi appends `overrides` last on the fzf
+    # command line, so these win over both FZF_DEFAULT_OPTS and navi's own
+    # flags - including the eza/bat `--preview` in FZF_DEFAULT_OPTS, which navi
+    # already overrides with its own `navi preview {}`.
+    #
+    # Quoted because the `--prompt` value contains ": ", which YAML will not
+    # accept inside a plain scalar.
+    overrides: "--height=90% --layout=reverse --border --cycle --prompt='Cheats: '"
+
+    # Variable picker. `--no-select-1` is the load-bearing flag: navi builds the
+    # variable finder with prevent_select1 = false, so fzf's `--select-1` fires
+    # whenever a `$ var:` line yields exactly one suggestion and accepts it
+    # without drawing anything. Every default ported from pet is a one-line
+    # `echo`, so without this the defaults would be constants instead of the
+    # editable pre-filled values they are in pet.
+    #
+    # No `--prompt` here on purpose - navi sets that per variable name.
+    overrides_var: --no-select-1 --height=90% --layout=reverse --border --cycle
+
+# Column widths matter more than colour here: several ported snippets are long
+# one-liners, so the snippet column gets the largest share.
+style:
+    tag:
+        color: cyan
+        width_percentage: 20
+        min_width: 12
+    comment:
+        color: white
+        width_percentage: 35
+        min_width: 30
+    snippet:
+        color: green
+        width_percentage: 45
+        min_width: 40

@@ -245,6 +245,16 @@ vim.filetype.add({
   },
 })
 
+-- navi cheatsheets: dot_config/private_navi/**/*.cheat here, and the copies
+-- chezmoi places under ~/.config/navi. Highlighted by syntax/cheat.vim, since
+-- navi has no tree-sitter grammar. `.cheat.tmpl` needs no entry - the `.*%.tmpl`
+-- pattern above strips the suffix and re-detects off the inner name.
+vim.filetype.add({
+  extension = {
+    cheat = "cheat",
+  },
+})
+
 if vim.env.PYENV_ROOT then
   vim.g.python3_host_prog = vim.env.PYENV_ROOT .. "/versions/global/bin/python"
 end

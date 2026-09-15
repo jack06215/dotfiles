@@ -1,0 +1,18 @@
+; Ported from dot_config/private_pet/snippet.toml.
+
+% prettify, zsh, bash
+
+# Prettify a bash/zsh file
+(d="$(pwd)"; cd "$HOME" && shfmt -w -ln=<language> -i 2 -ci -sr -bn "$d/<file_name>")
+
+$ language: echo 'zsh'
+
+% prettify, jq
+
+# Prettify JSON from clipboard.
+pbpaste | jq | pbcopy
+
+% file-properties
+
+# Count file types by extension of the current directory.
+find . -type f -name "*.*" | sed 's/.*\.//' | sort | uniq -c | sort -rn

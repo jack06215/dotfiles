@@ -1,0 +1,9 @@
+; Ported from dot_config/private_pet/snippet.toml.
+
+% homebrew
+
+# List of cask packages
+brew info --cask --json=v2 $(brew list --cask) | jq -r '.casks[] | select(.depends_on != {}) | .token'
+
+# List of formula packages
+brew info --json=v2 --installed | jq -r '.formulae[] | select(.installed[0].installed_on_request == true) | .name'

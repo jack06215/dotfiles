@@ -1,0 +1,11 @@
+; Ported from dot_config/private_pet/snippet.toml.
+; Both commands came out of https://github.com/flywheel-jp/monorepo/pull/114699.
+
+% aws, ecr, image-tags
+
+# List of image tags
+aws --profile <profile> ecr list-images --repository-name=<repository_name> --output json | jq -r '.imageIds[] | select(.imageTag)'
+
+# Find Repository
+aws --profile <profile> ecr describe-repositories --output json | jq -r '.repositories[] | select(.repositoryName | test("<regex>"))'
+
