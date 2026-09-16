@@ -3,8 +3,9 @@
 
 source "$ZDOTDIR/src/functions.zsh"
 
-# The appearance values wezterm_config tunes, as
-#   <key>|<label>|<min>|<max>|<step>|<default>
+# The appearance values wezterm_config tunes, keyed by the name the state file
+# and the Lua template both use, as
+#   <label>|<min>|<max>|<step>|<default>
 #
 # The defaults must match the fallback dict at the top of
 # dot_config/wezterm/chezmoi_tmpl.lua.tmpl, which is what renders on a machine
@@ -12,25 +13,37 @@ source "$ZDOTDIR/src/functions.zsh"
 #
 # The two opacities are authored here as a 0-100 percentage and divided by 100
 # on the Lua side; the blur is a point radius WezTerm takes as-is.
-_WEZTERM_SETTINGS=(
-  "windowBackgroundOpacity|Window background opacity|0|100|5|50"
-  "textBackgroundOpacity|Text background opacity|0|100|5|50"
-  "macosWindowBackgroundBlur|macOS background blur radius|0|100|5|5"
+typeset -gA _WEZTERM_SETTINGS=(
+  windowBackgroundOpacity "Window background opacity|0|100|5|50"
+  textBackgroundOpacity "Text background opacity|0|100|5|50"
+  macosWindowBackgroundBlur "macOS background blur radius|0|100|5|5"
 )
 
+# A zsh hash has no order of its own - for these three keys ${(k)…} comes back
+# neither authored nor alphabetical - so the menu takes its order from here.
+_WEZTERM_ORDER=(
+  windowBackgroundOpacity
+  textBackgroundOpacity
+  macosWindowBackgroundBlur
+)
+
+# Print one named field of <key>'s record. `key` is not among them: it is the
+# hash key rather than part of the record.
 function _wezterm_field() {
-  local key="$1" index="$2" row
-  local -a fields
+  local key="$1" name="$2"
+  local label min max step default
 
-  for row in "${_WEZTERM_SETTINGS[@]}"; do
-    if [[ "${row%%|*}" == "$key" ]]; then
-      fields=("${(@s:|:)row}")
-      print -r -- "${fields[$index]}"
-      return 0
-    fi
-  done
+  ((${+_WEZTERM_SETTINGS[$key]})) || return 1
+  IFS='|' read -r label min max step default <<< "${_WEZTERM_SETTINGS[$key]}"
 
-  return 1
+  case "$name" in
+    label) print -r -- "$label" ;;
+    min) print -r -- "$min" ;;
+    max) print -r -- "$max" ;;
+    step) print -r -- "$step" ;;
+    default) print -r -- "$default" ;;
+    *) return 1 ;;
+  esac
 }
 
 function _wezterm_state_file() {
@@ -49,7 +62,7 @@ function _wezterm_get() {
     fi
   fi
 
-  _wezterm_field "$key" 6
+  _wezterm_field "$key" default
 }
 
 function _wezterm_set() {
@@ -109,10 +122,10 @@ function _wezterm_tune() {
   local label min max step original current applied action input
   local -a actions
 
-  label=$(_wezterm_field "$key" 2) || return 1
-  min=$(_wezterm_field "$key" 3)
-  max=$(_wezterm_field "$key" 4)
-  step=$(_wezterm_field "$key" 5)
+  label=$(_wezterm_field "$key" label) || return 1
+  min=$(_wezterm_field "$key" min)
+  max=$(_wezterm_field "$key" max)
+  step=$(_wezterm_field "$key" step)
 
   original=$(_wezterm_get "$key")
   current="$original"
@@ -192,12 +205,13 @@ function wezterm_config() {
   local min max
 
   if [[ -n "$key" ]]; then
-    min=$(_wezterm_field "$key" 3) || {
+    ((${+_WEZTERM_SETTINGS[$key]})) || {
       echo "wezterm_config: unknown setting '$key'. Known settings:" >&2
-      printf '  %s\n' "${_WEZTERM_SETTINGS[@]%%|*}" >&2
+      printf '  %s\n' "${(@ko)_WEZTERM_SETTINGS}" >&2
       return 2
     }
-    max=$(_wezterm_field "$key" 4)
+    min=$(_wezterm_field "$key" min)
+    max=$(_wezterm_field "$key" max)
 
     [[ -n "$value" ]] || {
       _wezterm_tune "$key"
@@ -210,18 +224,17 @@ function wezterm_config() {
     }
 
     _wezterm_set_and_apply "$key" "$value" || return 1
-    gum log --level info "saved" "$(_wezterm_field "$key" 2)" "$value"
+    gum log --level info "saved" "$(_wezterm_field "$key" label)" "$value"
     return 0
   fi
 
-  local row k label choice rc
+  local k label choice rc
   local -a menu
 
   while true; do
     menu=()
-    for row in "${_WEZTERM_SETTINGS[@]}"; do
-      k="${row%%|*}"
-      label=$(_wezterm_field "$k" 2)
+    for k in "${_WEZTERM_ORDER[@]}"; do
+      label=$(_wezterm_field "$k" label)
       menu+=("$(printf '%-26s %-30s %s' "$k" "$label" "$(_wezterm_get "$k")")")
     done
 
