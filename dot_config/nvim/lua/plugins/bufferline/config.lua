@@ -41,7 +41,7 @@ return {
       TESTS = { priority = 9, color = "#83a598" },
       DOCS = { priority = 8, color = "#b8bb26" },
       BUILD = { priority = 7, color = "#fabd2f" },
-      KUBERNETES = { priority = 6, color = "#d3869b" },
+      INFRA = { priority = 6, color = "#d3869b" },
       NEOVIM = { priority = 5, color = "#458588" },
       BACKEND = { priority = 4, color = "#8ec07c" },
       CONFIG = { priority = 3, color = "#fb4934" },
@@ -169,12 +169,12 @@ return {
             },
 
             ------------------------------------------------------------------
-            -- Kubernetes / Infra
+            -- Infrastructure as Code
             ------------------------------------------------------------------
             {
-              name = "Kubernetes",
-              priority = GROUP.KUBERNETES.priority,
-              highlight = hl(GROUP.KUBERNETES),
+              name = "IoC Manifests",
+              priority = GROUP.INFRA.priority,
+              highlight = hl(GROUP.INFRA),
 
               matcher = function(buf)
                 return ext(buf, "tf", "tfvars", "hcl")
