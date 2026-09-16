@@ -1,7 +1,8 @@
 # =============================================================================
 # GlazeWM — modifier grammar
 # -----------------------------------------------------------------------------
-#   alt                  + arrows    focus window in direction
+#   alt                  + arrows    focus window in direction  (Windows)
+#   alt + control        + arrows    focus window in direction  (macOS)
 #   alt + shift          + h/j/k/l   move window in direction
 #   alt + control        + h/j/k/l   resize focused window
 #   alt + control+shift  + h/j/k/l   move whole workspace to monitor in direction
@@ -35,7 +36,21 @@
 # tmux on `lalt`. GlazeWM's docs list `lalt`/`ralt` as valid and the config
 # parsed without error, but its macOS build ignores the left/right distinction:
 # `ralt+v` still fired on the LEFT Option key. Do not retry that approach.)
+# -----------------------------------------------------------------------------
+# RESERVED on macOS: plain `alt` + an arrow belongs to the system text layer.
+#
+# Option+arrow moves the caret by word and Option+Shift+arrow extends the
+# selection by word, in every Cocoa text field there is. Same failure mode as
+# the tmux clash above — GlazeWM's OS-level grab means the key never reaches
+# the app, so word-wise cursor movement just silently stops working everywhere.
+#
+# Hence this file is a chezmoi template (edit the source in the dotfiles repo,
+# not ~/.glzr/glazewm/config.yaml). On darwin, focus picks up `control`
+# alongside `alt` — alt+control+<arrow> is free here, since alt+control+h/j/k/l
+# is resize and never binds arrows — and the alt+shift+<arrow> aliases on move
+# are dropped, leaving alt+shift+h/j/k/l to do that job alone.
 # =============================================================================
+{{ $darwin := eq .chezmoi.os "darwin" -}}
 
 general:
   # Commands to run when the WM starts (e.g. launch a bar or script).
@@ -128,6 +143,18 @@ binding_modes:
 
 keybindings:
   # ---------------------------------------------------------------------------
+{{- if $darwin }}
+  # Focus window            alt + control + arrows   (macOS: see header)
+  # ---------------------------------------------------------------------------
+  - commands: ["focus --direction left"]
+    bindings: ["alt+control+left"]
+  - commands: ["focus --direction down"]
+    bindings: ["alt+control+down"]
+  - commands: ["focus --direction up"]
+    bindings: ["alt+control+up"]
+  - commands: ["focus --direction right"]
+    bindings: ["alt+control+right"]
+{{- else }}
   # Focus window            alt + arrows
   # ---------------------------------------------------------------------------
   - commands: ["focus --direction left"]
@@ -138,18 +165,19 @@ keybindings:
     bindings: ["alt+up"]
   - commands: ["focus --direction right"]
     bindings: ["alt+right"]
+{{- end }}
 
   # ---------------------------------------------------------------------------
   # Move window             alt + shift + h/j/k/l
   # ---------------------------------------------------------------------------
   - commands: ["move --direction left"]
-    bindings: ["alt+shift+h", "alt+shift+left"]
+    bindings: ["alt+shift+h"{{ if not $darwin }}, "alt+shift+left"{{ end }}]
   - commands: ["move --direction down"]
-    bindings: ["alt+shift+j", "alt+shift+down"]
+    bindings: ["alt+shift+j"{{ if not $darwin }}, "alt+shift+down"{{ end }}]
   - commands: ["move --direction up"]
-    bindings: ["alt+shift+k", "alt+shift+up"]
+    bindings: ["alt+shift+k"{{ if not $darwin }}, "alt+shift+up"{{ end }}]
   - commands: ["move --direction right"]
-    bindings: ["alt+shift+l", "alt+shift+right"]
+    bindings: ["alt+shift+l"{{ if not $darwin }}, "alt+shift+right"{{ end }}]
 
   # ---------------------------------------------------------------------------
   # Resize window           alt + control + h/j/k/l   (mirrors resize mode)
