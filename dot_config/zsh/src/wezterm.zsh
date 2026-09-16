@@ -1,8 +1,6 @@
 # shellcheck shell=bash
 # shellcheck disable=SC1091
 
-# Callers must use `_check_gum_cmd || return 1`: on its own the call reports
-# the problem but does not stop the caller from running on without gum.
 source "$ZDOTDIR/src/functions.zsh"
 
 # The appearance values wezterm_config tunes, as
@@ -20,8 +18,6 @@ _WEZTERM_SETTINGS=(
   "macosWindowBackgroundBlur|macOS background blur radius|0|100|5|5"
 )
 
-# Print field <index> of the row for <key>, or return non-zero when no such key
-# is configured. Fields are 1-based and follow the layout commented above.
 function _wezterm_field() {
   local key="$1" index="$2" row
   local -a fields
@@ -37,8 +33,6 @@ function _wezterm_field() {
   return 1
 }
 
-# Resolved the same way dot_zshenv sets it, so this agrees with the path
-# chezmoi_tmpl.lua.tmpl reads at apply time.
 function _wezterm_state_file() {
   print -r -- "${XDG_STATE_HOME:-$HOME/.local/state}/wezterm/appearance.json"
 }
@@ -55,8 +49,6 @@ function _wezterm_get() {
     fi
   fi
 
-  # No file, or the file has nothing to say about this key: fall back to the
-  # same default the template would have used.
   _wezterm_field "$key" 6
 }
 
@@ -68,8 +60,6 @@ function _wezterm_set() {
   mkdir -p "$dir" || return 1
   tmp=$(mktemp "$dir/.appearance.XXXXXX") || return 1
 
-  # Rewritten from whatever is already on disk, so keys this function does not
-  # know about survive a write.
   if [[ -r "$file" ]]; then
     jq --arg k "$key" --argjson v "$value" '.[$k] = $v' "$file" > "$tmp"
   else
@@ -83,18 +73,12 @@ function _wezterm_set() {
     return 1
   fi
 
-  # Renamed into place rather than redirected over: a half-written state file
-  # would make every later chezmoi apply fail in fromJson, which would be a
-  # confusing way to discover that the disk filled up.
   mv -f "$tmp" "$file"
 }
 
 function _wezterm_apply() {
   local config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 
-  # Named targets rather than a bare `chezmoi apply`, so nudging the opacity
-  # cannot quietly apply unrelated pending changes from the rest of the source
-  # state. chezmoi_tmpl.lua carries the values; wezterm.lua reads them.
   chezmoi apply \
     "$config_home/wezterm/chezmoi_tmpl.lua" \
     "$config_home/wezterm/wezterm.lua"
@@ -106,15 +90,8 @@ function _wezterm_set_and_apply() {
 
   _wezterm_set "$key" "$value" || return 1
 
-  # WezTerm watches its config file and reloads on change, so the apply is the
-  # whole preview mechanism - there is nothing to signal or restart.
   _wezterm_apply && return 0
 
-  # The write landed but the render did not, so the state file now holds a value
-  # the user never got to see, let alone keep - and the next unrelated `chezmoi
-  # apply` would commit it. Put the old value back and re-render. When the key
-  # was absent, `previous` is the template's own default, so the file gains a
-  # key but renders exactly as it did before.
   _wezterm_set "$key" "$previous" && _wezterm_apply > /dev/null 2>&1
   echo "wezterm_config: apply failed, restored $key=$previous" >&2
   return 1
@@ -123,18 +100,14 @@ function _wezterm_set_and_apply() {
 function _wezterm_valid() {
   local value="$1" min="$2" max="$3"
 
-  # Unquoted <-> is zsh's "any run of digits" pattern, which also rejects the
-  # negatives and decimals WezTerm would not take here.
   [[ "$value" == <-> ]] || return 1
   ((value >= min && value <= max))
 }
 
-# Step one value up and down, applying as you go so the window changes under
-# you. Nothing is final until `keep`: both `revert` and escaping put the
-# original back.
 function _wezterm_tune() {
-  local key="$1"
+  local key="$1" from_menu="${2:-}"
   local label min max step original current applied action input
+  local -a actions
 
   label=$(_wezterm_field "$key" 2) || return 1
   min=$(_wezterm_field "$key" 3)
@@ -146,16 +119,19 @@ function _wezterm_tune() {
   applied="$original"
 
   while true; do
-    action=$(printf '%s\n' \
-      "up       +${step}|up" \
-      "down     -${step}|down" \
-      "set      type an exact value|set" \
-      "keep     save ${current} and exit|keep" \
-      "revert   restore ${original} and exit|revert" \
+    actions=(
+      "up       +${step}|up"
+      "down     -${step}|down"
+      "set      type an exact value|set"
+      "keep     save ${current} and exit|keep"
+      "revert   restore ${original} and exit|revert"
+    )
+    [[ -n "$from_menu" ]] && actions+=("back     save ${current} and pick another setting|back")
+
+    action=$(printf '%s\n' "${actions[@]}" \
       | gum choose --label-delimiter="|" \
-        --height=7 \
+        --height=$((${#actions} + 2)) \
         --header="${label}: ${current}  (was ${original}, range ${min}-${max})") || {
-      # Escaping is a revert, not a save: everything before `keep` was a preview.
       [[ "$applied" == "$original" ]] || _wezterm_set_and_apply "$key" "$original"
       return 1
     }
@@ -180,6 +156,10 @@ function _wezterm_tune() {
         gum log --level info "reverted" "$label" "$original"
         return 0
         ;;
+      back)
+        gum log --level info "saved" "$label" "$current"
+        return 2
+        ;;
     esac
 
     # Only when it actually moved: hitting up at the ceiling should not cost a
@@ -197,11 +177,6 @@ function _wezterm_tune() {
   done
 }
 
-# wezterm_config [<setting> [<value>]]
-#
-#   wezterm_config                              pick a setting, then tune it live
-#   wezterm_config windowBackgroundOpacity      tune that one live
-#   wezterm_config windowBackgroundOpacity 85   set it and apply, no prompts
 function wezterm_config() {
   _check_gum_cmd || return 1
 
@@ -239,22 +214,27 @@ function wezterm_config() {
     return 0
   fi
 
-  local row k label choice
+  local row k label choice rc
   local -a menu
 
-  # Each row carries its current value, so the menu doubles as a summary of
-  # where the appearance currently stands.
-  for row in "${_WEZTERM_SETTINGS[@]}"; do
-    k="${row%%|*}"
-    label=$(_wezterm_field "$k" 2)
-    menu+=("$(printf '%-30s %s|%s' "$label" "$(_wezterm_get "$k")" "$k")")
+  while true; do
+    menu=()
+    for row in "${_WEZTERM_SETTINGS[@]}"; do
+      k="${row%%|*}"
+      label=$(_wezterm_field "$k" 2)
+      menu+=("$(printf '%-26s %-30s %s' "$k" "$label" "$(_wezterm_get "$k")")")
+    done
+
+    choice=$(printf '%s\n' "${menu[@]}" \
+      | gum filter --header="Which WezTerm appearance value?" \
+        --placeholder="type to filter") || return
+    [[ -n "$choice" ]] || return
+
+    _wezterm_tune "${choice%% *}" menu
+    rc=$?
+
+    # Anything but "back to the menu" is this function's own result: a saved
+    # value, a revert, or a picker that was escaped out of.
+    ((rc == 2)) || return "$rc"
   done
-
-  choice=$(printf '%s\n' "${menu[@]}" \
-    | gum choose --label-delimiter="|" \
-      --height=6 \
-      --header="Which WezTerm appearance value?") || return
-  [[ -n "$choice" ]] || return
-
-  _wezterm_tune "$choice"
 }
