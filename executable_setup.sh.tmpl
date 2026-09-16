@@ -6,6 +6,17 @@ ASDF_VERSION="v0.12.0"
 YARN_VERSION="4.12.0"
 COREPACK_VERSION="0.33.0"
 
+# Installed for every nodejs version in .tool-versions. Unpinned on purpose, so
+# a rerun upgrades them the way `brew upgrade` does the Brewfile; pin one as
+# `name@version` if it needs holding back. corepack is not listed because
+# install_yarn_v4 installs it at COREPACK_VERSION.
+NPM_GLOBAL_PACKAGES=(
+  '@mermaid-js/mermaid-cli'
+  'bash-language-server'
+  'pyright'
+  'typescript-language-server'
+)
+
 function read_tool_versions() {
   sed -E 's/ *#.*$//' .tool-versions \
     | # Remove comments
@@ -128,6 +139,17 @@ function install_yarn_v4() {
   foreach_tool_version 'nodejs' "${cmd}"
 }
 
+function install_npm_global_packages() {
+  # The command runs in a fresh `bash -c`, so the array has to be flattened
+  # into it; %q keeps a spec like `foo@>=1.2` from being read as a redirect.
+  local cmd
+  cmd="
+    npm install -g $(printf '%q ' "${NPM_GLOBAL_PACKAGES[@]}")
+    asdf reshim nodejs
+  "
+  foreach_tool_version 'nodejs' "${cmd}"
+}
+
 # gum when it is available, the hand-rolled ANSI path when it is not. The
 # fallback is not optional here: this script is what installs gum, so the
 # earliest sections necessarily run before it exists.
@@ -181,6 +203,9 @@ function setup_macos() {
 
   section 'Installing Yarn v4'
   install_yarn_v4
+
+  section 'Installing npm global packages'
+  install_npm_global_packages
 }
 
 function setup_debian() {
@@ -195,6 +220,9 @@ function setup_debian() {
 
   section 'Installing Yarn v4'
   install_yarn_v4
+
+  section 'Installing npm global packages'
+  install_npm_global_packages
 }
 
 function is_wsl() {
