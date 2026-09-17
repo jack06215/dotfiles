@@ -1,6 +1,15 @@
+{{- /*
+  One zsh function per `packages.cli` subcommand, generated on `chezmoi apply`
+  from `python -m packages.cli --list`, so adding a tool to `_COMMANDS` in the
+  monorepo never needs an edit here - just re-apply. Machines without the
+  monorepo or its venv get `_pycli` and no wrappers.
+*/ -}}
+{{- $repo := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo" -}}
+{{- $venv := .pypoetry.zshPythonDir -}}
+{{- $python := joinPath $venv "bin/python" -}}
 function _pycli() {
-  local repo="$HOME/workspace/jack06215/monorepo"
-  local venv="{{ .pypoetry.zshPythonDir }}"
+  local repo="{{ $repo }}"
+  local venv="{{ $venv }}"
 
   if [[ ! -d "$repo" ]]; then
     print -u2 "_cli: repo not found: $repo"
@@ -18,16 +27,15 @@ function _pycli() {
       && python -m packages.cli "$@"
   )
 }
-
-function hello_pycli() { _pycli hello_world "$@"; }
-function docx2md() { _pycli docx2md "$@"; }
-function aws_list_assumable_role() { _pycli list_assumable_role "$@"; }
-function aws_list_role_policy() { _pycli list_role_policy "$@"; }
-function jira_ticket() { _pycli jira_ticket "$@"; }
-function jsonl_unescape() { _pycli jsonl_unescape "$@"; }
-function kibana_response_stringify() { _pycli kibana_response_stringify "$@"; }
-function gh_pr_review() { _pycli gh_pr_review "$@"; }
-function boolsearch() { _pycli boolsearch "$@"; }
-function md2docx() { _pycli md2docx "$@"; }
-function lcg_github_create_pull_request() { _pycli lcg_github_create_pull_request "$@"; }
-function lcg_say_hello_world() { _pycli lcg_say_hello_world "$@"; }
+{{- if and $venv (stat (joinPath $repo "packages/cli.py")) (stat $python) }}
+{{- /* Paths go in as positional args so sh never re-parses them. */}}
+{{-   $names := output "sh" "-c" "cd \"$1\" && exec \"$2\" -m packages.cli --list" "sh" $repo $python }}
+{{-   "\n" }}
+{{- /* The names are pasted into shell source: skip anything that isn't a
+       plain function name (test_cli.py asserts none are). */}}
+{{-   range $names | trim | splitList "\n" }}
+{{-     if regexMatch "^[a-z][a-z0-9_]*$" . }}
+function {{ . }}() { _pycli {{ . }} "$@"; }
+{{-     end }}
+{{-   end }}
+{{- end }}
