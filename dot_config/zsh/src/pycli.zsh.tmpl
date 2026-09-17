@@ -1,23 +1,26 @@
 {{- /*
-  One zsh function per `packages.cli` subcommand, generated on `chezmoi apply`
-  from `python -m packages.cli --list`, so adding a tool to `_COMMANDS` in the
+  `pycli` runs `packages.cli`: bare, it lists every subcommand with its
+  description; `pycli <subcommand> ...` runs one.
+
+  Plus one zsh function per subcommand, generated on `chezmoi apply` from
+  `python -m packages.cli --list`, so adding a tool to `_COMMANDS` in the
   monorepo never needs an edit here - just re-apply. Machines without the
-  monorepo or its venv get `_pycli` and no wrappers.
+  monorepo or its venv get `pycli` and no wrappers.
 */ -}}
 {{- $repo := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo" -}}
 {{- $venv := .pypoetry.zshPythonDir -}}
 {{- $python := joinPath $venv "bin/python" -}}
-function _pycli() {
+function pycli() {
   local repo="{{ $repo }}"
   local venv="{{ $venv }}"
 
   if [[ ! -d "$repo" ]]; then
-    print -u2 "_cli: repo not found: $repo"
+    print -u2 "pycli: repo not found: $repo"
     return 1
   fi
   if [[ ! -f "$venv/bin/activate" ]]; then
-    print -u2 "_cli: venv activate script not found: $venv/bin/activate"
-    print -u2 "_cli: run 'poetry install' or check .pypoetry.zshPythonDir in chezmoi"
+    print -u2 "pycli: venv activate script not found: $venv/bin/activate"
+    print -u2 "pycli: run 'poetry install' or check .pypoetry.zshPythonDir in chezmoi"
     return 1
   fi
 
@@ -35,7 +38,7 @@ function _pycli() {
        plain function name (test_cli.py asserts none are). */}}
 {{-   range $names | trim | splitList "\n" }}
 {{-     if regexMatch "^[a-z][a-z0-9_]*$" . }}
-function {{ . }}() { _pycli {{ . }} "$@"; }
+function {{ . }}() { pycli {{ . }} "$@"; }
 {{-     end }}
 {{-   end }}
 {{- end }}
