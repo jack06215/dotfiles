@@ -4,7 +4,7 @@ alias tree='eza --tree'
 alias cls='clear'
 alias lg='lazygit'
 alias zshrc_edit='vim "$ZDOTDIR/.zshrc"'
-alias zshrc_reload='source "$ZDOTDIR/.zshrc"'
+alias zshrc_reload='exec zsh'
 
 alias nlof="$ZDOTDIR/src/myscripts/fzf-listoldfiles"
 alias nzo="$ZDOTDIR/src/myscripts/zoxide-openfiles-nvim"
