@@ -1,0 +1,31 @@
+{{- /*
+  carapace completion specs for `pycli` and the per-tool wrappers that
+  dot_config/zsh/src/pycli.zsh.tmpl defines, written to
+  ~/.config/carapace/specs by the monorepo's packages/cli_carapace.py from the
+  tools' own argparse parsers. The specs are not in this repo: like the
+  wrappers, they follow the monorepo's `_COMMANDS` on every apply.
+
+  Building every parser imports every tool (~1.4s), so this template renders
+  only the generator's --fingerprint (~30ms, a hash of every .py file under the
+  monorepo's packages/, plus poetry.lock). chezmoi reruns a run_onchange_ script only
+  when its rendered text changes, so the specs are rewritten only after a tool
+  (or a dependency) does. To rewrite them regardless, run the two commands at
+  the bottom by hand.
+
+  Same guard as pycli.zsh.tmpl: without the monorepo or its venv this renders
+  empty, and chezmoi skips an empty script.
+*/ -}}
+{{- $repo := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo" -}}
+{{- $venv := .pypoetry.zshPythonDir -}}
+{{- $python := joinPath $venv "bin/python" -}}
+{{- if and $venv (stat (joinPath $repo "packages/cli_carapace.py")) (stat $python) -}}
+#!/bin/bash
+set -euo pipefail
+
+{{/* Paths go in as positional args so sh never re-parses them. */ -}}
+# monorepo fingerprint: {{ output "sh" "-c" "cd \"$1\" && exec \"$2\" -m packages.cli_carapace --fingerprint" "sh" $repo $python | trim }}
+
+cd "{{ $repo }}"
+"{{ $python }}" -m packages.cli_carapace \
+  --out "${XDG_CONFIG_HOME:-$HOME/.config}/carapace/specs"
+{{ end -}}

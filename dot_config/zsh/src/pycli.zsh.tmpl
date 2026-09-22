@@ -6,6 +6,10 @@
   `python -m packages.cli --list`, so adding a tool to `_COMMANDS` in the
   monorepo never needs an edit here - just re-apply. Machines without the
   monorepo or its venv get `pycli` and no wrappers.
+
+  Tab completion for `pycli` and every wrapper comes from carapace specs that
+  .chezmoiscripts/run_onchange_after_pycli-carapace-specs.sh.tmpl generates
+  from the same tools on apply.
 */ -}}
 {{- $repo := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo" -}}
 {{- $venv := .pypoetry.zshPythonDir -}}
