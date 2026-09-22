@@ -9,17 +9,13 @@ export XDG_BIN_HOME="$XDG_PREFIX_HOME/bin"
 export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
 
 # Built-in Python environment
-_py_version="3.13"
+_py_version="3.14"
 export BUILTIN_PYTHON_BIN_DIR="/opt/homebrew/opt/python@${_py_version}/bin/python${_py_version}"
 export BUILTIN_PIP_BIN_DIR="/opt/homebrew/opt/python@${_py_version}/bin/pip${_py_version}"
 
 GPG_TTY=$(tty)
 export GPG_TTY
 
-# Editor. Neither was exported before, so `git var GIT_EDITOR` (gcm, the
-# rebase conflict resolver) and `${EDITOR:-vi}` in ls_fzf_open both fell
-# through to a bare, unconfigured `vi`. vim reads $XDG_CONFIG_HOME/vim/vimrc.
-# nvim stays the IDE - vimfind/vimrecent/fzf-listprojects still call it.
 export EDITOR=vim
 export VISUAL=vim
 
@@ -51,11 +47,6 @@ export KDEHOME="$XDG_CONFIG_HOME/kde"
 export LEIN_HOME="$XDG_DATA_HOME/lein"
 export LYNX_CFG="$XDG_CONFIG_HOME/lynx/lynx.cfg"
 export LYNX_LSS="$XDG_CONFIG_HOME/lynx/lynx.lss"
-# LYNX_USERAGENT used to claim Chrome 21 on OS X 10.8 - a 2012 string that is
-# a rarer fingerprint than lynx's own, and that talks sites into serving the
-# JS-heavy layout a text browser cannot render. Left unset so lynx identifies
-# honestly and gets the lightweight page; set it per-invocation
-# (`lynx -useragent=...`) on the rare site that blocks text browsers outright.
 export MAMBA_ROOT_PREFIX="$XDG_DATA_HOME/micromamba"
 export MPLAYER_HOME="$XDG_CONFIG_HOME/mplayer"
 export NAVI_CONFIG="$XDG_CONFIG_HOME/navi/config.yaml"
