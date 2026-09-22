@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://carapace.sh/schemas/command.json
+#
+# Completion for s3_fetch_blob (dot_config/zsh/src/aws.zsh). Carapace only
+# loads specs named *.yaml - a .yml file in this directory is silently ignored.
+#
+# The $(...) macros run under sh with the command line so far in the
+# environment: C_VALUE is the word being completed, C_FLAG_<NAME> each flag's
+# value. Two rules make them easy to break:
+#   - carapace expands ${...} itself before sh runs, so stick to plain $var
+#     (or $$ for a literal $); a nested ${...} fails with "bad substitution".
+#   - a macro has to be one line. The >- blocks fold their lines together with
+#     spaces, so every statement needs its own ";".
+# Each macro keeps aws's exit status instead of piping aws straight into awk,
+# so an expired SSO token shows up as a red message in the completion list
+# rather than as an empty one. The exception is `aws s3 ls` exiting 1, which
+# only means nothing is under that prefix; real failures exit 253-255.
+#
+# Debug with: carapace s3_fetch_blob export s3_fetch_blob -p PROFILE s3://
+name: s3_fetch_blob
+description: Print an S3 object to stdout
+flags:
+  -p, --profile=: AWS profile (default AWS_PROFILE)
+  -b, --bucket=: S3 bucket, when KEY is not an s3:// URL
+  -h, --help: show usage
+completion:
+  flag:
+    profile: ["$(aws configure list-profiles)"]
+    bucket:
+      - >-
+        $(if [ -n "$C_FLAG_PROFILE" ]; then set -- --profile "$C_FLAG_PROFILE"; fi;
+        out=$(aws s3 ls "$@") || exit;
+        printf '%s\n' "$out" | awk '{ print $3 }')
+  positional:
+    # One prefix level per Tab, like path completion. With -b the word is a key
+    # in that bucket; without it the word is an s3:// URL, which completes the
+    # bucket names first. Values are full words because carapace drops any that
+    # do not start with what was typed, and $nospace(/) stops Tab adding a
+    # space after a prefix so the next Tab can descend into it.
+    - - >-
+        $(if [ -n "$C_FLAG_PROFILE" ]; then set -- --profile "$C_FLAG_PROFILE"; fi;
+        bucket=$C_FLAG_BUCKET; key=$C_VALUE; url=;
+        if [ -z "$bucket" ]; then
+        case "$C_VALUE" in
+        s3://*/*)
+        bucket=$(printf '%s' "$C_VALUE" | sed 's|^s3://||; s|/.*||');
+        key=$(printf '%s' "$C_VALUE" | sed 's|^s3://[^/]*/||');
+        url="s3://$bucket/";;
+        *)
+        out=$(aws s3 ls "$@") || exit;
+        printf '%s\n' "$out" | awk '{ print "s3://" $3 "/\tbucket" }';
+        exit 0;;
+        esac;
+        fi;
+        dir=$(printf '%s' "$key" | sed 's|[^/]*$||');
+        out=$(aws s3 ls "$@" "s3://$bucket/$dir"); rc=$?;
+        [ $rc -eq 1 ] && exit 0;
+        [ $rc -eq 0 ] || exit $rc;
+        printf '%s\n' "$out" | awk -v d="$url$dir" '
+        $1 == "PRE" { sub(/^ *PRE /, ""); print d $0 "\tprefix"; next }
+        NF < 4 { next }
+        { size = $3; sub(/^[^ ]+ +[^ ]+ +[^ ]+ /, ""); print d $0 "\t" size " bytes" }')
+      - $nospace(/)

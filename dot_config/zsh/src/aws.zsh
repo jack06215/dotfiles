@@ -1,16 +1,3 @@
-# function aws_login() {
-#   local profile="$1"
-#   if [[ -z "$profile" ]]; then
-#     echo "Usage: aws_login <profile>" >&2
-#     return 2
-#   fi
-#   if ! command -v aws-azure-login >/dev/null 2>&1; then
-#     echo "aws-azure-login not found" >&2
-#     return 127
-#   fi
-#   az2aws --profile "$profile" --no-prompt && export AWS_PROFILE="$profile"
-# }
-
 source "$ZDOTDIR/src/functions.zsh"
 
 # Print the profile to act on: <profile> when one is passed in, otherwise one
@@ -75,7 +62,7 @@ function aws_get_caller_identity() {
 # The typed path decides what happens next: a prefix opens the fzf list of
 # everything under it, while a path that names an object is fetched straight
 # away. Every step is a prompt. Picking the key from a live listing means it is
-# byte-exact, so the NFC/NFD retry the old fetch-blob script needed is gone.
+# byte-exact, so it needs none of the NFC/NFD retry that s3_fetch_blob does.
 function aws_fetch_blob() {
   local to_clipboard=0
   while (($#)); do
@@ -190,4 +177,98 @@ function aws_fetch_blob() {
   fi
 
   aws s3 cp --profile "$profile" "s3://$bucket/$key" -
+}
+
+function s3_fetch_blob() {
+  local usage="Usage: s3_fetch_blob [-p PROFILE] -b BUCKET KEY | s3://BUCKET/KEY"
+  local profile="" bucket="" key=""
+
+  while (($#)); do
+    case "$1" in
+      -p | --profile)
+        if (($# < 2)); then
+          echo "s3_fetch_blob: $1 needs a profile" >&2
+          return 2
+        fi
+        profile="$2"
+        shift 2
+        ;;
+      -b | --bucket)
+        if (($# < 2)); then
+          echo "s3_fetch_blob: $1 needs a bucket" >&2
+          return 2
+        fi
+        bucket="$2"
+        shift 2
+        ;;
+      --profile=*)
+        profile="${1#*=}"
+        shift
+        ;;
+      --bucket=*)
+        bucket="${1#*=}"
+        shift
+        ;;
+      -h | --help)
+        echo "$usage" >&2
+        return 0
+        ;;
+      -*)
+        echo "s3_fetch_blob: unknown option $1" >&2
+        echo "$usage" >&2
+        return 2
+        ;;
+      *)
+        if [[ -n "$key" ]]; then
+          echo "s3_fetch_blob: takes one key, got '$key' and '$1'" >&2
+          return 2
+        fi
+        key="$1"
+        shift
+        ;;
+    esac
+  done
+
+  # A full URL names its own bucket, overriding -b.
+  if [[ "$key" == s3://* ]]; then
+    key="${key#s3://}"
+    bucket="${key%%/*}"
+    [[ "$key" == */* ]] && key="${key#*/}" || key=""
+  fi
+
+  if [[ -z "$key" ]]; then
+    echo "$usage" >&2
+    return 2
+  fi
+
+  if [[ -z "$bucket" ]]; then
+    echo "s3_fetch_blob: no bucket - pass -b BUCKET or an s3://BUCKET/KEY URL" >&2
+    return 2
+  fi
+
+  profile=$(_aws_choose_profile "${profile:-$AWS_PROFILE}" \
+    "Fetch from which AWS profile?") || return $?
+
+  aws s3 cp --profile "$profile" "s3://$bucket/$key" - && return 0
+
+  # myscripts/ is only on PATH in an interactive shell, not when this runs
+  # through zshfn, so fall back to where chezmoi installs it. (Not
+  # ${commands[normalize-nfd]}: shfmt rewrites that subscript as arithmetic.)
+  local normalize_nfd
+  normalize_nfd=$(command -v normalize-nfd) \
+    || normalize_nfd="$ZDOTDIR/src/myscripts/normalize-nfd"
+  if [[ ! -x "$normalize_nfd" ]]; then
+    echo "s3_fetch_blob: normalize-nfd not found, so no NFD retry" >&2
+    return 1
+  fi
+
+  local nfd_key
+  nfd_key=$("$normalize_nfd" "$key") || return 1
+
+  # An ASCII key (or one already in NFD) normalizes to itself, so there is
+  # nothing different to try.
+  [[ "$nfd_key" != "$key" ]] || return 1
+
+  echo "s3_fetch_blob: retrying with the key NFD-normalized" >&2
+  aws s3 cp --profile "$profile" "s3://$bucket/$nfd_key" -
 }

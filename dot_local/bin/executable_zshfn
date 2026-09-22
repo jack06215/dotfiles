@@ -19,6 +19,7 @@
 # mode below is checked explicitly instead.
 
 typeset -A funcs=(
+  s3_fetch_blob aws.zsh
   jqc jq.zsh
   jqf jq.zsh
   tk tock.zsh
