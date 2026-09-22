@@ -404,10 +404,15 @@ user_pref("onebar.hide-navigation-buttons", false);
 
 user_pref("ui.key.menuAccessKey", 96);  // Disable Alt key to show top menu by remapping to "`"
 
-/* YouTube fixes */
-user_pref("network.http.http3.enable", false);
-user_pref("network.http.http3.receBufferSize", 157286400);
-user_pref("media.mediasource.eviction_threshold.video", 157286400);
+/* Video streaming */
+// Buffer limit for YouTube/Twitch/Netflix streams. The 150 MiB default is only ~30-50 s of 4K.
+// This is a maximum, not a reservation: memory is only used while a video is buffering.
+user_pref("media.mediasource.eviction_threshold.video", 419430400); // 400 MiB
+
+/* Picture-in-Picture */
+user_pref("media.videocontrols.picture-in-picture.enable-when-switching-tabs.enabled", true); // auto-PiP when you switch away from a playing tab
+user_pref("media.videocontrols.picture-in-picture.playback-speed.enabled", true);             // speed control in the PiP window
+user_pref("media.videocontrols.picture-in-picture.respect-disablePictureInPicture", false);   // allow PiP on sites that block it
 
 /* Keep download button visible  */
 user_pref("browser.download.autohideButton", false);
