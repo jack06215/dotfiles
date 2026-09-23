@@ -58,6 +58,14 @@ function formatDate(date, format = 'YYYY/MM/DD hh:mm:ss') {
     .replace('ss',   padZero(date.getSeconds()));
 }
 
+// Local time as ISO 8601 with UTC offset, e.g. 2026-09-23T17:42:10+09:00
+function isoWithOffset(date) {
+  const offset = -date.getTimezoneOffset();
+  const sign   = offset >= 0 ? '+' : '-';
+  const abs    = Math.abs(offset);
+  return `${formatDate(date, 'YYYY-MM-DDThh:mm:ss')}${sign}${padZero(Math.floor(abs / 60))}:${padZero(abs % 60)}`;
+}
+
 function tabOpenBackground(url) {
   return api.RUNTIME('openLink', { tab: { tabbed: true, active: false }, url });
 }
@@ -604,6 +612,115 @@ siteMapkey(/youtube\.com/, () => {
     () => { location.href = 'https://www.youtube.com/playlist?list=WL'; });
 });
 
+// Monkeytype — copy the result screen as a YAML document. Each copy starts
+// with `---` and a timestamp, so pastes can be appended to one log file.
+// Selectors follow monkeytype's pages/test-result.html and test/result.ts.
+// The wpm chart is a <canvas>, so per-word burst stands in for it.
+const YAML_PLAIN    = /^[A-Za-z_][\w./-]*(?: [\w./-]+)*$/;
+const YAML_RESERVED = /^(?:y|n|yes|no|true|false|on|off|null)$/i;
+
+// Plain scalar when safe, otherwise double-quoted (a JSON string is valid YAML)
+function yamlStr(value) {
+  const str = String(value);
+  return YAML_PLAIN.test(str) && !YAML_RESERVED.test(str) ? str : JSON.stringify(str);
+}
+
+function matchNumber(text, re) {
+  const m = String(text).match(re);
+  return m ? Number(m[1]) : null;
+}
+
+function monkeytypeResultYaml() {
+  const result = document.querySelector('#result');
+  if (!result || result.classList.contains('hidden')) return null;
+
+  const bottom = (group) => result.querySelector(`.group.${group} > .bottom`);
+  const text   = (group) => bottom(group)?.textContent.trim() ?? '';
+  // Hover labels hold the unrounded values, e.g. "39.12 wpm", "94.12%\n523 correct\n33 incorrect"
+  const hover  = (group) => bottom(group)?.getAttribute('aria-label') ?? '';
+  // "test type" and "other" are text lines separated by <br>
+  const lines  = (group) => [...(bottom(group)?.childNodes ?? [])]
+    .filter((node) => node.nodeType === Node.TEXT_NODE)
+    .map((node) => node.textContent.trim())
+    .filter(Boolean);
+  const speed  = (group) =>
+    matchNumber(hover(group), /([\d.]+) wpm/) ?? matchNumber(text(group), /([\d.]+)/);
+  const seconds = (str) => (str.includes(':')
+    ? str.split(':').reduce((total, part) => total * 60 + Number(part), 0)
+    : matchNumber(str, /([\d.]+)/));
+
+  const [test = '', ...options] = lines('testType');
+  const language = test.startsWith('custom') ? null : options.shift();
+  const chars    = text('key').split('/').map(Number);
+  const keys     = [/(\d+) correct/, /(\d+) incorrect/].map((re) => matchNumber(hover('acc'), re));
+  const timeText = result.querySelector('.group.time .text')?.textContent.trim() ?? '';
+  const crown    = result.querySelector('.group.wpm .crown');
+  const pb       = !!crown && !['hidden', 'ineligible', 'error', 'warning']
+    .some((cls) => crown.classList.contains(cls));
+  const other    = result.querySelector('.group.info')?.classList.contains('hidden') ? [] : lines('info');
+
+  const out   = ['---', 'monkeytype:'];
+  const field = (key, value) => {
+    if (value !== null && value !== undefined && !Number.isNaN(value)) out.push(`  ${key}: ${value}`);
+  };
+
+  field('date', isoWithOffset(new Date()));
+  field('test', yamlStr(test));
+  if (language) field('language', yamlStr(language));
+  if (options.length) field('options', `[${options.map(yamlStr).join(', ')}]`);
+  field('wpm', speed('wpm'));
+  field('raw', speed('raw'));
+  field('acc', matchNumber(hover('acc'), /^([\d.]+)%/) ?? matchNumber(text('acc'), /([\d.]+)/));
+  if (keys.every((n) => n !== null)) field('keys', `{correct: ${keys[0]}, incorrect: ${keys[1]}}`);
+  if (chars.length === 4 && chars.every(Number.isFinite)) {
+    field('chars', `{correct: ${chars[0]}, incorrect: ${chars[1]}, extra: ${chars[2]}, missed: ${chars[3]}}`);
+  }
+  field('consistency', matchNumber(hover('consistency'), /^([\d.]+)% \(/) ?? matchNumber(text('consistency'), /([\d.]+)/));
+  field('key_consistency', matchNumber(hover('consistency'), /([\d.]+)% key/));
+  field('time', matchNumber(hover('time'), /^([\d.]+)s \(/) ?? seconds(timeText));
+  field('afk_pct', matchNumber(hover('time'), /afk ([\d.]+)%/));
+  field('pb', pb);
+  if (other.length) field('other', `[${other.map(yamlStr).join(', ')}]`);
+
+  // Input history: `burst` = word wpm, `input` = what was typed before fixing
+  // typos, letter.corrected = a typo that was fixed, .error = still wrong
+  const words = [...result.querySelectorAll('#resultWordsHistory .words .word')]
+    .filter((el) => el.getAttribute('input'));
+  if (words.length) out.push('  words:');
+  for (const el of words) {
+    const word = [...el.querySelectorAll('letter')]
+      .filter((letter) => !letter.classList.contains('extra'))
+      .map((letter) => letter.textContent)
+      .join('');
+    const typed = el.getAttribute('input');
+    const burst = Number(el.getAttribute('burst'));
+    const fixed = el.querySelectorAll('letter.corrected').length;
+
+    const fields = [`word: ${yamlStr(word)}`];
+    if (el.hasAttribute('burst')) fields.push(`wpm: ${burst >= 1000 ? '.inf' : Math.round(burst)}`);
+    if (typed !== word) fields.push(`typed: ${yamlStr(typed)}`);
+    if (fixed > 0) fields.push(`fixed: ${fixed}`);
+    if (el.classList.contains('error')) fields.push('error: true');
+    out.push(`    - {${fields.join(', ')}}`);
+  }
+
+  return { yaml: `${out.join('\n')}\n`, words: words.length };
+}
+
+siteMapkey(/monkeytype\.com/, () => {
+  api.mapkey('yr', '#7Copy Monkeytype result as YAML', () => {
+    const copied = monkeytypeResultYaml();
+    if (!copied) {
+      api.Front.showBanner('No Monkeytype result on screen');
+      return;
+    }
+    api.Clipboard.write(copied.yaml);
+    api.Front.showBanner(copied.words > 0
+      ? `Copied Monkeytype result (${copied.words} words)`
+      : 'Copied Monkeytype result (open input history to include words)');
+  });
+});
+
 // Disable bindings on sites with their own keyboard UX
 unmapIfMatch(
   /^https?:\/\/(mail\.google\.com|twitter\.com|feedly\.com|www\.figma\.com\/file)/,
@@ -626,6 +743,7 @@ const siteHelps = [
   { pattern: /b\.hatena\.ne\.jp/, help: ['[[ / ]]: Move between dates'] },
   { pattern: /github\.com/,      help: ['ga: Assigned PRs', 'gr: Review-requested PRs', 'gm: My open PRs', ';dw: Open DeepWiki'] },
   { pattern: /trotto\.io/,       help: [';gol: Open a Trotto Go Link'] },
+  { pattern: /monkeytype\.com/,  help: ['yr: Copy result as YAML'] },
   { pattern: /.*/,               help: 'No site-specific help available.' },
 ];
 
