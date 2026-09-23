@@ -4,8 +4,12 @@
 
   Plus one zsh function per subcommand, generated on `chezmoi apply` from
   `python -m packages.cli --list`, so adding a tool to `_COMMANDS` in the
-  monorepo never needs an edit here - just re-apply. Machines without the
-  monorepo or its venv get `pycli` and no wrappers.
+  monorepo never needs an edit here - just re-apply. `--list` prints only the
+  names: an entry's preset positional arguments (the rest of its `_COMMANDS`
+  list after the module path) are put in by packages.cli itself, so a wrapper
+  passes on just what was typed, and `<name> ...` runs exactly like
+  `pycli <name> ...`. Machines without the monorepo or its venv get `pycli`
+  and no wrappers.
 
   Tab completion for `pycli` and every wrapper comes from carapace specs that
   .chezmoiscripts/run_onchange_after_pycli-carapace-specs.sh.tmpl generates
