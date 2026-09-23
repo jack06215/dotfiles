@@ -35,6 +35,7 @@ DEFAULT_LOG = (
 RECURRING_WINDOW = 20  # results scanned for recurring problem words and key confusions
 PRACTICE_LIMIT = 20
 AFK_FLAG_PCT = 2
+ABORTED_MIN_KEYS = 25  # fewer keypresses than 5 standard words: nothing to analyze
 
 # ---------------------------------------------------------------------------
 # Reader for the YAML subset `yr` writes
@@ -81,6 +82,18 @@ class Result:
             return datetime.fromisoformat(str(self.data.get('date'))).timestamp()
         except ValueError:
             return float('-inf')
+
+    @property
+    def aborted(self) -> bool:
+        """Ended before there was anything to measure, e.g. min accuracy failing on the first typo."""
+        keys, chars = self.data.get('keys'), self.data.get('chars')
+        if isinstance(keys, dict):
+            keypresses = sum(number(keys.get(k)) or 0 for k in ('correct', 'incorrect'))
+        elif isinstance(chars, dict):
+            keypresses = sum(number(chars.get(k)) or 0 for k in ('correct', 'incorrect', 'extra'))
+        else:
+            keypresses = None
+        return (keypresses is not None and keypresses < ABORTED_MIN_KEYS) or 'too short' in self.flags
 
 
 def parse_scalar(text: str, line_no: int):
@@ -264,6 +277,7 @@ CATEGORIES = [
     'extra letter',
     'doubled letter',
     'early space',
+    'unfinished word',
 ]
 
 # ---------------------------------------------------------------------------
@@ -271,38 +285,49 @@ CATEGORIES = [
 # ---------------------------------------------------------------------------
 
 
-def align(target: str, typed: str) -> list[tuple[str, str, str]]:
-    """Optimal string alignment of target vs typed: (op, expected, typed) for each edit."""
+# A wrong key costs more than one extra or missing key but less than two, so a
+# slip that shifts the rest of the word ("/Mlti…" for "Multi…") reads as an
+# extra key plus a missing one rather than as two wrong keys.
+WRONG_KEY_COST = 1.5
+
+
+def osa_table(target: str, typed: str) -> list[list[float]]:
+    """Optimal string alignment cost of every target prefix against every typed prefix."""
     n, m = len(target), len(typed)
-    dist = [[0] * (m + 1) for _ in range(n + 1)]
+    dist = [[0.0] * (m + 1) for _ in range(n + 1)]
     for i in range(n + 1):
-        dist[i][0] = i
+        dist[i][0] = float(i)
     for j in range(m + 1):
-        dist[0][j] = j
+        dist[0][j] = float(j)
     for i in range(1, n + 1):
         for j in range(1, m + 1):
-            cost = 0 if target[i - 1] == typed[j - 1] else 1
+            cost = 0 if target[i - 1] == typed[j - 1] else WRONG_KEY_COST
             dist[i][j] = min(dist[i - 1][j] + 1, dist[i][j - 1] + 1, dist[i - 1][j - 1] + cost)
             if is_swap(target, typed, i, j):
                 dist[i][j] = min(dist[i][j], dist[i - 2][j - 2] + 1)
+    return dist
 
+
+def backtrace(dist, target: str, typed: str, i: int, j: int) -> list[tuple[str, str, str]]:
+    """Edits aligning target[:i] with typed[:j] as (op, expected, typed); for extra keys
+    `expected` is the next letter wanted."""
     ops = []
-    i, j = n, m
     while i > 0 or j > 0:
         if i and j and target[i - 1] == typed[j - 1] and dist[i][j] == dist[i - 1][j - 1]:
             i, j = i - 1, j - 1
         elif is_swap(target, typed, i, j) and dist[i][j] == dist[i - 2][j - 2] + 1:
             ops.append(('swap', target[i - 2:i], typed[j - 2:j]))
             i, j = i - 2, j - 2
-        elif i and j and dist[i][j] == dist[i - 1][j - 1] + 1:
+        elif i and j and dist[i][j] == dist[i - 1][j - 1] + WRONG_KEY_COST:
             ops.append(('sub', target[i - 1], typed[j - 1]))
             i, j = i - 1, j - 1
         elif i and dist[i][j] == dist[i - 1][j] + 1:
             ops.append(('missing', target[i - 1], ''))
             i -= 1
         else:
-            neighbours = {typed[j - 2] if j > 1 else '', target[i] if i < n else ''}
-            ops.append(('doubled' if typed[j - 1] in neighbours else 'extra', '', typed[j - 1]))
+            wanted = target[i] if i < len(target) else ''
+            doubled = typed[j - 1] in {typed[j - 2] if j > 1 else '', wanted}
+            ops.append(('doubled' if doubled else 'extra', wanted, typed[j - 1]))
             j -= 1
     return ops[::-1]
 
@@ -323,18 +348,46 @@ def classify(word: dict) -> list[tuple[str, str, str]]:
         return []
     typed = str(typed)
     # Monkeytype shows a space pressed before the word was finished as `_`
-    if typed.endswith('_') and not target.startswith(typed) and target.startswith(typed[:-1]):
-        return [('early space', f'space after "{typed[:-1]}"', '')]
+    early_space = typed.endswith('_') and len(typed) <= len(target) and target[len(typed) - 1] != '_'
+    if early_space:
+        typed = typed[:-1]
+
+    # `typed` holds the first key pressed at each position. After an extra or
+    # missing key the rest of the word is shifted until the typist notices and
+    # backspaces, and a word can be left unfinished, so the end of the target
+    # may have no first attempt at all. Let it go unmatched: always after an
+    # early space, as one "unfinished" event for words left wrong, and for
+    # corrected words at half the cost of a missing letter, so a shifted attempt
+    # ("sched_yieol") reads as one extra key while a wrong last key ("addresd")
+    # still reads as a wrong key.
+    dist = osa_table(target, typed)
+    n, m = len(target), len(typed)
+    left_wrong = bool(word.get('error'))
+    end = n
+    if n:
+        prefix = min(range(n), key=lambda k: (dist[k][m], abs(k - m)))
+        if early_space or dist[prefix][m] + (1 if left_wrong else 0.5) < dist[n][m]:
+            end = prefix
+
     typos = []
-    for op, expected, got in align(target, typed):
+    for op, expected, got in backtrace(dist, target, typed, end, m):
         if op == 'swap':
             typos.append(('swapped letters', f'"{expected}"→"{got}"', f'{expected}→{got}'))
         elif op == 'sub':
             typos.append((wrong_key_kind(expected, got), f'"{expected}"→"{got}"', f'{expected}→{got}'))
         elif op == 'missing':
             typos.append(('missing letter', f'"{expected}" missing', ''))
+        elif op == 'doubled':
+            typos.append(('doubled letter', f'doubled "{got}"', ''))
         else:
-            typos.append((f'{op} letter', f'extra "{got}"', ''))
+            where = f' before "{expected}"' if expected else ' at the end'
+            if expected and wrong_key_kind(expected, got) == 'wrong key: neighbour':
+                where += ' (neighbour key)'
+            typos.append(('extra letter', f'extra "{got}"{where}', ''))
+    if early_space:
+        typos.append(('early space', f'space after "{typed}"', ''))
+    elif end < n and left_wrong:
+        typos.append(('unfinished word', f'{n - end} letters not typed', ''))
     return typos
 
 
@@ -373,7 +426,8 @@ def lost_seconds(result: Result):
     incorrect, raw = number(keys.get('incorrect')), number(result.data.get('raw'))
     if incorrect is None or not raw:
         return None
-    return incorrect * 2 * 60 / (raw * 5)
+    lost, time = incorrect * 2 * 60 / (raw * 5), number(result.data.get('time'))
+    return min(lost, time) if time else lost  # raw speed is noisy in very short tests
 
 
 def segments(n: int) -> list[tuple[str, int, int]]:
@@ -420,7 +474,7 @@ def results_section(session: list[Result], goal: float) -> list[str]:
     for result in session:
         d = result.data
         acc, time = number(d.get('acc')), number(d.get('time'))
-        lost = lost_seconds(result)
+        lost = None if result.aborted else lost_seconds(result)
         lost_text = '–' if lost is None else f'{lost:.1f}s' + (f' ({lost / time:.0%})' if time else '')
         chars = d.get('chars') if isinstance(d.get('chars'), dict) else None
         left = '–' if chars is None else str(sum(number(chars.get(k)) or 0 for k in ('incorrect', 'extra', 'missed')))
@@ -428,6 +482,8 @@ def results_section(session: list[Result], goal: float) -> list[str]:
         afk = number(d.get('afk_pct'))
         if afk is not None and afk > AFK_FLAG_PCT:
             flags = flags + [f'afk {fmt(afk)}%']
+        if result.aborted:
+            flags = flags + ['aborted']
         rows.append([
             str(d.get('date', '–'))[:16].replace('T', ' '),
             str(d.get('test', '–')),
@@ -463,7 +519,7 @@ def speed_section(words: list[dict]) -> list[str]:
         ]
 
     header = ['group', 'words', 'mean wpm', 'mean length', 'Shift presses/word', 'symbols/word', 'with mistakes']
-    lines = [f'## Word speed ({len(words)} typed words)', '']
+    lines = [f'## Word speed ({plural(len(words), "typed word")})', '']
     lines += table(header, [row(f'slowest {len(slow)}', slow), row(f'fastest {len(fast)}', fast), row('all', words)])
     lines.append('Slowest: ' + ', '.join(f'{text(w)} {fmt(w["wpm"], 0)}' for w in slow))
     lines.append('Fastest: ' + ', '.join(f'{text(w)} {fmt(w["wpm"], 0)}' for w in fast))
@@ -599,6 +655,10 @@ def practice_section(words: list[dict], recurring: list[str]) -> list[str]:
 def render(session: list[Result], earlier: list[Result], goal: float, last: int, notes: list[str]) -> str:
     lines = ['# Monkeytype analysis', ''] + [f'- {note}' for note in notes] + ['']
     lines += results_section(session, goal)
+    session = [r for r in session if not r.aborted]
+    if not session:
+        lines.append(f'Nothing else to analyze: every result was aborted (under {ABORTED_MIN_KEYS} keypresses).')
+        return '\n'.join(lines).rstrip() + '\n'
     words = [w for r in session for w in r.words]
     if words:
         lines += speed_section(words) + mistakes_section(words) + position_section(session)
@@ -661,13 +721,17 @@ def main(argv: list[str] | None = None) -> int:
         known = {r.fingerprint for r in history}
         new = []
         for result in session:
-            if result.fingerprint not in known:
+            if not result.aborted and result.fingerprint not in known:
                 new.append(result)
                 known.add(result.fingerprint)
+        aborted = sum(1 for r in session if r.aborted)
+        if aborted:
+            notes.append(f'Not saved: {plural(aborted, "aborted result")} (under {ABORTED_MIN_KEYS} keypresses).')
         if args.no_save:
             notes.append('Not saved to the log (--no-save).')
         elif not new:
-            notes.append(f'Already in the log {args.log}, not saved again.')
+            if aborted < len(session):
+                notes.append(f'Already in the log {args.log}, not saved again.')
         else:
             try:
                 append_to_log(args.log, new)
@@ -675,13 +739,13 @@ def main(argv: list[str] | None = None) -> int:
             except OSError as err:
                 notes.append(f'WARNING: could not save to the log: {err}')
     else:
-        session = by_date(history)[-args.recent:]
+        session = by_date([r for r in history if not r.aborted])[-args.recent:]
         if not session:
             print(f'error: no results given and the log {args.log} is empty', file=sys.stderr)
             return 2
 
     session_ids = {r.fingerprint for r in session}
-    earlier = [r for r in history if r.fingerprint not in session_ids]
+    earlier = [r for r in history if r.fingerprint not in session_ids and not r.aborted]
     notes.insert(0, f'Session: {plural(len(session), "result")}. History: {plural(len(earlier), "earlier result")}.')
     sys.stdout.write(render(session, earlier, args.goal, args.last, notes))
     return 0
