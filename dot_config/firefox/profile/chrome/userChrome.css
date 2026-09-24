@@ -229,11 +229,64 @@
   max-width: 100vw !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
-  transition: all 0.25s ease-in-out !important;
+  transition: none !important;
 }
 #urlbar {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   transition: all 0.25s ease-in-out !important;
+}
+/* The results decide whether to wrap (URL bar under 650px) once, as they
+   open, so growing with a width transition could leave them wrapped. Jump to
+   the full width and animate a reveal instead; shrinking on blur still
+   transitions */
+#urlbar[focused] {
+  transition: none !important;
+  animation: urlbar-reveal 0.25s ease-in-out;
+}
+@keyframes urlbar-reveal {
+  from { clip-path: inset(0 80vw 0 0); } /* the nav bar grows by 80vw */
+  to { clip-path: inset(0); }
+}
+/* Slide whatever sits right of the URL bar along with the reveal's edge */
+#nav-bar:has(#urlbar-container:focus-within) :is(#urlbar-container, #nav-bar-customization-target) ~ * {
+  animation: urlbar-follow 0.25s ease-in-out;
+}
+@keyframes urlbar-follow {
+  from { translate: -80vw; }
+  to { translate: 0; }
+}
+
+/* === Toolbars Below Content === */
+#navigator-toolbox {
+  order: 1; /* <body> is a flex column: toolbox, then #browser */
+}
+
+/* Firefox pins the open URL bar's top to the toolbar, so its results would
+   drop off the bottom of the window. Anchor it to the bottom instead and
+   stack the results above the input */
+#urlbar[breakout][breakout-extend] {
+  top: auto !important;
+  bottom: 0 !important;
+  display: flex !important;
+  flex-direction: column-reverse !important;
+}
+
+/* Fullscreen hides the toolbox by pulling it up by its own height, which at
+   the bottom would leave it over the page. Collapse it instead, and reveal
+   it from the bottom edge */
+:root[inFullscreen] #navigator-toolbox {
+  margin-top: 0 !important;
+  translate: none !important; /* macOS shifts it down under the menu bar */
+}
+:root[fullscreenNavToolboxHidden] #navigator-toolbox {
+  visibility: collapse !important;
+}
+#urlbar {
+  --toolbar-shift-translate: none !important;
+}
+#fullscr-toggler {
+  top: auto !important;
+  bottom: 0 !important;
 }
