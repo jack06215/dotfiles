@@ -1,0 +1,10 @@
+% claude, ai, stream
+
+; vipe opens $EDITOR on an empty buffer (stdin is a tty); the saved text becomes
+; the prompt. ifne holds off starting claude until vipe emits output, because
+; claude -p gives up on stdin after 3s ("no stdin data received in 3s") and would
+; otherwise fire while the editor is still open; an empty buffer skips the call.
+; stream-json needs --verbose under -p, and --include-partial-messages emits
+; token deltas that jq prints as they arrive.
+# Write a prompt in $EDITOR and stream Claude's reply to the terminal
+vipe --suffix md | ifne claude -p --verbose --include-partial-messages --output-format stream-json | jq -rj --unbuffered '.event.delta.text? // empty'
