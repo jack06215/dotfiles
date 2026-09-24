@@ -73,7 +73,6 @@
   /* Sizes */
   --tab-min-height: 20px !important; /* Firefox sets it on :root too */
   --urlbar-height: 24px !important; /* same */
-
   /* Paddings */
   --padding-menuitem: 2px;
   --padding-toolbar-inner: 0px 2px;
@@ -271,6 +270,13 @@
   bottom: 0 !important;
   display: flex !important;
   flex-direction: column-reverse !important;
+}
+
+/* Firefox parks the unused search engine switcher at top: -999px, but the
+   URL bar (contain: layout) is its containing block, so at the bottom of a
+   tall window that lands on screen. Go a full window height above instead */
+.searchmode-switcher[offscreen] {
+  top: -200vh !important;
 }
 
 /* Fullscreen hides the toolbox by pulling it up by its own height, which at
