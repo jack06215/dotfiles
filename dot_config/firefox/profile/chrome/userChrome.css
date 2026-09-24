@@ -41,6 +41,7 @@
 
 #urlbar-container {
     width: auto !important;
+    padding-block: 2px !important;
 }
 
 #urlbar {
@@ -70,9 +71,13 @@
   --font-tab: "Cozette", monospace;
   --font-urlbar: monospace;
 
-  /* Sizes */
-  --tab-min-height: 20px !important; /* Firefox sets it on :root too */
-  --urlbar-height: 24px !important; /* same */
+  /* Sizes: each row of the bar is 20px plus 2px above and below. Firefox
+     sets these on :root too, hence !important */
+  --tab-min-height: 20px !important;
+  --tab-margin-block: 2px !important;
+  --urlbar-height: 20px !important;
+  --toolbarbutton-padding-inner: 4px !important; /* around a 16px icon */
+  --toolbarbutton-padding-outer: 0px !important;
   /* Paddings */
   --padding-menuitem: 2px;
   --padding-toolbar-inner: 0px 2px;
@@ -83,7 +88,7 @@
   /* RGB tab border */
   --rgb-speed: 2s;
   --rgb-border-width: 2px;
-  --rgb-glow: 4px; /* 0px disables; keep <= --tab-margin-block (4px) or it gets clipped */
+  --rgb-glow: 2px; /* 0px disables; keep <= --tab-margin-block (2px) or it gets clipped */
 }
 
 /* === Base Colors === */
