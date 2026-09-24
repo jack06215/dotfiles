@@ -327,7 +327,7 @@
 		<key>launchAtLoginWanted</key>
 		<true/>
 		<key>liquidGlassEnabled</key>
-		<false/>
+		<true/>
 		<key>mediaGIFEnd</key>
 		<real>0.0</real>
 		<key>mediaGIFFPS</key>
@@ -557,7 +557,7 @@
 		<key>monitorShowMixer</key>
 		<true/>
 		<key>monitorShowNetwork</key>
-		<true/>
+		<false/>
 		<key>monitorShowPower</key>
 		<true/>
 		<key>monitorShowSystem</key>
@@ -654,18 +654,20 @@
 		<true/>
 		<key>panelNavigationEnabled</key>
 		<true/>
+		<key>panelSectionOrder</key>
+		<string>mixer,brightness,network,power,keepAwake,system,disk,fanControl,utilities,controls,toggles</string>
 		<key>panelShowBrightness</key>
 		<true/>
 		<key>panelShowControls</key>
-		<true/>
+		<false/>
 		<key>panelShowFanControl</key>
 		<true/>
 		<key>panelShowKeepAwake</key>
-		<true/>
+		<false/>
 		<key>panelShowToggles</key>
-		<true/>
+		<false/>
 		<key>panelShowUtilities</key>
-		<true/>
+		<false/>
 		<key>panelToggleDarkMode</key>
 		<true/>
 		<key>panelToggleDesktopIcons</key>
