@@ -85,10 +85,12 @@
   /* Private browsing */
   --private-icon-char: "P";
 
-  /* RGB tab border */
+  /* RGB window border */
   --rgb-speed: 2s;
   --rgb-border-width: 2px;
-  --rgb-glow: 2px; /* 0px disables; keep <= --tab-margin-block (2px) or it gets clipped */
+  --rgb-glow: 8px; /* fades inwards over the page; 0px disables */
+  --rgb-window-radius: 0px; /* set per platform in the RGB section */
+  --rgb-bar-lift: calc(var(--rgb-border-width) + 2px); /* bar clears the ring */
 }
 
 /* === Base Colors === */
@@ -167,7 +169,7 @@
   background: transparent;
 }
 
-/* === Animated RGB Tab Border === */
+/* === Animated RGB Window Border === */
 /* Registering the angle lets it interpolate, so the gradient really spins
    instead of hue-rotate() recoloring it (which muddies yellow and blue) */
 @property --rgb-angle {
@@ -177,45 +179,60 @@
 }
 @keyframes rgb-spin { to { --rgb-angle: 360deg; } }
 
-/* ::before = crisp ring, ::after = soft glow around it */
-.tabbrowser-tab[selected] > .tab-stack::before,
-.tabbrowser-tab[selected] > .tab-stack::after {
-  grid-area: 1/1;
+/* CSS can't reach the native window frame, so this is drawn just inside it,
+   over the edge of the page and the bar; clicks go through.
+   ::before = crisp ring, ::after = soft glow fading inwards. Stacked as
+   page (Firefox's 2) < glow < bar < ring, so the glow only tints the page */
+body::before,
+body::after {
   content: "";
-  z-index: 1;
-  border-radius: var(--tab-border-radius);
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  border-radius: var(--rgb-window-radius);
   background: conic-gradient(from var(--rgb-angle),
     #ff1f4f, #ff9d00, #e5ff00, #00ff7b, #00e5ff, #3d6bff, #c43dff, #ff1f4f);
   animation: rgb-spin var(--rgb-speed) linear infinite;
   pointer-events: none;
 }
-.tabbrowser-tab[selected] > .tab-stack::before {
-  margin-block: var(--tab-margin-block);
+body::before {
+  z-index: 12;
   padding: var(--rgb-border-width);
   /* Full box minus content box = a ring exactly --rgb-border-width thick */
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
 }
-.tabbrowser-tab[selected] > .tab-stack::after {
-  margin: calc(var(--tab-margin-block) - var(--rgb-glow)) calc(-1 * var(--rgb-glow));
-  padding: var(--rgb-glow);
-  border-radius: calc(var(--tab-border-radius) + var(--rgb-glow));
-  /* Fade to transparent at the outer edge, hollow over the tab itself.
-     A mask rather than blur(), since filters run before masking */
+body::after {
+  opacity: 0.5;
+  /* Opaque at each edge, fading out --rgb-glow in */
   mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(to right, transparent, #000 var(--rgb-glow) calc(100% - var(--rgb-glow)), transparent),
-    linear-gradient(to bottom, transparent, #000 var(--rgb-glow) calc(100% - var(--rgb-glow)), transparent);
-  mask-composite: exclude, intersect;
+    linear-gradient(to right, #000, transparent var(--rgb-glow) calc(100% - var(--rgb-glow)), #000),
+    linear-gradient(to bottom, #000, transparent var(--rgb-glow) calc(100% - var(--rgb-glow)), #000);
+  mask-composite: add;
 }
-/* The expanded URL bar covers the tabs, but not the glow above them */
-#navigator-toolbox:has(#urlbar-container:focus-within) .tabbrowser-tab[selected] > .tab-stack::after {
+/* Background windows stop spinning */
+:root:-moz-window-inactive body::before,
+:root:-moz-window-inactive body::after {
+  animation-play-state: paused;
+}
+/* No frame around a fullscreen video */
+:root[inDOMFullscreen] body::before,
+:root[inDOMFullscreen] body::after {
   display: none;
 }
-.tab-background[selected]{
-  border: 1px solid transparent !important;
-  outline: none !important;
-  background-clip: padding-box !important;
+/* Follow the window's rounded corners, or they cut the ring off. Firefox
+   rounds its own chrome to these on Tahoe and Windows 11 */
+@media (-moz-platform: macos) {
+  :root { --rgb-window-radius: 10px; }
+}
+@media (-moz-mac-tahoe-theme) {
+  :root { --rgb-window-radius: 16px; }
+}
+@media (-moz-platform: windows) {
+  :root:not([sizemode="maximized"]) { --rgb-window-radius: 8px; }
+}
+:root[inFullscreen] {
+  --rgb-window-radius: 0px;
 }
 
 /* === URL Bar Expansion on Focus === */
@@ -265,6 +282,8 @@
 /* === Toolbars Below Content === */
 #navigator-toolbox {
   order: 1; /* <body> is a flex column: toolbox, then #browser */
+  padding-bottom: var(--rgb-bar-lift) !important;
+  z-index: 11 !important; /* between the window-border glow and ring */
 }
 
 /* Firefox pins the open URL bar's top to the toolbar, so its results would
@@ -272,7 +291,7 @@
    stack the results above the input */
 #urlbar[breakout][breakout-extend] {
   top: auto !important;
-  bottom: 0 !important;
+  bottom: var(--rgb-bar-lift) !important; /* level with the lifted bar */
   display: flex !important;
   flex-direction: column-reverse !important;
 }
