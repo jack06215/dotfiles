@@ -1,6 +1,3 @@
-
-@namespace url("http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul");
-
 /* == One line firefox == */
 /* Title bar */
 .titlebar-buttonbox {
@@ -24,7 +21,7 @@
 #nav-bar {
     background: transparent !important;
     margin-right: 80vw !important;
-    margin-top: -36px !important;
+    margin-top: calc(-1 * var(--tabstrip-min-height)) !important; /* pull up by the tab strip's height */
 }
 
 #downloads-button { display: -moz-box !important; }
@@ -78,8 +75,8 @@
   --font-urlbar: monospace;
 
   /* Sizes */
-  --tab-min-height: 20px;
-  --urlbar-height: 24px;
+  --tab-min-height: 20px !important; /* Firefox sets it on :root too */
+  --urlbar-height: 24px !important; /* same */
 
   /* Paddings */
   --padding-menuitem: 2px;
@@ -88,8 +85,10 @@
   /* Private browsing */
   --private-icon-char: "P";
 
-  /* RGB animation speed */
+  /* RGB tab border */
   --rgb-speed: 2s;
+  --rgb-border-width: 2px;
+  --rgb-glow: 4px; /* 0px disables; keep <= --tab-margin-block (4px) or it gets clipped */
 }
 
 /* === Base Colors === */
@@ -169,29 +168,49 @@
 }
 
 /* === Animated RGB Tab Border === */
-@keyframes filter{from{ filter: hue-rotate(0deg) } to { filter: hue-rotate(360deg) }}
- 
-.tabbrowser-tab[selected] > .tab-stack::before{
+/* Registering the angle lets it interpolate, so the gradient really spins
+   instead of hue-rotate() recoloring it (which muddies yellow and blue) */
+@property --rgb-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes rgb-spin { to { --rgb-angle: 360deg; } }
+
+/* ::before = crisp ring, ::after = soft glow around it */
+.tabbrowser-tab[selected] > .tab-stack::before,
+.tabbrowser-tab[selected] > .tab-stack::after {
   grid-area: 1/1;
   content: "";
-  display: inherit;
-  margin-block: var(--tab-block-margin);
+  z-index: 1;
   border-radius: var(--tab-border-radius);
-  z-index: 0;
-  background-image: conic-gradient(
-    hsl(0 100% 70%),
-    hsl(60 100% 45%) 70deg,
-    hsl(120 100% 55%) 105deg,
-    hsl(160 100% 60%) 160deg,
-    hsl(200 100% 60%) 200deg,
-    hsl(240 100% 65%) 255deg,
-    hsl(300 100% 60%) 290deg,
-    hsl(360 100% 70%) 360deg);
-  mask-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPg0KICA8cmVjdCB4PSIwIiB5PSIwIiByeD0iNCIgc3Ryb2tlPSJyZWQiIHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIHN0cm9rZS13aWR0aD0iMiIgZmlsbD0ibm9uZSIgdmVjdG9yLWVmZmVjdD0ibm9uLXNjYWxpbmctc3Ryb2tlIi8+DQo8L3N2Zz4");
-  background-size: cover;
-  background-position: center;
-  animation: filter steps(30) 2s infinite;
-  
+  background: conic-gradient(from var(--rgb-angle),
+    #ff1f4f, #ff9d00, #e5ff00, #00ff7b, #00e5ff, #3d6bff, #c43dff, #ff1f4f);
+  animation: rgb-spin var(--rgb-speed) linear infinite;
+  pointer-events: none;
+}
+.tabbrowser-tab[selected] > .tab-stack::before {
+  margin-block: var(--tab-margin-block);
+  padding: var(--rgb-border-width);
+  /* Full box minus content box = a ring exactly --rgb-border-width thick */
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.tabbrowser-tab[selected] > .tab-stack::after {
+  margin: calc(var(--tab-margin-block) - var(--rgb-glow)) calc(-1 * var(--rgb-glow));
+  padding: var(--rgb-glow);
+  border-radius: calc(var(--tab-border-radius) + var(--rgb-glow));
+  /* Fade to transparent at the outer edge, hollow over the tab itself.
+     A mask rather than blur(), since filters run before masking */
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(to right, transparent, #000 var(--rgb-glow) calc(100% - var(--rgb-glow)), transparent),
+    linear-gradient(to bottom, transparent, #000 var(--rgb-glow) calc(100% - var(--rgb-glow)), transparent);
+  mask-composite: exclude, intersect;
+}
+/* The expanded URL bar covers the tabs, but not the glow above them */
+#navigator-toolbox:has(#urlbar-container:focus-within) .tabbrowser-tab[selected] > .tab-stack::after {
+  display: none;
 }
 .tab-background[selected]{
   border: 1px solid transparent !important;
