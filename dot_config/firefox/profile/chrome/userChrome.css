@@ -86,7 +86,9 @@
   --private-icon-char: "P";
 
   /* RGB window border */
-  --rgb-speed: 2s;
+  --rgb-colors: #ff1f4f, #ff9d00, #e5ff00, #00ff7b, #00e5ff, #3d6bff, #c43dff, #ff1f4f;
+  --rgb-speed: 6s; /* one turn */
+  --rgb-steps: 120; /* repaints per turn: 360/120 = 3deg a jump, 20 a second */
   --rgb-border-width: 2px;
   --rgb-glow: 8px; /* fades inwards over the page; 0px disables */
   --rgb-window-radius: 0px; /* set per platform in the RGB section */
@@ -182,7 +184,11 @@
 /* CSS can't reach the native window frame, so this is drawn just inside it,
    over the edge of the page and the bar; clicks go through.
    ::before = crisp ring, ::after = soft glow fading inwards. Stacked as
-   page (Firefox's 2) < glow < bar < ring, so the glow only tints the page */
+   page (Firefox's 2) < glow < bar < ring, so the glow only tints the page.
+   Custom properties can't animate on the compositor, so each step repaints
+   the gradient, and redraws the mask on the CPU, over all the area they
+   cover. Both are cut into bands along the edges (each band's gradient
+   centred on the window), so a step costs a thin frame, not the window */
 body::before,
 body::after {
   content: "";
@@ -190,30 +196,60 @@ body::after {
   inset: 0;
   z-index: 10;
   border-radius: var(--rgb-window-radius);
-  background: conic-gradient(from var(--rgb-angle),
-    #ff1f4f, #ff9d00, #e5ff00, #00ff7b, #00e5ff, #3d6bff, #c43dff, #ff1f4f);
-  animation: rgb-spin var(--rgb-speed) linear infinite;
+  background:
+    conic-gradient(from var(--rgb-angle) at 50% 50vh, var(--rgb-colors))
+      top / 100% var(--rgb-band-y),
+    conic-gradient(from var(--rgb-angle) at 50% calc(var(--rgb-band-y) - 50vh), var(--rgb-colors))
+      bottom / 100% var(--rgb-band-y),
+    conic-gradient(from var(--rgb-angle) at 50vw 50%, var(--rgb-colors))
+      left / var(--rgb-band-x) calc(100% - 2 * var(--rgb-band-y)),
+    conic-gradient(from var(--rgb-angle) at calc(var(--rgb-band-x) - 50vw) 50%, var(--rgb-colors))
+      right / var(--rgb-band-x) calc(100% - 2 * var(--rgb-band-y));
+  background-repeat: no-repeat;
+  /* A steps() spin only repaints when the angle changes */
+  animation: rgb-spin var(--rgb-speed) steps(var(--rgb-steps)) infinite paused;
   pointer-events: none;
 }
 body::before {
   z-index: 12;
-  padding: var(--rgb-border-width);
-  /* Full box minus content box = a ring exactly --rgb-border-width thick */
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
+  /* Top and bottom bands hold the rounded corners */
+  --rgb-band-y: max(var(--rgb-window-radius), var(--rgb-border-width));
+  --rgb-band-x: var(--rgb-border-width);
+  /* A ring exactly --rgb-border-width thick: a strip along each edge, and in
+     each corner everything outside the inner curve, which border-radius
+     then rounds off. Only added up, never subtracted: subtracting (the
+     simpler "box minus content box") redraws the whole window's mask. The
+     inner curve fades over a Retina pixel, since a hard stop is jagged */
+  --rgb-inner-radius: calc(var(--rgb-window-radius) - var(--rgb-border-width));
+  --rgb-corner: transparent calc(var(--rgb-inner-radius) - 0.25px), #000 calc(var(--rgb-inner-radius) + 0.25px);
+  mask:
+    linear-gradient(#000 0 0) top / 100% var(--rgb-border-width),
+    linear-gradient(#000 0 0) bottom / 100% var(--rgb-border-width),
+    linear-gradient(#000 0 0) left / var(--rgb-border-width) 100%,
+    linear-gradient(#000 0 0) right / var(--rgb-border-width) 100%,
+    radial-gradient(circle at 100% 100%, var(--rgb-corner)) top left / var(--rgb-window-radius) var(--rgb-window-radius),
+    radial-gradient(circle at 0 100%, var(--rgb-corner)) top right / var(--rgb-window-radius) var(--rgb-window-radius),
+    radial-gradient(circle at 100% 0, var(--rgb-corner)) bottom left / var(--rgb-window-radius) var(--rgb-window-radius),
+    radial-gradient(circle at 0 0, var(--rgb-corner)) bottom right / var(--rgb-window-radius) var(--rgb-window-radius);
+  mask-repeat: no-repeat;
 }
 body::after {
-  opacity: 0.5;
-  /* Opaque at each edge, fading out --rgb-glow in */
+  --rgb-band-y: var(--rgb-glow);
+  --rgb-band-x: var(--rgb-glow);
+  /* Half opaque at each edge, fading out --rgb-glow in. Halved here rather
+     than with opacity, which would draw the whole window offscreen */
   mask:
-    linear-gradient(to right, #000, transparent var(--rgb-glow) calc(100% - var(--rgb-glow)), #000),
-    linear-gradient(to bottom, #000, transparent var(--rgb-glow) calc(100% - var(--rgb-glow)), #000);
-  mask-composite: add;
+    linear-gradient(to bottom, rgb(0 0 0 / 50%), transparent) top / 100% var(--rgb-glow),
+    linear-gradient(to top, rgb(0 0 0 / 50%), transparent) bottom / 100% var(--rgb-glow),
+    linear-gradient(to right, rgb(0 0 0 / 50%), transparent) left / var(--rgb-glow) 100%,
+    linear-gradient(to left, rgb(0 0 0 / 50%), transparent) right / var(--rgb-glow) 100%;
+  mask-repeat: no-repeat;
 }
-/* Background windows stop spinning */
-:root:-moz-window-inactive body::before,
-:root:-moz-window-inactive body::after {
-  animation-play-state: paused;
+/* Spin only while you're using the bar, and never in background windows;
+   otherwise it holds still and costs nothing */
+:root:not(:-moz-window-inactive) body:has(#navigator-toolbox:hover, #urlbar[focused])::before,
+:root:not(:-moz-window-inactive) body:has(#navigator-toolbox:hover, #urlbar[focused])::after {
+  animation-play-state: running;
 }
 /* No frame around a fullscreen video */
 :root[inDOMFullscreen] body::before,
