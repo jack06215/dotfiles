@@ -208,6 +208,12 @@ function setup_macos() {
   install_npm_global_packages
 }
 
+{{/* osRelease is empty on macOS, and missingkey=error rejects reading it. */ -}}
+{{ $isSupportedDebian := false -}}
+{{ if eq .chezmoi.os "linux" -}}
+{{   $isSupportedDebian = and (eq .chezmoi.osRelease.id "debian") (or (eq .chezmoi.osRelease.versionId "12") (eq .chezmoi.osRelease.versionId "13")) -}}
+{{ end -}}
+{{ if $isSupportedDebian -}}
 function setup_debian() {
   section 'Installing Homebrew'
   install_homebrew
@@ -224,17 +230,22 @@ function setup_debian() {
   section 'Installing npm global packages'
   install_npm_global_packages
 }
+{{ end -}}
 
+{{ if and .myComputer.isWSL2 -}}
 function is_wsl() {
   [[ "$(uname -s)" == "Linux" ]] \
     && [[ -r /proc/version ]] \
     && grep -qi microsoft /proc/version 2>/dev/null
 }
+{{ end -}}
 
+{{ if and .myComputer.isWSL2 -}}
 function setup_wsl2() {
   echo 'WSL2 is not yet supported.'
   return 1
 }
+{{ end -}}
 
 {{ if and .myComputer.isDarwin -}}
 {{   if .myComputer.isArm -}}
@@ -243,17 +254,14 @@ setup_macos
 echo 'Unsupported mac architecture. Only arm64 is supported.'
 exit 1
 {{   end -}}
-{{ else if .myComputer.isLinux -}}
-if is_wsl; then
+{{ else if .myComputer.isWSL2 -}}
   setup_wsl2
-else
-{{   if and (eq .chezmoi.osRelease.id "debian") (or (eq .chezmoi.osRelease.versionId "12") (eq .chezmoi.osRelease.versionId "13")) -}}
+{{   if $isSupportedDebian -}}
   setup_debian
 {{   else -}}
   echo 'Unsupported linux distribution and version.'
   exit 1
 {{   end -}}
-fi
 {{ else -}}
 echo 'Unsupported system'
 exit 1
