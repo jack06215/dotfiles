@@ -19,57 +19,27 @@
 
 /* Nav bar*/
 #nav-bar {
-    background: transparent !important;
     margin-right: 80vw !important;
     margin-top: calc(-1 * var(--tabstrip-min-height)) !important; /* pull up by the tab strip's height */
 }
-
-#downloads-button { display: -moz-box !important; }
 
 /* URL bar */
 /* #back-button { */
 /*     display: none !important; */
 /* } */
 
-#forward-button {
-    display: none !important;
-}
-
-#tracking-protection-icon-container {
-    display: none !important;
-}
-
 #urlbar-container {
     width: auto !important;
     padding-block: 2px !important;
-}
-
-#urlbar {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-
-#page-action-buttons {
-    display: none !important;
-}
-
-#PanelUI-button {
-    display: none !important;
 }
 
 /* === Global Theme Variables === */
 :root {
   /* Colors */
   --color-bg-dark: #111117;
-  --color-bg-mid: #262639;
   --color-fg-light: #c1c1d1;
   --color-fg-dim: #6c6c93;
   --color-accent: #00ffe0;
-
-  /* Font */
-  --font-tab: "Cozette", monospace;
-  --font-urlbar: monospace;
 
   /* Sizes: each row of the bar is 20px plus 2px above and below. Firefox
      sets these on :root too, hence !important */
@@ -78,17 +48,16 @@
   --urlbar-height: 20px !important;
   --toolbarbutton-padding-inner: 4px !important; /* around a 16px icon */
   --toolbarbutton-padding-outer: 0px !important;
-  /* Paddings */
-  --padding-menuitem: 2px;
-  --padding-toolbar-inner: 0px 2px;
 
   /* Private browsing */
   --private-icon-char: "P";
 
   /* RGB window border */
   --rgb-colors: #ff1f4f, #ff9d00, #e5ff00, #00ff7b, #00e5ff, #3d6bff, #c43dff, #ff1f4f;
-  --rgb-speed: 6s; /* one turn */
-  --rgb-steps: 120; /* repaints per turn: 360/120 = 3deg a jump, 20 a second */
+  --rgb-idle-speed: 60s; /* one turn, whenever the window is focused */
+  --rgb-idle-steps: 360; /* repaints per turn: 1deg a jump, 6 a second */
+  --rgb-speed: 6s; /* an extra turn on top of that, while you use the bar */
+  --rgb-steps: 120; /* 3deg a jump, 20 a second */
   --rgb-border-width: 2px;
   --rgb-glow: 8px; /* fades inwards over the page; 0px disables */
   --rgb-window-radius: 0px; /* set per platform in the RGB section */
@@ -102,11 +71,12 @@
   background: var(--color-bg-dark) !important;
 }
 
+/* !important, or Firefox's own selected-tab colour wins */
 .tabbrowser-tab[selected] .tab-content {
-  color: var(--color-fg-light);
+  color: var(--color-fg-light) !important;
 }
 .tabbrowser-tab:not([selected]) .tab-content {
-  color: var(--color-fg-dim);
+  color: var(--color-fg-dim) !important;
 }
 
 /* === Tab Layout === */
@@ -137,7 +107,7 @@
 #page-action-buttons,
 #PanelUI-button,
 #tracking-protection-icon-container {
-  display: none;
+  display: none !important;
 }
 
 /* === Unified Extensions Menu === */
@@ -172,13 +142,21 @@
 }
 
 /* === Animated RGB Window Border === */
-/* Registering the angle lets it interpolate, so the gradient really spins
-   instead of hue-rotate() recoloring it (which muddies yellow and blue) */
+/* Registering the angles lets them interpolate, so the gradient really spins
+   instead of hue-rotate() recoloring it (which muddies yellow and blue).
+   Two spins added together, so the fast one can pause and resume where it
+   was; changing one spin's speed instead would jump the ring around */
+@property --rgb-idle-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
 @property --rgb-angle {
   syntax: "<angle>";
   inherits: false;
   initial-value: 0deg;
 }
+@keyframes rgb-idle-spin { to { --rgb-idle-angle: 360deg; } }
 @keyframes rgb-spin { to { --rgb-angle: 360deg; } }
 
 /* CSS can't reach the native window frame, so this is drawn just inside it,
@@ -196,18 +174,21 @@ body::after {
   inset: 0;
   z-index: 10;
   border-radius: var(--rgb-window-radius);
+  --rgb-turn: calc(var(--rgb-idle-angle) + var(--rgb-angle));
   background:
-    conic-gradient(from var(--rgb-angle) at 50% 50vh, var(--rgb-colors))
+    conic-gradient(from var(--rgb-turn) at 50% 50vh, var(--rgb-colors))
       top / 100% var(--rgb-band-y),
-    conic-gradient(from var(--rgb-angle) at 50% calc(var(--rgb-band-y) - 50vh), var(--rgb-colors))
+    conic-gradient(from var(--rgb-turn) at 50% calc(var(--rgb-band-y) - 50vh), var(--rgb-colors))
       bottom / 100% var(--rgb-band-y),
-    conic-gradient(from var(--rgb-angle) at 50vw 50%, var(--rgb-colors))
+    conic-gradient(from var(--rgb-turn) at 50vw 50%, var(--rgb-colors))
       left / var(--rgb-band-x) calc(100% - 2 * var(--rgb-band-y)),
-    conic-gradient(from var(--rgb-angle) at calc(var(--rgb-band-x) - 50vw) 50%, var(--rgb-colors))
+    conic-gradient(from var(--rgb-turn) at calc(var(--rgb-band-x) - 50vw) 50%, var(--rgb-colors))
       right / var(--rgb-band-x) calc(100% - 2 * var(--rgb-band-y));
   background-repeat: no-repeat;
   /* A steps() spin only repaints when the angle changes */
-  animation: rgb-spin var(--rgb-speed) steps(var(--rgb-steps)) infinite paused;
+  animation:
+    rgb-idle-spin var(--rgb-idle-speed) steps(var(--rgb-idle-steps)) infinite,
+    rgb-spin var(--rgb-speed) steps(var(--rgb-steps)) infinite paused;
   pointer-events: none;
 }
 body::before {
@@ -245,11 +226,15 @@ body::after {
     linear-gradient(to left, rgb(0 0 0 / 50%), transparent) right / var(--rgb-glow) 100%;
   mask-repeat: no-repeat;
 }
-/* Spin only while you're using the bar, and never in background windows;
-   otherwise it holds still and costs nothing */
+/* Drift slowly in a focused window, spin up while you're using the bar, and
+   hold still (costing nothing) in background windows */
 :root:not(:-moz-window-inactive) body:has(#navigator-toolbox:hover, #urlbar[focused])::before,
 :root:not(:-moz-window-inactive) body:has(#navigator-toolbox:hover, #urlbar[focused])::after {
   animation-play-state: running;
+}
+:root:-moz-window-inactive body::before,
+:root:-moz-window-inactive body::after {
+  animation-play-state: paused;
 }
 /* No frame around a fullscreen video */
 :root[inDOMFullscreen] body::before,
