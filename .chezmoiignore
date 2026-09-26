@@ -68,9 +68,13 @@ Brewfile
 {{ end }}
 
 
-# pbcopy/pbpaste wrappers around win32yank.exe (dot_local/bin): WSL2 only.
-# macOS has the real ones in /usr/bin, and these must never shadow them.
+# WSL2-only shims in ~/.local/bin (dot_local/bin): pbcopy/pbpaste wrap
+# win32yank.exe - macOS has the real ones in /usr/bin, and these must never
+# shadow them - and powershell.exe links the Windows binary onto PATH, which
+# appendWindowsPath=false keeps off it, for tools that probe for it by name
+# (nvim's img-clip pastes images through it).
 {{ if not .myComputer.isWSL2 }}
 .local/bin/pbcopy
 .local/bin/pbpaste
+.local/bin/powershell.exe
 {{ end }}

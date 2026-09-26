@@ -60,11 +60,14 @@ return {
     opts = {
       servers = {
         pyright = {
-          settings = {
-            python = {
-              pythonPath = python_env.get_path(),
-            },
-          },
+          -- Resolved when pyright starts, not while lazy.nvim reads this spec:
+          -- get_path() runs `poetry env info`, which cost ~300ms of every
+          -- startup even in sessions that never open a Python file.
+          before_init = function(_, config)
+            config.settings = vim.tbl_deep_extend("force", config.settings or {}, {
+              python = { pythonPath = python_env.get_path() },
+            })
+          end,
         },
       },
     },

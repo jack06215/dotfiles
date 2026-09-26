@@ -139,17 +139,30 @@ local is_wsl = (vim.fn.has("wsl") == 1)
 local is_win = (vim.fn.has("win32") == 1) or (vim.fn.has("win64") == 1)
 
 if is_wsl or is_win then
-  vim.g.clipboard = {
-    name = is_wsl and "win32yank-wsl" or "win32yank-windows",
-    copy = {
-      ["+"] = "win32yank.exe -i --crlf",
-      ["*"] = "win32yank.exe -i --crlf",
-    },
-    paste = {
-      ["+"] = "win32yank.exe -o --lf",
-      ["*"] = "win32yank.exe -o --lf",
-    },
-  }
+  -- By absolute path, never a bare `win32yank.exe`: on WSL2
+  -- appendWindowsPath=false keeps Windows dirs off PATH, so the bare name only
+  -- resolved in an nvim started from the interactive zsh (which appends
+  -- chocolatey's dir) - and elsewhere every yank failed with E475 while
+  -- :checkhealth still said OK. ~/.local/bin's pbcopy/pbpaste (dot_local/bin,
+  -- WSL2 only) wrap win32yank at the path `chezmoi init` found for it.
+  local copy, paste
+  local bin = vim.fn.expand("~/.local/bin")
+  if is_wsl and vim.fn.executable(bin .. "/pbcopy") == 1 then
+    copy, paste = { bin .. "/pbcopy" }, { bin .. "/pbpaste" }
+  else
+    local yank = vim.fn.exepath("win32yank.exe")
+    if yank ~= "" then
+      copy, paste = { yank, "-i", "--crlf" }, { yank, "-o", "--lf" }
+    end
+  end
+  -- Neither found: leave g:clipboard unset and let nvim's own detection try.
+  if copy then
+    vim.g.clipboard = {
+      name = is_wsl and "win32yank-wsl" or "win32yank-windows",
+      copy = { ["+"] = copy, ["*"] = copy },
+      paste = { ["+"] = paste, ["*"] = paste },
+    }
+  end
 end
 
 -- neovim specific options

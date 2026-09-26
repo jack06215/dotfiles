@@ -1,12 +1,13 @@
-local util = require("lspconfig.util")
 local M = { _path = nil, _name = nil }
 
 -- internal detection
 local function detect()
   local cwd = vim.fn.getcwd()
 
-  -- 1) locate project root by .git, pyproject.toml or .venv
-  local project_root = util.root_pattern(".git", "pyproject.toml", ".venv")(cwd) or cwd
+  -- 1) locate project root by .git, pyproject.toml or .venv. vim.fs.root
+  --    rather than lspconfig.util: this module is required while lazy.nvim
+  --    reads the plugin specs, before lspconfig is installed on a new machine.
+  local project_root = vim.fs.root(cwd, { ".git", "pyproject.toml", ".venv" }) or cwd
 
   local sys = vim.loop.os_uname().sysname
   local is_wsl = sys == "Linux" and vim.fn.has("wsl") == 1
@@ -14,10 +15,14 @@ local function detect()
   ------------------------------------------------------------------
   -- 2) Poetry venv (works in WSL)
   ------------------------------------------------------------------
-  local poetry_cmd = "cd " .. project_root .. " && poetry env info -p"
-  local p = vim.fn.trim(vim.fn.system(poetry_cmd))
+  --    No shell: the project path goes in as cwd, so spaces in it are fine.
+  local p = ""
+  if vim.fn.executable("poetry") == 1 then
+    local res = vim.system({ "poetry", "env", "info", "-p" }, { cwd = project_root, text = true }):wait()
+    p = res.code == 0 and vim.trim(res.stdout or "") or ""
+  end
 
-  if vim.v.shell_error == 0 and p ~= "" then
+  if p ~= "" then
     local bin = sys == "Windows_NT" and (p .. "\\Scripts\\python.exe") or (p .. "/bin/python")
 
     return bin, vim.fn.fnamemodify(p, ":t")

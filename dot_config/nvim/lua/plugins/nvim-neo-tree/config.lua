@@ -1,6 +1,6 @@
-local neo_tree = require("neo-tree")
-local neo_tree_commands = require("neo-tree.sources.common.commands")
-local neo_tree_events = require("neo-tree.events")
+-- neo-tree is required inside the functions below, not up here: this module is
+-- imported while lazy.nvim reads the specs, which on a fresh install is before
+-- neo-tree has been cloned - a top-level require failed the whole spec there.
 
 ---@class neotree.UserCommands
 ---@field [string] neotree.TreeCommand
@@ -105,7 +105,7 @@ M.show_file_details = function(state)
   if not node or node.type == "message" then
     return
   end
-  neo_tree_commands.show_file_details(state)
+  require("neo-tree.sources.common.commands").show_file_details(state)
   if vim.bo.filetype ~= "neo-tree-popup" then
     return -- popup did not open; don't map into the tree buffer
   end
@@ -141,7 +141,7 @@ return {
     },
     opt = { log_level = "warn" },
     config = function()
-      neo_tree.setup({
+      require("neo-tree").setup({
         sources = { "filesystem" },
         -- NOTE: Names must not collide with neo-tree's built-ins. Duplicated
         -- name would be silently dropped in favour of the built-in.
@@ -169,7 +169,7 @@ return {
         },
         event_handlers = {
           {
-            event = neo_tree_events.NEO_TREE_BUFFER_ENTER,
+            event = require("neo-tree.events").NEO_TREE_BUFFER_ENTER,
             handler = M.restore_line_numbers,
           },
         },
