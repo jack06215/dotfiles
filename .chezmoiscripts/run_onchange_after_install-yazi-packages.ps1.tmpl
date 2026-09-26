@@ -1,0 +1,35 @@
+{{- if eq .chezmoi.os "windows" -}}
+#!/usr/bin/env pwsh
+# Windows counterpart of run_onchange_after_install-yazi-packages.sh.tmpl.
+#
+# That script used to carry the Windows case in an {{ "{{ else }}" }} branch, but what it
+# rendered there was still bash - and chezmoi has no sh to hand it to on
+# Windows, so `chezmoi apply` failed outright with "%1 is not a valid Win32
+# application". The .sh script is now Unix-only and this is the Windows half,
+# the same split link-firefox-profile and link-vscode-config already make.
+#
+# chezmoi reruns this whenever its rendered text changes, so these two lines
+# make it rerun once `ya` gets installed (a fresh machine applies the dotfiles
+# before setup.ps1 has installed yazi) and whenever the plugin list changes:
+#   ya:           {{ lookPath "ya" | default "not installed" }}
+#   package.toml: {{ include "dot_config/yazi/package.toml.tmpl" | sha256sum }}
+
+$ErrorActionPreference = 'Stop'
+
+if (-not (Get-Command ya -ErrorAction SilentlyContinue)) {
+    # Not an error: on a fresh machine this runs before setup.ps1 has installed
+    # yazi from the Chocolatey manifest. The next `chezmoi apply` after that -
+    # setup.ps1 does one at the end - installs the packages.
+    Write-Warning "yazi: 'ya' not found, skipping plugin install until yazi is installed"
+    Write-Warning '      (choco install yazi && chezmoi apply)'
+    exit 0
+}
+
+# The sources land in .config/yazi/plugins and .config/yazi/flavors, which
+# .chezmoiignore keeps out of the managed set - package.toml pins the revisions.
+& ya pkg install
+if ($LASTEXITCODE -ne 0) {
+    Write-Warning "yazi: 'ya pkg install' exited $LASTEXITCODE"
+    exit $LASTEXITCODE
+}
+{{- end -}}

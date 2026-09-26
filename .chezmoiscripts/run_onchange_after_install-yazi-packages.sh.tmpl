@@ -1,3 +1,4 @@
+{{ if ne .chezmoi.os "windows" -}}
 #!/bin/bash
 set -euo pipefail
 
@@ -7,7 +8,6 @@ set -euo pipefail
 #   ya:           {{ lookPath "ya" | default "not installed" }}
 #   package.toml: {{ include "dot_config/yazi/package.toml.tmpl" | sha256sum }}
 
-{{ if ne .chezmoi.os "windows" -}}
 if ! command -v ya > /dev/null 2>&1; then
   # Not an error: on a fresh machine this runs before setup.sh has installed
   # yazi (brewfiles/{{ if .myComputer.isDarwin }}darwin{{ else }}wsl2{{ end }}). The next `chezmoi apply` after that - setup.sh
@@ -42,11 +42,4 @@ if [[ -r "$manifest" ]]; then
     exit 1
   fi
 fi
-{{ else -}}
-if ! command -v ya > /dev/null 2>&1; then
-  echo "yazi: 'ya' not installed, skipping plugin install" >&2
-  exit 0
-fi
-
-ya pkg install
 {{ end -}}
