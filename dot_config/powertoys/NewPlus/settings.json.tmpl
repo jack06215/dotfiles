@@ -1,0 +1,7 @@
+{{/* TemplateLocation is an absolute path, and PowerToys writes it back as one -
+     so it is rendered from %LOCALAPPDATA% rather than committed with this
+     machine's username in it. Same prefix + Microsoft\PowerToys shape as
+     run_onchange_after_link-powertoys-settings.ps1. Windows-only: .chezmoiignore
+     keeps this tree out of the macOS and WSL2 homes, where LOCALAPPDATA is
+     unset. */ -}}
+{"properties":{"HideFileExtension":{"value":true},"HideStartingDigits":{"value":true},"TemplateLocation":{"value":{{ joinPath (env "LOCALAPPDATA") "Microsoft/PowerToys/NewPlus/Templates" | toJson }}}},"name":"NewPlus","version":"1.0"}
