@@ -4,28 +4,36 @@
 source "$ZDOTDIR/src/functions.zsh"
 
 # The appearance values wezterm_config tunes, keyed by the name the state file
-# and the Lua template both use, as
-#   <label>|<min>|<max>|<step>|<default>
+# and wezterm.lua both use, as
+#   <label>|<min>|<max>|<step>|<default>    a number
+#   <label>|<choice,choice,...>|||<default> one of a fixed set of words
 #
-# The defaults must match the fallback dict at the top of
-# dot_config/wezterm/chezmoi_tmpl.lua.tmpl, which is what renders on a machine
-# whose state file does not exist yet.
+# The defaults must match the `appearance` table at the top of
+# dot_config/wezterm/wezterm.lua, which is what applies on a machine whose
+# state file does not exist yet.
 #
 # The two opacities are authored here as a 0-100 percentage and divided by 100
-# on the Lua side; the blur is a point radius WezTerm takes as-is.
+# on the Lua side; the blur is a point radius WezTerm takes as-is. The backdrop
+# is Windows-only: Mica and Tabbed only show at window opacity 0.
 typeset -gA _WEZTERM_SETTINGS=(
-  windowBackgroundOpacity "Window background opacity|0|100|5|50"
+  windowBackgroundOpacity "Window background opacity|0|100|5|65"
   textBackgroundOpacity "Text background opacity|0|100|5|50"
-  macosWindowBackgroundBlur "macOS background blur radius|0|100|5|5"
+  macosWindowBackgroundBlur "macOS background blur radius|0|100|5|20"
+  win32SystemBackdrop "Windows backdrop|Acrylic,Mica,Tabbed,Disable|||Acrylic"
 )
 
-# A zsh hash has no order of its own - for these three keys ${(k)…} comes back
+# A zsh hash has no order of its own - for these keys ${(k)…} comes back
 # neither authored nor alphabetical - so the menu takes its order from here.
+# Each platform lists only what its WezTerm reads.
 _WEZTERM_ORDER=(
   windowBackgroundOpacity
   textBackgroundOpacity
-  macosWindowBackgroundBlur
 )
+if [[ "$OSTYPE" == darwin* ]]; then
+  _WEZTERM_ORDER+=(macosWindowBackgroundBlur)
+elif [[ -n "$WIN_HOME" ]]; then
+  _WEZTERM_ORDER+=(win32SystemBackdrop)
+fi
 
 # Print one named field of <key>'s record. `key` is not among them: it is the
 # hash key rather than part of the record.
@@ -46,8 +54,19 @@ function _wezterm_field() {
   esac
 }
 
+# Choice settings keep their word list where numbers keep their minimum.
+function _wezterm_is_choice() {
+  [[ "$(_wezterm_field "$1" min)" == *[^0-9]* ]]
+}
+
+# wezterm.lua reads the state from ~/.local/state of the machine WezTerm runs
+# on. On WSL2 that is Windows ($WIN_HOME, from ~/.zshenv), not this home.
 function _wezterm_state_file() {
-  print -r -- "${XDG_STATE_HOME:-$HOME/.local/state}/wezterm/appearance.json"
+  if [[ -n "$WIN_HOME" ]]; then
+    print -r -- "$WIN_HOME/.local/state/wezterm/appearance.json"
+  else
+    print -r -- "${XDG_STATE_HOME:-$HOME/.local/state}/wezterm/appearance.json"
+  fi
 }
 
 function _wezterm_get() {
@@ -73,10 +92,14 @@ function _wezterm_set() {
   mkdir -p "$dir" || return 1
   tmp=$(mktemp "$dir/.appearance.XXXXXX") || return 1
 
+  # Numbers as JSON numbers, choices as strings.
+  local -a vflag=(--argjson v "$value")
+  [[ "$value" == <-> ]] || vflag=(--arg v "$value")
+
   if [[ -r "$file" ]]; then
-    jq --arg k "$key" --argjson v "$value" '.[$k] = $v' "$file" > "$tmp"
+    jq --arg k "$key" "${vflag[@]}" '.[$k] = $v' "$file" > "$tmp"
   else
-    jq -n --arg k "$key" --argjson v "$value" '{($k): $v}' > "$tmp"
+    jq -n --arg k "$key" "${vflag[@]}" '{($k): $v}' > "$tmp"
   fi
   rc=$?
 
@@ -89,12 +112,18 @@ function _wezterm_set() {
   mv -f "$tmp" "$file"
 }
 
+# wezterm.lua reads the state file at load time and watches it, so there is
+# nothing to render. Touching wezterm.lua as well makes WezTerm reload even
+# when the state file was only just created and is not on its watch list yet.
 function _wezterm_apply() {
-  local config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
-
-  chezmoi apply \
-    "$config_home/wezterm/chezmoi_tmpl.lua" \
-    "$config_home/wezterm/wezterm.lua"
+  local config
+  if [[ -n "$WIN_HOME" ]]; then
+    config="$WIN_HOME/.config/wezterm/wezterm.lua"
+  else
+    config="${XDG_CONFIG_HOME:-$HOME/.config}/wezterm/wezterm.lua"
+  fi
+  [[ -f "$config" ]] && touch "$config"
+  return 0
 }
 
 function _wezterm_set_and_apply() {
@@ -113,14 +142,40 @@ function _wezterm_set_and_apply() {
 function _wezterm_valid() {
   local value="$1" min="$2" max="$3"
 
+  # A choice setting passes its comma-separated words as `min`.
+  if [[ "$min" == *[^0-9]* ]]; then
+    ((${${(s:,:)min}[(Ie)$value]}))
+    return
+  fi
+
   [[ "$value" == <-> ]] || return 1
   ((value >= min && value <= max))
+}
+
+# The choice-setting counterpart of _wezterm_tune: one pick, applied at once.
+function _wezterm_choose() {
+  local key="$1" label current choice
+  label=$(_wezterm_field "$key" label) || return 1
+  current=$(_wezterm_get "$key")
+
+  choice=$(print -rl -- ${(s:,:)$(_wezterm_field "$key" min)} \
+    | gum choose --header="${label}: ${current}" --selected="$current") || return 1
+  [[ -n "$choice" && "$choice" != "$current" ]] || return 0
+
+  _wezterm_set_and_apply "$key" "$choice" || return 1
+  gum log --level info "saved" "$label" "$choice"
 }
 
 function _wezterm_tune() {
   local key="$1" from_menu="${2:-}"
   local label min max step original current applied action input
   local -a actions
+
+  if _wezterm_is_choice "$key"; then
+    _wezterm_choose "$key" || return 1
+    [[ -n "$from_menu" ]] && return 2
+    return 0
+  fi
 
   label=$(_wezterm_field "$key" label) || return 1
   min=$(_wezterm_field "$key" min)
@@ -176,7 +231,7 @@ function _wezterm_tune() {
     esac
 
     # Only when it actually moved: hitting up at the ceiling should not cost a
-    # chezmoi apply.
+    # reload.
     if [[ "$current" != "$applied" ]]; then
       if ! _wezterm_set_and_apply "$key" "$current"; then
         # The failed step already undid itself, but earlier previews from this
@@ -194,7 +249,7 @@ function wezterm_config() {
   _check_gum_cmd || return 1
 
   local cmd
-  for cmd in chezmoi jq; do
+  for cmd in jq; do
     command -v "$cmd" > /dev/null 2>&1 || {
       echo "wezterm_config: $cmd not found" >&2
       return 127
@@ -219,7 +274,11 @@ function wezterm_config() {
     }
 
     _wezterm_valid "$value" "$min" "$max" || {
-      echo "wezterm_config: '$value' is not a whole number in ${min}-${max}" >&2
+      if _wezterm_is_choice "$key"; then
+        echo "wezterm_config: '$value' is not one of: ${min//,/, }" >&2
+      else
+        echo "wezterm_config: '$value' is not a whole number in ${min}-${max}" >&2
+      fi
       return 2
     }
 

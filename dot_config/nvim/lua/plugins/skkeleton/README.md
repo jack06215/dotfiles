@@ -102,7 +102,7 @@ kensaku avoids the same trap for a related reason, and `config/lazy.lua` sets
 
 ## Requirements
 
-- [Deno][] on `$PATH` — the denops runtime (`brew-formula-*.txt`)
+- [Deno][] on `$PATH` — the denops runtime (`brewfiles/*`)
 - `vim-denops/denops.vim`, declared here and again under `kensaku`, `flash` and
   `fuzzy-motion`; lazy.nvim dedupes it
 

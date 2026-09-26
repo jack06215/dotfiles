@@ -15,7 +15,7 @@
 
 ### git
 
-- `overrideGpg: true` — runs GPG signing in-process instead of spawning a subprocess, avoiding hangs with some pinentry setups.
+- `overrideGpg` — `true` on macOS only: GPG signs without lazygit leaving its UI, which needs a GUI pinentry (pinentry-mac). Everywhere else gpg-agent uses pinentry-curses, which needs the terminal, so it is `false` there and lazygit hands the terminal over while signing. (`config.yml.tmpl` is a chezmoi template with `[[ ]]` delimiters so that lazygit's own `{{ }}` templates pass through.)
 - `parseEmoji: false` — leaves `:emoji:` codes in commit messages as literal text instead of rendering them.
 - `localBranchSortOrder: recency` — sorts local branches by last checked-out time instead of commit date.
 - `autoForwardBranches: allBranches` — fast-forwards every local branch that's cleanly behind its upstream, not just main/master.

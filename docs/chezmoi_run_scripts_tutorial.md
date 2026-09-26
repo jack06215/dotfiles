@@ -88,7 +88,7 @@ hardcode.
 
 **Option A — precompute it once, as template data.** If you already know
 the value (e.g. you copied it once from the real filesystem) or can derive
-it deterministically per OS, compute it in `chezmoi.toml.tmpl` and expose it
+it deterministically per OS, compute it in `.chezmoi.toml.tmpl` and expose it
 under `[data.*]`:
 
 ```toml
@@ -111,7 +111,7 @@ it costs an extra `chezmoi apply` pass the first time.
 
 **Option B — discover it at apply time, inside the script's own template.**
 If the destination can be found with a filesystem glob (and there's
-reliably exactly one match), skip `chezmoi.toml.tmpl` entirely and resolve
+reliably exactly one match), skip `.chezmoi.toml.tmpl` entirely and resolve
 it inline using chezmoi's `glob` template function:
 
 ```sh
@@ -182,7 +182,7 @@ chezmoi apply --dry-run --verbose   # rerun; should now be a no-op
 
 If the first `--dry-run` shows a `map has no entry for key "..."` template
 error and you took Option A, see the bootstrap gotcha below — you likely
-need to `chezmoi apply` once first so the new data field actually lands in
+need to run `chezmoi init` first so the new data field actually lands in
 `~/.config/chezmoi/chezmoi.toml`.
 
 ## Execution order in one `apply` pass
@@ -230,20 +230,27 @@ cost of it always showing up in `diff`.
 
 ## A bootstrap gotcha
 
-If you took Option A above and your own `chezmoi.toml.tmpl` is itself a
-chezmoi-managed dotfile (i.e. it lives under `dot_config/chezmoi/` and
-targets `~/.config/chezmoi/chezmoi.toml`, rather than the special
-root-level `.chezmoi.toml.tmpl` chezmoi reads before loading config),
-templates in an `apply` run are evaluated using whatever config is
-**already on disk** at the start of that run — not the one being
-regenerated mid-run. So adding a new field under `[data.*]` requires
-**two** `chezmoi apply` passes to become usable elsewhere:
+Option A data lives in the root-level `.chezmoi.toml.tmpl`, which only
+`chezmoi init` renders (into `~/.config/chezmoi/chezmoi.toml`). Every other
+template in an `apply` run is evaluated against the config **already on
+disk**, so adding a new field under `[data.*]` takes one extra step before
+it is usable elsewhere:
 
-1. First pass updates `~/.config/chezmoi/chezmoi.toml` with the new field
-   (any template referencing the new field elsewhere fails during this
-   pass with a `map has no entry for key "..."` error).
-2. Second pass loads the updated config, and the new field is available
-   everywhere, including in scripts.
+1. Run `chezmoi init` to regenerate `~/.config/chezmoi/chezmoi.toml`
+   with the new field. Until then, any template referencing it fails with
+   a `map has no entry for key "..."` error — and `chezmoi apply` warns
+   that the config template has changed.
+2. `chezmoi apply` now sees the field everywhere, including in scripts.
+
+Two things differ from ordinary templates when `.chezmoi.toml.tmpl` runs:
+`.chezmoidata/` has not been loaded yet (so this repo reads
+`.chezmoidata/lookups.toml` with `include ... | fromToml`), while
+`.chezmoitemplates/` is available through `includeTemplate`.
+
+(This repo used to keep the template under `dot_config/chezmoi/` as an
+ordinary managed file. That needed **two** `chezmoi apply` passes instead,
+and a fresh machine's first apply died halfway because `init` never
+generated a config at all.)
 
 This doesn't apply if you use Option B (inline `glob`/`output` discovery),
 since there's no dependency on your own config being regenerated first.
@@ -253,7 +260,7 @@ since there's no dependency on your own config being regenerated first.
 Applying the recipe above to Firefox profiles (Option A, since the profile
 ID is stable and reused elsewhere):
 
-`dot_config/chezmoi/chezmoi.toml.tmpl` computes the real path once, per OS:
+`.chezmoi.toml.tmpl` computes the real path once, per OS:
 
 ```toml
 [data.firefox]
@@ -315,7 +322,7 @@ differ from the darwin script:
 
 3. **PowerShell 7 must be requested explicitly.** chezmoi's built-in
    interpreter for `.ps1` is Windows PowerShell 5.1 (`powershell.exe
-   -NoLogo`). `chezmoi.toml.tmpl` overrides it on Windows:
+   -NoLogo`). `.chezmoi.toml.tmpl` overrides it on Windows:
 
    ```toml
    [interpreters.ps1]

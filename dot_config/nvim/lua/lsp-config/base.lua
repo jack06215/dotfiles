@@ -13,7 +13,6 @@ M.lsp_list = {
   "jsonnet_ls",
   "lua_ls",
   "marksman",
-  "powershell_es",
   "pyright",
   "regols",
   "rubocop",
@@ -25,6 +24,13 @@ M.lsp_list = {
   -- lspsaga's peek_definition opens one float per client that answers.
   "yamlls",
 }
+
+-- PowerShellEditorServices runs from the Windows module path in
+-- settings/powershell_es.lua (C:/Users/...), under pwsh.exe: native Windows
+-- only. On macOS and WSL2 it failed to spawn on every .ps1 buffer.
+if vim.fn.has("win32") == 1 then
+  table.insert(M.lsp_list, "powershell_es")
+end
 
 -- Enhanced capabilities (e.g., for nvim-cmp)
 M.capabilities = function()

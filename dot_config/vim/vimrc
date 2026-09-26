@@ -267,9 +267,32 @@ xnoremap < <gv
 xnoremap > >gv
 " Explicit clipboard yanks - 'clipboard=unnamed' would mean every delete in a
 " commit message clobbers whatever was in the pasteboard.
-nnoremap <leader>y "+y
-xnoremap <leader>y "+y
-nnoremap <leader>Y "+y$
+if has('clipboard')
+  nnoremap <leader>y "+y
+  xnoremap <leader>y "+y
+  nnoremap <leader>Y "+y$
+elseif executable('pbcopy')
+  " Homebrew's and the distro's Linux vim are built without +clipboard, so
+  " there is no "+ register. On WSL2 ~/.local/bin/pbcopy (a win32yank wrapper,
+  " see dot_local/bin) reaches the Windows clipboard instead: the mapping
+  " yanks as usual and flags the yank, and TextYankPost sends it out.
+  function! s:PbcopyNext(keys) abort
+    let g:vimrc_pbcopy_next = 1
+    return a:keys
+  endfunction
+  augroup vimrc_pbcopy
+    autocmd!
+    autocmd TextYankPost *
+          \ if get(g:, 'vimrc_pbcopy_next', 0) && v:event.operator ==# 'y'
+          \ |   call system('pbcopy', join(v:event.regcontents, "\n")
+          \       .. (v:event.regtype ==# 'V' ? "\n" : ''))
+          \ | endif
+          \ | let g:vimrc_pbcopy_next = 0
+  augroup END
+  nnoremap <expr> <leader>y <SID>PbcopyNext('y')
+  xnoremap <expr> <leader>y <SID>PbcopyNext('y')
+  nnoremap <expr> <leader>Y <SID>PbcopyNext('y$')
+endif
 
 " Conflict markers. This vim has no built-in `]n` motion (that one is a
 " neovim/unimpaired thing), and `git rebase` conflict edits are a main reason

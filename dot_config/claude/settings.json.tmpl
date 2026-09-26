@@ -15,6 +15,7 @@
         "chezmoi" .chezmoi
         "table" (dict
           "darwin/jack06215/nacho" (joinPath .chezmoi.homeDir "workspace/jack06215/monorepo")
+          "linux/MSI/nacho" (joinPath .chezmoi.homeDir "workspace/jack06215/monorepo")
         )
       )
 -}}
@@ -48,8 +49,7 @@
       "Bash(git --no-pager show:*)",
       "Bash(git diff:*)",
       "Bash(git --no-pager diff:*)",
-      "Bash(sed -n '/*/p':*)",
-      "Bash(sed -n '/*/{=;p}':*)",
+      "Bash(sed -n:*)",
       "Bash(bazel run //tools/*)",
       "Bash(bazel test:*)",
       "Bash(npx markdownlint-cli:*)",

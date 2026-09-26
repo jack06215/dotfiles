@@ -1,0 +1,14 @@
+#!/bin/sh
+# pbpaste for WSL2: the Windows clipboard -> stdout, with LF line endings.
+# Deployed only on WSL2; see pbcopy next to this file for why it is an
+# executable and why win32yank.
+y={{ .wsl.win32yank | squote }}
+if [ -x "$y" ] || y="$(command -v win32yank.exe)"; then
+  exec "$y" -o --lf
+fi
+
+# No win32yank: Windows PowerShell can read the clipboard too, ~0.25s slower.
+echo "pbpaste: win32yank.exe not found, falling back to powershell.exe" >&2
+/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe -NoProfile -NonInteractive \
+  -Command '[Console]::OutputEncoding = [Text.Encoding]::UTF8; Get-Clipboard -Raw' \
+  | tr -d '\r'

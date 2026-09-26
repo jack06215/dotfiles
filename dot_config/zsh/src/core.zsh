@@ -17,7 +17,7 @@ setopt hist_find_no_dups
 # custom bindings made against the old one are lost.
 bindkey -v
 
-export PATH="$XDG_DATA_HOME/npm/bin:$PATH"
+path=("$XDG_DATA_HOME/npm/bin" $path)
 
 # =============================================================================
 # Platform detection

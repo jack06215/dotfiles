@@ -55,7 +55,7 @@
   df = "!git hist | fzf | awk '{print $2}' | xargs -I {} git diff {}^ {}"
   hist = log --pretty=format:\"%Cgreen%h %Creset%cd %Cblue[%cn] %Creset%s%C(yellow)%d%C(reset)\" --graph --date=relative --decorate --all
   llog = log --graph --name-status --pretty=format:\"%C(red)%h %C(reset)(%cd) %C(green)%an %Creset%s %C(yellow)%d%Creset\" --date=relative
-  open = "!hub browse"
+  open = "!gh browse"
   type = cat-file -t
   dump = cat-file -p
   find = "!f() { git log --pretty=format:\"%h %cd [%cn] %s%d\" --date=relative -S'pretty' -S\"$@\" | fzf | awk '{print $1}' | xargs -I {} git diff {}^ {}; }; f"
@@ -66,7 +66,7 @@
 [pull]
   rebase = false
 [core]
-  excludeFile = ~/.config/git/ignore
+  excludesFile = ~/.config/git/ignore
   ignorecase = false
   fsmonitor = true
   untrackedcache = true
@@ -87,4 +87,22 @@
 [branch]
   sort = -committerdate
 [commit]
-  gpgsign = true
+  # Per machine (.myComputer.gitSign, from .chezmoidata/lookups.toml): signing
+  # needs the GPG key imported into $GNUPGHOME, which not every machine has.
+{{- $gpgsign := true }}
+{{- if hasKey .myComputer "gitSign" }}
+{{-   $gpgsign = .myComputer.gitSign }}
+{{- end }}
+  gpgsign = {{ $gpgsign }}
+{{- if .myComputer.isLinux }}
+# HTTPS auth through gh's login. macOS gets osxkeychain from Homebrew git's
+# system gitconfig; Linuxbrew's git ships none, and GIT_CONFIG_GLOBAL (see
+# ~/.zshenv) hides whatever `gh auth setup-git` wrote into ~/.gitconfig. The
+# empty `helper =` clears any helper inherited from another config first.
+[credential "https://github.com"]
+  helper =
+  helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+  helper =
+  helper = !gh auth git-credential
+{{- end }}

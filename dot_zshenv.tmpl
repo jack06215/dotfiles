@@ -4,21 +4,58 @@ export XDG_PREFIX_HOME="$HOME/.local"
 export XDG_DATA_HOME="$XDG_PREFIX_HOME/share"
 export XDG_STATE_HOME="$XDG_PREFIX_HOME/state"
 export XDG_BIN_HOME="$XDG_PREFIX_HOME/bin"
-[[ "$PATH" == *"$XDG_BIN_HOME"* ]] || export PATH="$XDG_BIN_HOME:$PATH"
+
+# This file runs for every zsh, scripts and `zsh -c` included, so nothing in
+# it forks. -U keeps the re-prepends below from piling up in nested shells
+# (and moves an entry to the front instead).
+typeset -U path fpath
+{{- if eq .chezmoi.os "linux" }}
+
+# Linuxbrew, for non-interactive shells too: a `zsh -c` from WezTerm's
+# gui-startup, tmux's run-shell or a script would otherwise not find brew's
+# tmux, git or nvim. What `brew shellenv` prints, minus its fork - and minus
+# its `export FPATH`, see below.
+if [[ -d /home/linuxbrew/.linuxbrew ]]; then
+  export HOMEBREW_PREFIX="/home/linuxbrew/.linuxbrew"
+  export HOMEBREW_CELLAR="$HOMEBREW_PREFIX/Cellar"
+  export HOMEBREW_REPOSITORY="$HOMEBREW_PREFIX/Homebrew"
+  export INFOPATH="$HOMEBREW_PREFIX/share/info${INFOPATH:+:$INFOPATH}"
+  path=("$HOMEBREW_PREFIX/bin" "$HOMEBREW_PREFIX/sbin" $path)
+  fpath=("$HOMEBREW_PREFIX/share/zsh/site-functions" $fpath)
+fi
+{{- end }}
+path=("$XDG_BIN_HOME" $path)
+
+# An exported FPATH replaces a child zsh's built-in function path, and zsh's
+# own functions dir is versioned (Cellar/zsh/5.9.2/...): after `brew upgrade
+# zsh`, every shell spawned from an environment captured earlier (the tmux
+# server, WezTerm, an editor) would lose compinit, add-zsh-hook and
+# is-at-least. So never export it, drop dirs that no longer exist, and if
+# that took zsh's own functions with it, fall back to brew's unversioned link.
+typeset +x FPATH
+fpath=(${^fpath}(N-/))
+_zsh_own_functions=(${^fpath}/compinit(N))
+if (( ! ${#_zsh_own_functions} )) && [[ -n "$HOMEBREW_PREFIX" ]]; then
+  fpath+=("$HOMEBREW_PREFIX/share/zsh/functions"(N-/))
+fi
+unset _zsh_own_functions
+
+# Ubuntu's /usr/bin/zsh runs its own compinit from /etc/zsh/zshrc unless told
+# not to; completion.zsh runs the one this config wants.
+skip_global_compinit=1
 
 export ZDOTDIR="$XDG_CONFIG_HOME/zsh"
 
-# Built-in Python environment
-_py_version="3.14"
-export BUILTIN_PYTHON_BIN_DIR="/opt/homebrew/opt/python@${_py_version}/bin/python${_py_version}"
-export BUILTIN_PIP_BIN_DIR="/opt/homebrew/opt/python@${_py_version}/bin/pip${_py_version}"
-
-GPG_TTY=$(tty)
-export GPG_TTY
+# $TTY is zsh's own; $(tty) forked on every zsh and said "not a tty" in
+# scripts.
+[[ -n "$TTY" ]] && export GPG_TTY="$TTY"
 
 export EDITOR=vim
 export VISUAL=vim
 
+# asdf >= 0.16's default, spelled out: plugins, installs and shims stay where
+# the old bash asdf kept them. See dot_config/zsh/src/asdf.zsh.
+export ASDF_DATA_DIR="$HOME/.asdf"
 export BUN_INSTALL="$XDG_DATA_HOME/bun"
 export CABAL_CONFIG="$XDG_CONFIG_HOME/cabal/config"
 export GLAZEWM_CONFIG_PATH="$XDG_CONFIG_HOME/glazewm/config.yaml"
@@ -35,7 +72,9 @@ export GEM_HOME="$XDG_DATA_HOME/gem"
 export GEM_SPEC_CACHE="$XDG_CACHE_HOME/gem"
 export GHCUP_USE_XDG_DIRS=1
 export GIT_CONFIG_GLOBAL="$HOME/.config/git/config"
-export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_git"
+# Only where the key exists: pointing ssh at a missing identity breaks every
+# git-over-ssh remote on that machine.
+[[ -f "$HOME/.ssh/id_git" ]] && export GIT_SSH_COMMAND="ssh -i $HOME/.ssh/id_git"
 export GNUPGHOME="$XDG_DATA_HOME/gnupg"
 export GOPATH="$XDG_DATA_HOME/go"
 export GTK2_RC_FILES="$XDG_CONFIG_HOME/gtk-2.0/gtkrc"
@@ -63,9 +102,16 @@ export RUSTUP_HOME="$XDG_DATA_HOME/rustup"
 export SSB_HOME="$XDG_DATA_HOME/zoom"
 export STACK_ROOT="$XDG_DATA_HOME/stack"
 export SUDO_EDITOR=vim
-export WGETRC="$XDG_CONFIG_HOME/wgetrc"
-export CHEZMOI_SOURCE_DIR="${HOME}/workspace/jack06215/dotfiles"
+# wget refuses to run at all (exit 1) when WGETRC names a missing file.
+[[ -f "$XDG_CONFIG_HOME/wgetrc" ]] && export WGETRC="$XDG_CONFIG_HOME/wgetrc"
 # export XMODIFIERS='@im=fcitx'
 # export GTK_IM_MODULE='fcitx'
 # export QT_IM_MODULE='fcitx'
 # export SDL_IM_MODULE='fcitx'
+{{- if .myComputer.isWSL2 }}
+
+# WSL2: the Windows side, resolved once by `chezmoi init` (.chezmoi.toml.tmpl)
+# instead of asking cmd.exe/pwsh.exe on every shell start.
+export WIN_USER={{ .wsl.windowsUser | squote }}
+export WIN_HOME={{ .wsl.windowsHome | squote }}
+{{- end }}

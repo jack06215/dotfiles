@@ -1,0 +1,7 @@
+# macOS-only snippets, loaded through SnippetDirs in config.toml (macOS only);
+# .chezmoiignore keeps this dir off other machines. Casks do not exist on
+# Linuxbrew: there `brew info --cask` fails with "key not found: :prefpanedir".
+[[snippets]]
+    description = "List of cask packages"
+    command = "brew info --cask --json=v2 $(brew list --cask) | jq -r '.casks[] | select(.depends_on != {}) | .token'"
+    tag = ["homebrew"]

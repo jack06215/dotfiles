@@ -1,0 +1,8 @@
+; macOS-only half of homebrew.cheat, kept off other machines by .chezmoiignore:
+; casks do not exist on Linuxbrew, where `brew info --cask` fails with
+; "key not found: :prefpanedir".
+
+% homebrew
+
+# List of cask packages
+brew info --cask --json=v2 $(brew list --cask) | jq -r '.casks[] | select(.depends_on != {}) | .token'

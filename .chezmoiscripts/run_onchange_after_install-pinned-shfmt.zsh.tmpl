@@ -1,0 +1,21 @@
+{{- /*
+  Installs the shfmt that patch_functions.zsh pins (s_shfmt_pinned) whenever
+  that file changes. It used to run on every interactive shell start, which
+  made the first shell on a new machine block on a network `go install`.
+
+  Needs go. Where go is missing (a fresh machine, before setup.sh's brew
+  bundle) this renders a skip notice instead; once go is installed the
+  rendered text changes, so the next `chezmoi apply` runs the install. A
+  failed install warns without failing the apply. Empty (skipped) on native
+  Windows, which has no zsh.
+*/ -}}
+{{- if ne .chezmoi.os "windows" -}}
+#!/usr/bin/env zsh
+# patch_functions.zsh sha256: {{ include "dot_config/zsh/src/patch_functions.zsh" | sha256sum }}
+{{ if lookPath "go" -}}
+source {{ joinPath .xdg.configHome "zsh/src/patch_functions.zsh" | quote }}
+s_shfmt_pinned || print -u2 -- "install-pinned-shfmt: s_shfmt_pinned failed; run it by hand to retry"
+{{- else -}}
+print -u2 -- "install-pinned-shfmt: go not found, skipping; rerun chezmoi apply once go is installed"
+{{- end }}
+{{ end -}}

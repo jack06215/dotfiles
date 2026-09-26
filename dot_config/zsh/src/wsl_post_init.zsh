@@ -12,4 +12,6 @@ function chrome_version() {
     "(Get-Item 'C:\Program Files\Google\Chrome\Application\chrome.exe').VersionInfo.ProductVersion"
 }
 
-export PATH="$HOME/.asdf/shims:$PATH"
+# asdf.zsh (sourced earlier) already puts the shims dir on PATH. Re-prepending
+# it here would put it ahead of ~/.local/bin (the pinned shfmt) and override
+# ZSH_RUBY_MANAGER=rbenv - the same reason darwin_post_init.zsh dropped it.

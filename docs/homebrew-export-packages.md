@@ -17,7 +17,8 @@ The jq recipes above are the manual way to read out `name`/`tap` pairs.
 `generate-brewfile.sh` at the repo root does the whole export in one step:
 
 ```sh
-bazel run //:export_brewfile_macos   # from the repo (macOS only)
+bazel run //:export_brewfile_macos   # from the repo, on macOS
+bazel run //:export_brewfile_linux   # from the repo, on Linux/WSL2
 ~/generate-brewfile.sh               # anywhere; picks the manifest by uname
 ```
 

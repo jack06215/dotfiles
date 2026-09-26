@@ -29,6 +29,20 @@ play = [
 	{ run = "mpv --force-window %s", desc = "Play", for = "unix", orphan = true },
 	{ run = "mediainfo %s1; echo 'Press enter to exit'; read _", desc = "Show media info", for = "unix", block = true },
 ]
+{{- if .myComputer.isWSL2 }}
+
+# WSL2: the preset's Linux `open`/`reveal` are xdg-open, which has no Windows
+# desktop behind it. wslview hands a file to its Windows default app, and
+# Explorer reveals it; explorer.exe goes by absolute path because
+# appendWindowsPath=false keeps it off PATH (and it always exits 1, hence
+# orphan rather than waiting on it).
+open = [
+	{ run = "wslview %s1", desc = "Open with Windows", for = "linux", orphan = true },
+]
+reveal = [
+	{ run = '/mnt/c/Windows/explorer.exe /select,"$(wslpath -w %s1)"', desc = "Reveal in Explorer", for = "linux", orphan = true },
+]
+{{- end }}
 
 # git.yazi, showing per-file VCS status as a linemode sign. Two rules because
 # files and directories are fetched separately; the shared `group` lets both

@@ -367,3 +367,8 @@ TSWLatexianTemp*
 *.zwc
 
 **/.claude/settings.local.json
+
+### Windows ###
+# Alternate data streams that Windows writes as files when something is copied
+# into the WSL filesystem from Explorer or a browser download.
+*:Zone.Identifier

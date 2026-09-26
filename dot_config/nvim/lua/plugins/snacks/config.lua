@@ -4,6 +4,10 @@ return {
   priority = 1000,
   opts = {
     image = {
+      -- Not on WSL2: WezTerm on Windows ships kitty graphics switched off and
+      -- they are unreliable there even when on (wezterm#8070), and ImageMagick
+      -- is not installed on the WSL side.
+      enabled = vim.fn.has("wsl") == 0,
       -- Drop "pdf" from the default image formats so snacks doesn't register a
       -- `BufReadCmd *.pdf` that shells out to ImageMagick/ghostscript (`gs`).
       -- `gs` isn't installed here, so that conversion fails; instead we let

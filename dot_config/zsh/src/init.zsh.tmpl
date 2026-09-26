@@ -36,7 +36,8 @@ fi
 [ -f "$ZDOTDIR/src/darwin_pre_init.zsh" ] && source "$ZDOTDIR/src/darwin_pre_init.zsh"
 [ -f "$ZDOTDIR/src/darwin.zsh" ] && source "$ZDOTDIR/src/darwin.zsh"
 {{- else if eq .chezmoi.os "linux" }}
-{{-   if contains "microsoft" (.chezmoi.kernel.osrelease | lower) }}
+{{-   if .myComputer.isWSL2 }}
+[[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] WSL2 detected; sourcing wsl_pre_init.zsh and wsl.zsh"
 [ -f "$ZDOTDIR/src/wsl_pre_init.zsh" ] && source "$ZDOTDIR/src/wsl_pre_init.zsh"
 [ -f "$ZDOTDIR/src/wsl.zsh" ] && source "$ZDOTDIR/src/wsl.zsh"
 {{-   else if env "TERMUX_VERSION" }}
@@ -71,11 +72,11 @@ fi
 [ -f "$ZDOTDIR/src/functions.zsh" ] && source "$ZDOTDIR/src/functions.zsh"
 
 # Version overrides for tools whose pin (company .tool-versions, etc.) can't
-# be trusted to stay current - see patch_functions.zsh for why.
-if [ -f "$ZDOTDIR/src/patch_functions.zsh" ]; then
-  source "$ZDOTDIR/src/patch_functions.zsh"
-  s_shfmt_pinned
-fi
+# be trusted to stay current - see patch_functions.zsh for why. Only the
+# functions: the pinned shfmt itself is installed on `chezmoi apply` by
+# .chezmoiscripts/run_onchange_after_install-pinned-shfmt.zsh.tmpl, so a shell
+# start never blocks on a network `go install`.
+[ -f "$ZDOTDIR/src/patch_functions.zsh" ] && source "$ZDOTDIR/src/patch_functions.zsh"
 
 # =============================================================================
 # Zinit and its plugins
@@ -145,7 +146,8 @@ fi
 {{- if eq .chezmoi.os "darwin" }}
 [ -f "$ZDOTDIR/src/darwin_post_init.zsh" ] && source "$ZDOTDIR/src/darwin_post_init.zsh"
 {{- else if eq .chezmoi.os "linux" }}
-{{-   if contains "microsoft" (.chezmoi.kernel.osrelease | lower) }}
+{{-   if .myComputer.isWSL2 }}
+[[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] WSL2 detected; sourcing wsl_post_init.zsh"
 [ -f "$ZDOTDIR/src/wsl_post_init.zsh" ] && source "$ZDOTDIR/src/wsl_post_init.zsh"
 {{-   else if env "TERMUX_VERSION" }}
 [ -f "$ZDOTDIR/src/termux_post_init.zsh" ] && source "$ZDOTDIR/src/termux_post_init.zsh"

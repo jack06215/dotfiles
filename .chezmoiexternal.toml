@@ -1,0 +1,15 @@
+{{- /*
+  Git repositories chezmoi clones (and refreshes with --refresh-externals, or
+  after refreshPeriod) as part of `chezmoi apply`.
+*/ -}}
+{{ if ne .chezmoi.os "windows" -}}
+# tmux plugin manager. tmux.conf runs it from here (TMUX_PLUGIN_MANAGER_PATH)
+# and it clones the @plugin list into the same directory; setup.sh installs
+# those with tpm's bin/install_plugins, `prefix + I` does it from tmux.
+[".local/share/tmux/plugins/tpm"]
+    type = "git-repo"
+    url = "https://github.com/tmux-plugins/tpm.git"
+    refreshPeriod = "168h"
+    clone.args = ["--depth", "1"]
+    pull.args = ["--ff-only"]
+{{ end -}}

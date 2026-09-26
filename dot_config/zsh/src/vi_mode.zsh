@@ -37,10 +37,10 @@ ZVM_LAZY_KEYBINDINGS=false
 # macOS, so dot_config/nvim never gets a look in. Point *only* this at nvim:
 # $EDITOR itself stays `vim`, so git's commit editor is unchanged.
 #
-# /opt/homebrew/bin is already on PATH by this point (path_helper reads
-# /etc/paths.d/homebrew before .zshrc), so the probe is meaningful here. Where
-# nvim isn't installed - WSL, termux, a bare server - this stays unset and the
-# plugin falls back to ${EDITOR:-vim} on its own.
+# Homebrew's bin is already on PATH by this point (macOS: path_helper reads
+# /etc/paths.d/homebrew before .zshrc; Linux: ~/.zshenv adds Linuxbrew), so
+# the probe is meaningful here. Where nvim isn't installed - termux, a bare
+# server - this stays unset and the plugin falls back to ${EDITOR:-vim}.
 (($+commands[nvim])) && ZVM_VI_EDITOR=nvim
 
 # =============================================================================
@@ -61,10 +61,11 @@ ZVM_SYSTEM_CLIPBOARD_ENABLED=true
 # (same is_wsl/is_termux predicates notify.zsh dispatches on; both come from
 # core.zsh, which init.zsh sources well before this file).
 if is_wsl; then
-  ZVM_CLIPBOARD_COPY_CMD='clip.exe'
-  # Get-Clipboard hands back CRLF; the trailing ^M would be pasted literally
-  # into the command line. PASTE_CMD is eval'd, so a pipeline is fine here.
-  ZVM_CLIPBOARD_PASTE_CMD="powershell.exe -NoProfile -Command Get-Clipboard | tr -d '\r'"
+  # ~/.local/bin's win32yank wrappers (dot_local/bin), named explicitly so
+  # the plugin can't pick something else. clip.exe/powershell.exe are not
+  # on PATH here (appendWindowsPath=false), and clip.exe garbles non-ASCII.
+  ZVM_CLIPBOARD_COPY_CMD='pbcopy'
+  ZVM_CLIPBOARD_PASTE_CMD='pbpaste'
 elif is_termux; then
   ZVM_CLIPBOARD_COPY_CMD='termux-clipboard-set'
   ZVM_CLIPBOARD_PASTE_CMD='termux-clipboard-get'

@@ -1,24 +1,16 @@
-# Linux/WSL2 package manifest, rendered into ~/Brewfile by Brewfile.tmpl.
+# Linux/WSL2 package manifest, rendered into ~/Brewfile by Brewfile.tmpl and
+# installed by setup.sh's `brew bundle install`.
 #
-# Converted from the retired brew-formula-wsl2.txt + brew-trust-taps.txt, so
-# it carries every tap the old brew_trust_taps pass added even though only
-# terraform, k9s and protolint need one. Running generate-brewfile.sh on an
-# actual WSL2 box replaces this with a real `brew bundle dump`, which prunes
-# the unused taps and adds the description comments.
+# Curated rather than dumped: every formula here is a tool the configs in this
+# repo use or one installed on purpose - no ffmpeg/mpv libraries pulled in as
+# dependencies. Only two taps, for the only formulae that need one (acli and
+# HashiCorp's terraform, since homebrew-core froze terraform at the last MPL
+# release). The apt side - build deps, the word list, Claude Code's sandbox -
+# lives in setup.sh. generate-brewfile.sh on this machine replaces the file
+# with a `brew bundle dump`; drop anything unwanted from the diff it reports.
 tap "atlassian/acli", trusted: true
-tap "auth0/auth0-cli", trusted: true
-tap "bufbuild/buf", trusted: true
-tap "cockroachdb/tap", trusted: true
-tap "derailed/k9s", trusted: true
 tap "hashicorp/tap", trusted: true
-tap "kdash-rs/kdash", trusted: true
-tap "leoafarias/fvm", trusted: true
-tap "localstack/tap", trusted: true
-tap "nikitabobko/tap", trusted: true
-tap "yoheimuta/protolint", trusted: true
 brew "actionlint"
-brew "aom"
-brew "aribb24"
 brew "asdf"
 brew "atuin"
 brew "awscli"
@@ -27,8 +19,10 @@ brew "azure-cli"
 brew "bat"
 brew "bazelisk"
 brew "bottom"
+brew "btop"
 brew "buildifier"
 brew "carapace"
+brew "chezmoi"
 brew "clang-format"
 brew "cmake"
 brew "colordiff"
@@ -41,7 +35,6 @@ brew "exiftool"
 brew "eza"
 brew "fd"
 brew "ffmpeg"
-brew "frei0r"
 brew "fzf"
 brew "gawk"
 brew "gh"
@@ -54,51 +47,47 @@ brew "go"
 brew "grpcurl"
 brew "gum"
 brew "hadolint"
+brew "htop"
+brew "jq"
 brew "jsonnet"
 brew "k9s"
 brew "ktlint"
 brew "lazygit"
-brew "libass"
-brew "libbluray"
 brew "libomp"
-brew "librist"
-brew "libssh"
-brew "libvidstab"
-brew "libxv"
+brew "lua-language-server"
 brew "luarocks"
 brew "lynx"
 brew "markdownlint-cli"
+brew "marksman"
 brew "media-info"
+brew "moreutils"
 brew "mpv"
+brew "navi"
 brew "ncdu"
 brew "neovim"
 brew "nushell"
-brew "opencore-amr"
+brew "opencc"
 brew "peco"
+brew "pet"
 brew "poetry"
 brew "poppler"
 brew "protolint"
 brew "pyright"
 brew "python-yq"
 brew "python@3.12"
-brew "rav1e"
 brew "rclone"
 brew "ripgrep"
-brew "rubberband"
 brew "sd"
 brew "sevenzip"
-brew "snappy"
-brew "speex"
-brew "srt"
 brew "starship"
-brew "terraform"
 brew "tesseract"
-brew "theora"
-brew "wordnet"
-brew "xvid"
+brew "tmux"
+brew "tock"
+brew "vim"
 brew "yamllint"
 brew "yazi"
-brew "zeromq"
-brew "zimg"
+brew "zellij"
 brew "zoxide"
 brew "zsh"
+brew "atlassian/acli/acli"
+brew "hashicorp/tap/terraform"

@@ -12,15 +12,25 @@ config files.
 ## Quick start
 
 ```sh
-chezmoi init --apply <this-repo>
+mkdir -p ~/workspace/jack06215
+git clone https://github.com/jack06215/dotfiles ~/workspace/jack06215/dotfiles
+chezmoi init --apply --source ~/workspace/jack06215/dotfiles
 ```
 
-chezmoi prompts derive from `dot_config/chezmoi/chezmoi.toml.tmpl`, which
-detects OS/arch, whether the machine is a "company machine"
-(`IS_COMPANY_MACHINE` env var), and XDG paths, then exposes them to every
-template as `.myComputer.*` / `.xdg.*`. `.chezmoiignore` uses the same data
-to skip OS-inapplicable files (e.g. `AppData/**` is skipped everywhere
-except Windows) and to drop `.tool-versions` on one specific hostname.
+`chezmoi init` renders `.chezmoi.toml.tmpl` into
+`~/.config/chezmoi/chezmoi.toml` (recording the `--source` checkout as
+`sourceDir`, so later commands need no flag). The template detects OS/arch,
+WSL2, whether the machine is a "company machine" (`IS_COMPANY_MACHINE` env
+var), XDG paths and the per-machine paths in `.chezmoidata/lookups.toml`,
+then exposes them to every template as `.myComputer.*` / `.wsl.*` /
+`.xdg.*` / `.pypoetry.*` / `.firefox.*` / `.vscode.*`. On WSL2 it also finds
+the Windows home (`.wsl.windowsHome`, e.g. `/mnt/c/Users/<you>`) and
+`win32yank.exe`, and resolves the Firefox and VS Code paths on the Windows
+side, since those apps run on Windows. The values are baked in at init time:
+after editing the template or `lookups.toml`, run `chezmoi init` again
+(`chezmoi apply` warns when the template has changed).
+`.chezmoiignore` uses the same data to skip OS-inapplicable files and to
+drop `.tool-versions` on one specific hostname.
 
 ## Layout
 
@@ -31,18 +41,19 @@ Everything follows the [XDG base directory spec](https://specifications.freedesk
 `$HOME` stays clean.
 
 ```
+.chezmoi.toml.tmpl          → chezmoi config template (machine data; see Quick start)
+.chezmoidata/, .chezmoitemplates/ → lookup tables + the lookup/lookupPath helpers
 .chezmoiscripts/            → run_ scripts (executed, never placed in ~)
 dot_zshenv                  → ~/.zshenv (XDG + tool env vars, ZDOTDIR)
 dot_tool-versions           → ~/.tool-versions (asdf-managed toolchain)
 dot_config/
   zsh/                      → shell config (see below)
-  chezmoi/                  → chezmoi.toml.tmpl (prompt/data source)
   claude/                   → Claude Code settings; skills/ symlinks to ../../skills
   git/, gh-dash/, lazygit/  → git tooling
   starship/                 → prompt theme (Nord palette)
   tock/                     → time tracker (tock.yaml; SQLite db under XDG_DATA_HOME)
   tmux/, tmux-powerline/    → multiplexer config, which-key menu, status bar
-  wezterm/                  → terminal emulator config (Lua, templated)
+  wezterm/                  → terminal emulator config (plain Lua + a rendered machine.lua)
   nvim/                     → LazyVim-based Neovim config
   zellij/                   → terminal multiplexer keybinds
   bottom/, btop/, htop/     → system monitors
@@ -51,9 +62,12 @@ dot_config/
   myscripts/, private_pet/  → misc scripts + `pet` snippet manager
   private_navi/             → `navi` cheatsheets: config.yaml, cheats/ (zsh)
                               and cheats-nu/ (nushell), ported from pet
+  vscode/, firefox/         → VS Code settings, Firefox user.js + userChrome.css
+  windows-terminal/         → Windows Terminal settings (jsonnet source + json)
+  powershell/               → PowerShell 7 profile, MyModule, Scripts, and the
+                              Chocolatey/winget manifests (see docs/windows-setup.md)
 dot_glzr/
   glazewm/, zebar/          → Windows tiling WM + status bar
-AppData/                    → Windows-only app config (ignored elsewhere)
 ```
 
 ## Shell (zsh)
@@ -93,14 +107,14 @@ Highlights under `src/`:
 | `pet.zsh` | binds `Ctrl-O` to `pet search` snippet lookup (`Ctrl-S` is tmux's prefix, so a `^S` binding never reaches zsh) |
 | `navi.zsh` | binds `Ctrl-G` to the `navi` widget — cheatsheet search over `dot_config/private_navi/cheats/*.cheat`, a port of pet's `snippet.toml`. Runs alongside pet rather than replacing it; `NAVI_CONFIG` in `dot_zshenv` pins the config path because navi otherwise resolves it per-platform (`~/Library/Application Support/navi` on macOS). nushell gets the same `Ctrl-G` from `dot_config/nushell/function.nu`, whose `navi` wrapper passes `--path` for `cheats-nu/` so the nu pipelines stay out of the zsh picker — the same split pet makes with `snippet.nu.toml` |
 | `tock.zsh` | time tracking: `tk` (start/switch, project inferred from the git root, prompts for tag + note), `tockpick`/`tkr` (gum picker over history, shows last note and asks for a new one), `tkn`/`tkd` + `tks`/`tkc`/`tkl`/`tkw`/`tka` |
-| `wezterm.zsh` | `wezterm_config`: gum-driven live tuning of WezTerm opacity/blur, persisted per-machine in `$XDG_STATE_HOME/wezterm/appearance.json` |
+| `wezterm.zsh` | `wezterm_config`: gum-driven live tuning of WezTerm opacity, macOS blur / Windows backdrop, persisted in `~/.local/state/wezterm/appearance.json` of the machine WezTerm runs on (on WSL2 the Windows home) |
 | `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |
 | `search.zsh` | fzf-based search helpers |
 | `aws.zsh`, `bazel.zsh`, `k8s.zsh`, `mysql.zsh`, `dart.zsh` | domain-specific shortcuts |
-| `zsh_python_init.zsh` | resolves the Poetry-managed venv under `python` per OS and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN`, `DBT_BIN`, `GDOWN_BIN` + aliases |
+| `zsh_python_init.zsh` | resolves the Poetry-managed venv under `python` per OS and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN` + aliases |
 | `executable_sleep.zsh` / `executable_wakeup.zsh` | sleepwatcher hooks (macOS); skip weekends, gate on `sleepwatcher.should_run`, drive a Teamspirit clock-in/out script |
 | `myscripts/` | standalone executables: `fzf-listprojects`, `whisper-mic`, `transcribe-yt`, `convert-mp3-to-aiff`, `ghpr-index` (rows + preview for the `ghpr` picker), AWS role listing, sleepwatcher enable/disable, etc. |
-| `BUILD.bazel`, `MODULE.bazel` | Bazel entry points for repo maintenance tasks — `bazel run //:export_brewfile_macos` regenerates `brewfiles/darwin`. Not a build system for the dotfiles themselves; `.bazelrc` sets `--symlink_prefix=/` so no `bazel-*` symlinks appear in a chezmoi source tree |
+| `BUILD.bazel`, `MODULE.bazel` | Bazel entry points for repo maintenance tasks — `bazel run //:export_brewfile_macos` / `export_brewfile_linux` regenerate `brewfiles/darwin` / `brewfiles/wsl2`. Not a build system for the dotfiles themselves; `.bazelrc` sets `--symlink_prefix=/` so no `bazel-*` symlinks appear in a chezmoi source tree |
 | `brewfiles/` | per-OS Homebrew manifests (`darwin`, `wsl2`) carrying taps + formulae + casks + tap trust; `Brewfile.tmpl` renders the matching one to `~/Brewfile` for `brew bundle install`, and `generate-brewfile.sh` regenerates the one for the machine you are on |
 | `prompt_repository/`, `template/` | reusable prompt/PR templates |
 
@@ -122,16 +136,21 @@ all Python tooling invoked from zsh:
 
 ## Terminal & editor
 
-- **wezterm** (`dot_config/wezterm/wezterm.lua.tmpl`) — templated via a
-  small helper module (`chezmoi_tmpl.lua.tmpl`) that exposes chezmoi's
-  `myComputer.*` data to Lua; picks the login shell per OS, defines
-  hyperlink rules (including a custom `TICKET-123/branch-name` →
-  GitHub monorepo tree link rule for Flywheel branches).
-  Background opacity and macOS blur are not hard-coded: `chezmoi_tmpl`
-  reads them from `$XDG_STATE_HOME/wezterm/appearance.json` (falling back
-  to committed defaults), and `wezterm_config` tunes them live — each step
-  re-applies the two wezterm targets, and WezTerm's own config watcher
-  reloads. Opacities are authored 0–100 and divided by 100 in `tmpl.pct`.
+- **wezterm** (`dot_config/wezterm/wezterm.lua`) — one plain-Lua config for
+  macOS and Windows, deciding per OS at runtime (`wezterm.target_triple`):
+  the "Cmd" key layer is CMD on macOS and CTRL+SHIFT elsewhere (plain CTRL
+  would take Ctrl-C/W/V/... from the shell); on Windows it opens the WSL2
+  distro through WezTerm's `WSL:<distro>` domain, and the first tab runs the
+  tmux dev workspace, as on macOS. The per-machine facts it cannot work out
+  itself (the distro, the login shell there) come from `machine.lua`,
+  rendered from chezmoi data. It also defines hyperlink rules (including a
+  custom `TICKET-123/branch-name` → GitHub monorepo tree link rule for
+  Flywheel branches). Opacity, macOS blur and the Windows backdrop are read
+  at runtime from `~/.local/state/wezterm/appearance.json` (falling back to
+  the defaults at the top of wezterm.lua) and watched, so `wezterm_config`
+  just writes that file - on WSL2 on the Windows side - and WezTerm reloads.
+  On WSL2 the files reach `%USERPROFILE%\.config\wezterm` through the
+  Windows push below.
 - **nvim** (`dot_config/nvim/`) — [LazyVim](https://github.com/LazyVim/LazyVim) starter, own fork at
   `jack06215/lazyvim-starter`.
 - **Dictionary completion** (`dot_config/nvim/lua/plugins/blink/`) — English
@@ -265,6 +284,16 @@ merge helpers for unmerged files).
 [GlazeWM](https://github.com/glzr-io/glazewm) (tiling WM) and
 [Zebar](https://github.com/glzr-io/zebar) (status bar) for Windows machines.
 
+On a WSL2 machine the Windows apps read their config from the Windows home,
+which `chezmoi apply` inside WSL never touches (and which cannot follow a
+symlink into the WSL filesystem). `run_onchange_after_push-windows-configs`
+copies WezTerm, GlazeWM, Zebar, VS Code (`%APPDATA%\Code\User`), Firefox
+(the profile in `.chezmoidata/lookups.toml`) and Windows Terminal settings
+there instead, from the repo directly. It reruns whenever one of them
+changes; a Windows-side copy that differs from what it last wrote (edited on
+Windows, or there before it) is kept as `<name>.chezmoi-backup-<timestamp>`
+before being replaced.
+
 ## Claude Code
 
 `dot_config/claude/settings.json` sets theme/editor mode. Skills live at the
@@ -287,3 +316,30 @@ server config on disk.
 Managed via [asdf](https://asdf-vm.com/) (`dot_tool-versions`): dasel,
 helm, java (oracle-graalvm), jq, kind, kubectl, kustomize, node, python,
 shellcheck, shfmt, mysql, poetry.
+
+On Windows the same file is read by [mise](https://mise.jdx.dev/) instead —
+asdf is a bash program and does not run there. 11 of the 13 install; java and
+mysql are skipped, and `docs/windows-setup.md` explains why.
+
+## Windows
+
+Provisioning maps onto the Unix side one piece at a time:
+
+| Unix | manifest | Windows |
+| --- | --- | --- |
+| Homebrew | `brewfiles/` | Chocolatey, `dot_config/powershell/chocolatey/packages.config` |
+| — | — | winget, `dot_config/powershell/winget/packages.json`, for what Chocolatey lacks |
+| asdf | `dot_tool-versions` | mise, reading the same file |
+| `setup.sh` | — | `setup.ps1` (`executable_setup.ps1.tmpl`) |
+| `generate-brewfile.sh` | — | `generate-chocofile.ps1` |
+
+`setup.ps1` requires an elevated PowerShell 7, since Chocolatey installs
+machine-wide. The PowerShell profile lives in `dot_config/powershell/` and is
+copied into `Documents\PowerShell` — the only path pwsh reads `$PROFILE` and its
+per-user `PSModulePath` entry from — by
+`run_onchange_after_link-powershell-profile.ps1` on Windows, or by
+`run_onchange_after_push-windows-configs.sh` from WSL2. Neovim, VS Code and the
+language servers are deliberately absent: development happens in WSL2.
+
+See **[docs/windows-setup.md](docs/windows-setup.md)** for the bootstrap on a
+brand-new machine, the manual steps, and the known gaps.

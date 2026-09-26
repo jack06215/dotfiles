@@ -1,3 +1,6 @@
+# chezmoi:template:left-delimiter="[[" right-delimiter="]]"
+# ^ A chezmoi template with double-square-bracket delimiters, so lazygit's own
+#   {{ }} templates below (customCommands, copyToClipboardCmd) pass through.
 disableStartupPopups: true
 gui:
   nerdFontsVersion: "3"
@@ -7,7 +10,10 @@ gui:
   language: "en"
   showDivergenceFromBaseBranch: arrowAndNumber
 git:
-  overrideGpg: true
+  # true runs gpg without leaving the UI, which only works with a GUI pinentry
+  # (pinentry-mac on macOS). Elsewhere gpg-agent.conf uses pinentry-curses,
+  # which needs the terminal: false has lazygit hand it over while signing.
+  overrideGpg: [[ .myComputer.isDarwin ]]
   parseEmoji: false
   localBranchSortOrder: recency
   autoForwardBranches: allBranches
@@ -16,6 +22,13 @@ git:
       command: delta --paging=never
 os:
   editPreset: nvim
+[[- if .myComputer.isWSL2 ]]
+  # The built-in copy (commit hash, branch name, path) otherwise goes through
+  # wl-copy/xclip; ~/.local/bin's win32yank wrappers reach the Windows
+  # clipboard directly. {{text}} arrives shell-quoted.
+  copyToClipboardCmd: "printf '%s' {{text}} | pbcopy"
+  readFromClipboardCmd: "pbpaste"
+[[- end ]]
 customCommands:
   - key: "c"
     # yamllint disable rule:line-length

@@ -1,5 +1,5 @@
 # alias ls='ls --color'
-alias ls='eza --group-directories-first --icons'
+alias ls='eza --group-directories-first --icons=auto'
 alias tree='eza --tree'
 alias cls='clear'
 alias lg='lazygit'

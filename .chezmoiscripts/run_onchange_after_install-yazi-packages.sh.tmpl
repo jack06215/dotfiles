@@ -1,14 +1,20 @@
+{{ if ne .chezmoi.os "windows" -}}
 #!/bin/bash
 set -euo pipefail
 
-{{ if ne .chezmoi.os "windows" -}}
+# chezmoi reruns this whenever its rendered text changes, so these two lines
+# make it rerun once `ya` gets installed (a fresh machine applies the dotfiles
+# before setup.sh's brew bundle) and whenever the plugin list changes:
+#   ya:           {{ lookPath "ya" | default "not installed" }}
+#   package.toml: {{ include "dot_config/yazi/package.toml.tmpl" | sha256sum }}
+
 if ! command -v ya > /dev/null 2>&1; then
-  echo "yazi: 'ya' not found, but yazi is in brew-formula-{{ if .myComputer.isDarwin }}macos{{ else }}wsl2{{ end }}.txt and its" >&2
-  echo "      config has just been applied - so this is a broken install, not a" >&2
-  echo "      machine that opted out. Install it and re-apply:" >&2
-  echo "" >&2
-  echo "        brew install yazi && chezmoi apply" >&2
-  exit 1
+  # Not an error: on a fresh machine this runs before setup.sh has installed
+  # yazi (brewfiles/{{ if .myComputer.isDarwin }}darwin{{ else }}wsl2{{ end }}). The next `chezmoi apply` after that - setup.sh
+  # does one at the end - installs the packages.
+  echo "yazi: 'ya' not found, skipping plugin install until yazi is installed" >&2
+  echo "      (brew install yazi && chezmoi apply)" >&2
+  exit 0
 fi
 
 ya pkg install
@@ -36,11 +42,4 @@ if [[ -r "$manifest" ]]; then
     exit 1
   fi
 fi
-{{ else -}}
-if ! command -v ya > /dev/null 2>&1; then
-  echo "yazi: 'ya' not installed, skipping plugin install" >&2
-  exit 0
-fi
-
-ya pkg install
 {{ end -}}

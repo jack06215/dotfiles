@@ -1,5 +1,11 @@
 # Machine-specific lookup tables, fed to the `lookup` / `lookupPath` templates
-# in .chezmoitemplates by dot_config/chezmoi/chezmoi.toml.tmpl.
+# in .chezmoitemplates by .chezmoi.toml.tmpl (re-run `chezmoi init` after an
+# edit here: the values are baked into ~/.config/chezmoi/chezmoi.toml).
+#
+# Keys are tried most specific first: os/hostname/username -> os/hostname ->
+# os. On WSL2 the Windows-app tables (firefox*, vscode*) are looked up as
+# `windows` and joined onto the Windows home, so a WSL-only row is keyed
+# `windows/<hostname>/<linux user>`.
 #
 # ---------------------------------------------------------------- poetry ----
 
@@ -10,7 +16,9 @@
   "darwin/A0229/jack.cho" = "Library/Caches/pypoetry/virtualenvs"
 
 # poetry venv directory names are per-machine hashes, so these key on the
-# username too. Joined onto the resolved pypoetryDir above.
+# username too. Joined onto the resolved pypoetryDir above. A machine with no
+# zshPythonVenv row asks `poetry env info --path` in the monorepo instead, so
+# a row is only needed to override that.
 [lookups.zshPythonVenv]
   default = ""
 [lookups.zshPythonVenv.table]
@@ -21,6 +29,16 @@
   default = ""
 [lookups.fwMonorepoPythonVenv.table]
   "darwin/A0229/jack.cho" = "monorepo-XYqwb38J-py3.13"
+
+# ------------------------------------------------------------------- git ----
+
+# "true"/"false": whether this machine signs commits (commit.gpgsign in
+# dot_config/git/config.tmpl). Signing needs the GPG key imported into
+# $GNUPGHOME; give a machine without it a "false" row, or every commit fails
+# with "gpg failed to sign the data".
+[lookups.gitSign]
+  default = "true"
+[lookups.gitSign.table]
 
 # --------------------------------------------------------------- firefox ----
 

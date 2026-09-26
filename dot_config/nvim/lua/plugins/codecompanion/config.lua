@@ -13,7 +13,20 @@ return {
     {
       "Davidyz/VectorCode",
       version = "*",
-      build = "pip upgrade vectorcode",
+      -- Keeps the vectorcode CLI in step with the plugin. `pip upgrade` is not
+      -- a pip command, so the old build step failed on every update; this
+      -- upgrades through whichever tool installed it and is a no-op where the
+      -- CLI (or both tools) are absent.
+      build = function()
+        if vim.fn.executable("vectorcode") == 0 then
+          return
+        end
+        if vim.fn.executable("uv") == 1 then
+          vim.fn.system({ "uv", "tool", "upgrade", "vectorcode" })
+        elseif vim.fn.executable("pipx") == 1 then
+          vim.fn.system({ "pipx", "upgrade", "vectorcode" })
+        end
+      end,
       dependencies = { "nvim-lua/plenary.nvim" },
     },
     {
@@ -103,7 +116,13 @@ return {
           ["help"] = { opts = { max_lines = 1000 } },
           ["image"] = {
             keymaps = { modes = { i = "<C-i>" } },
-            opts = { dirs = { "~/Documents/Screenshots" } },
+            -- Where screenshots land: macOS's own folder, or Windows' on WSL2
+            -- ($WIN_HOME comes from ~/.zshenv there).
+            opts = {
+              dirs = {
+                vim.env.WIN_HOME and (vim.env.WIN_HOME .. "/Pictures/Screenshots") or "~/Documents/Screenshots",
+              },
+            },
           },
         },
       },
