@@ -23,16 +23,20 @@ raw=$(mktemp)
 words=$(mktemp)
 trap 'rm -f "$raw" "$words"' EXIT
 
-# wordnet is the fallback that makes WSL2 work without apt: it is already in
-# brewfiles/wsl2 for `wn`, which blink-cmp-dictionary shells out to for
-# the definitions it shows alongside each word, and the same package ships the
-# index files read below.
+# wordnet is the last resort: it ships `wn`, which blink-cmp-dictionary
+# shells out to for the definitions it shows alongside each word, and its
+# index files are a word list too. Homebrew's formula installs them under
+# <prefix>/dict (older builds used share/wordnet), apt's under
+# /usr/share/wordnet. On Linux, setup.sh installs apt's wamerican, which wins.
 wn_share=""
 if command -v brew > /dev/null 2>&1; then
   wn_prefix=$(brew --prefix wordnet 2> /dev/null || true)
-  if [[ -n "$wn_prefix" && -r "$wn_prefix/share/wordnet/index.noun" ]]; then
-    wn_share="$wn_prefix/share/wordnet"
-  fi
+  for dir in "$wn_prefix/dict" "$wn_prefix/share/wordnet"; do
+    if [[ -n "$wn_prefix" && -r "$dir/index.noun" ]]; then
+      wn_share="$dir"
+      break
+    fi
+  done
 fi
 if [[ -z "$wn_share" && -r /usr/share/wordnet/index.noun ]]; then
   # Where apt's wordnet-base package puts the same files.
@@ -60,7 +64,7 @@ elif [[ -n "$wn_share" ]]; then
   done
 else
   echo "dictionary: no system word list found, skipping $out" >&2
-  echo "dictionary: install one with 'brew install wordnet' or 'apt install wamerican'" >&2
+  echo "dictionary: install one with 'apt install wamerican' (setup.sh does) or 'brew install wordnet'" >&2
   exit 0
 fi
 

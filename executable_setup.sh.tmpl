@@ -2,7 +2,6 @@
 set -euo pipefail -o posix
 cd "$(dirname "$0")"
 
-ASDF_VERSION="v0.12.0"
 YARN_VERSION="4.12.0"
 COREPACK_VERSION="0.33.0"
 
@@ -16,6 +15,42 @@ NPM_GLOBAL_PACKAGES=(
   'pyright'
   'typescript-language-server'
 )
+
+# gh extensions, installed if missing (`gh extension upgrade --all` updates).
+GH_EXTENSIONS=(
+  'dlvhdr/gh-dash'
+)
+
+# apt packages for Debian/Ubuntu (WSL2 included): what Homebrew cannot or
+# should not provide.
+APT_PACKAGES=(
+  # Homebrew's own prerequisites
+  build-essential procps curl file git
+  # python-build, i.e. `asdf install python`
+  libssl-dev zlib1g-dev libbz2-dev libreadline-dev libsqlite3-dev
+  libncurses-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev
+  liblzma-dev uuid-dev pkg-config
+  # mason.nvim unpacks most language servers with it
+  unzip
+  # /usr/share/dict/words, which the nvim dictionary completion is built
+  # from (run_onchange_after_generate-dictionary)
+  wamerican
+  # Claude Code's sandbox on Linux (macOS uses the built-in Seatbelt)
+  bubblewrap socat
+  # wl-copy/wl-paste: lazygit's and gh-dash's copy only know those, xclip and
+  # xsel. WSLg keeps the Wayland clipboard in sync with the Windows one.
+  wl-clipboard
+  # gpg-agent.conf points pinentry at /usr/bin/pinentry-curses
+  gnupg pinentry-curses
+)
+
+# Steps that failed but did not stop the run; reported at the end.
+FAILURES=()
+
+function note_failure() {
+  FAILURES+=("$1")
+  echo "warning: $1 failed; continuing" >&2
+}
 
 function read_tool_versions() {
   sed -E 's/ *#.*$//' .tool-versions \
@@ -38,36 +73,12 @@ function foreach_tool_version() {
   local v
   for v in "${versions_arr[@]}"; do
     (
-      # shellcheck source=/dev/null
-      source "${HOME}/.asdf/asdf.sh"
-      asdf plugin add "${plugin_name}" || true
+      asdf plugin add "${plugin_name}" 2> /dev/null || true
       asdf install "${plugin_name}" "${v}"
       export "ASDF_$(tr '[:lower:]' '[:upper:]' <<< "${plugin_name}")_VERSION=${v}"
       bash -euo pipefail -c "${command}"
     )
   done
-}
-
-function install_asdf() {
-  if [[ -d ~/.asdf/.git ]]; then
-    (
-      cd ~/.asdf || exit 1
-      if [[ "$(git tag --list "${ASDF_VERSION}")" = '' ]]; then
-        git fetch --tags origin
-      fi
-      if [[ "$(git rev-parse HEAD)" != "$(git rev-parse "${ASDF_VERSION}")" ]]; then
-        git checkout "${ASDF_VERSION}"
-      fi
-    )
-  elif [[ -d ~/.asdf ]]; then
-    mv ~/.asdf ~/.asdf.tmp
-    git clone 'https://github.com/asdf-vm/asdf.git' ~/.asdf --branch "${ASDF_VERSION}"
-    mv ~/.asdf.tmp/* ~/.asdf
-    rmdir ~/.asdf.tmp
-    /bin/bash -euo pipefail -c 'source ~/.asdf/asdf.sh && asdf reshim'
-  else
-    git clone 'https://github.com/asdf-vm/asdf.git' ~/.asdf --branch "${ASDF_VERSION}"
-  fi
 }
 
 function install_xcode_clt() {
@@ -92,20 +103,49 @@ function install_xcode_clt() {
   fi
 }
 
+function install_apt_packages() {
+  local -a packages=("${APT_PACKAGES[@]}")
+
+  # asdf's mysql plugin runs MySQL's generic Linux build, which links against
+  # libaio.so.1. Debian 13 / Ubuntu 24.04 renamed the package for the 64-bit
+  # time_t transition, and nothing provides the old soname any more.
+  if apt-cache show libaio1t64 &> /dev/null; then
+    packages+=(libaio1t64)
+  else
+    packages+=(libaio1)
+  fi
+
+  sudo apt-get update
+  sudo apt-get install -y "${packages[@]}"
+
+  local libdir
+  libdir="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+  if [[ -e "${libdir}/libaio.so.1t64" && ! -e "${libdir}/libaio.so.1" ]]; then
+    sudo ln -s libaio.so.1t64 "${libdir}/libaio.so.1"
+  fi
+}
+
+# Put an installed-but-not-on-PATH Homebrew on PATH (e.g. setup.sh run from
+# bash, which never read ~/.zshenv).
+function load_homebrew() {
+  local candidate
+  for candidate in /opt/homebrew/bin/brew /usr/local/bin/brew \
+    /home/linuxbrew/.linuxbrew/bin/brew; do
+    if [[ -x "${candidate}" ]]; then
+      eval "$("${candidate}" shellenv)"
+      return 0
+    fi
+  done
+  return 1
+}
+
 function install_homebrew() {
-  if command -v brew &> /dev/null; then
+  if command -v brew &> /dev/null || load_homebrew; then
     return 0
   fi
   sudo echo
   NONINTERACTIVE=1 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-  if [[ -x /opt/homebrew/bin/brew ]]; then
-    eval "$(/opt/homebrew/bin/brew shellenv)"
-  elif [[ -x /usr/local/bin/brew ]]; then
-    eval "$(/usr/local/bin/brew shellenv)"
-  elif [[ -x /home/linuxbrew/.linuxbrew/bin/brew ]]; then
-    eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
-  fi
+  load_homebrew
 }
 
 function upgrade_homebrew_packages() {
@@ -120,6 +160,36 @@ function upgrade_homebrew_packages() {
 
   brew upgrade
   brew cleanup
+}
+
+# asdf comes from the Brewfile (asdf >= 0.16, one binary, nothing to source).
+# Its data - plugins, installs, shims - lives in ~/.asdf. Every tool in
+# ~/.tool-versions is installed, one plugin at a time so a single failing
+# build is reported without stopping the others.
+function install_asdf_tools() {
+  export ASDF_DATA_DIR="${ASDF_DATA_DIR:-${HOME}/.asdf}"
+  export PATH="${ASDF_DATA_DIR}/shims:${PATH}"
+
+  if ! command -v asdf &> /dev/null; then
+    note_failure 'asdf (not installed; it comes from the Brewfile)'
+    return 0
+  fi
+
+  # A plain word list, not a `while read` loop: asdf's installers read
+  # stdin, and a fresh Mac runs this under bash 3.2, which has no process
+  # substitution in POSIX mode.
+  local plugin
+  local -a plugins=()
+  read -r -a plugins <<< "$(read_tool_versions | awk '{ print $1 }' | tr '\n' ' ')"
+  for plugin in "${plugins[@]}"; do
+    if ! asdf plugin list 2> /dev/null | grep -qx "${plugin}"; then
+      asdf plugin add "${plugin}" || {
+        note_failure "asdf plugin add ${plugin}"
+        continue
+      }
+    fi
+    asdf install "${plugin}" || note_failure "asdf install ${plugin}"
+  done
 }
 
 function install_yarn_v4() {
@@ -148,6 +218,37 @@ function install_npm_global_packages() {
     asdf reshim nodejs
   "
   foreach_tool_version 'nodejs' "${cmd}"
+}
+
+function install_gh_extensions() {
+  local installed ext
+  installed="$(gh extension list 2> /dev/null || true)"
+  for ext in "${GH_EXTENSIONS[@]}"; do
+    if grep -qF "${ext}" <<< "${installed}"; then
+      echo "gh extension ${ext} is already installed; skipping."
+    else
+      gh extension install "${ext}" || note_failure "gh extension install ${ext} (try after 'gh auth login')"
+    fi
+  done
+}
+
+# tpm itself is a chezmoi external (.chezmoiexternal.toml); this clones the
+# plugins tmux.conf lists. tpm's CLI needs no running tmux: it starts a server
+# only long enough to read TMUX_PLUGIN_MANAGER_PATH from tmux.conf.
+function install_tmux_plugins() {
+  local tpm="${HOME}/.local/share/tmux/plugins/tpm"
+  if [[ ! -x "${tpm}/bin/install_plugins" ]]; then
+    note_failure "tmux plugins (${tpm} missing; run 'chezmoi apply' first)"
+    return 0
+  fi
+  "${tpm}/bin/install_plugins" || note_failure 'tmux plugin install'
+}
+
+# run_onchange_ scripts that found a tool missing on the first apply (yazi
+# packages, the pinned shfmt, the dictionary) render differently once it is
+# installed, so a second apply is what runs them.
+function reapply_dotfiles() {
+  chezmoi apply || note_failure 'chezmoi apply'
 }
 
 # gum when it is available, the hand-rolled ANSI path when it is not. The
@@ -188,6 +289,30 @@ function run_step() {
   "$@"
 }
 
+# The steps after Homebrew, shared by every OS.
+function setup_common() {
+  section 'Upgrading Homebrew packages'
+  upgrade_homebrew_packages
+
+  section 'Installing asdf tools'
+  install_asdf_tools
+
+  section 'Installing Yarn v4'
+  install_yarn_v4
+
+  section 'Installing npm global packages'
+  install_npm_global_packages
+
+  section 'Installing gh extensions'
+  install_gh_extensions
+
+  section 'Installing tmux plugins'
+  install_tmux_plugins
+
+  section 'Re-applying dotfiles'
+  reapply_dotfiles
+}
+
 function setup_macos() {
   section 'Installing Xcode Command Line Tools'
   install_xcode_clt
@@ -195,76 +320,46 @@ function setup_macos() {
   section 'Installing Homebrew'
   install_homebrew
 
-  section 'Upgrading Homebrew packages'
-  upgrade_homebrew_packages
-
-  section 'Installing asdf'
-  install_asdf
-
-  section 'Installing Yarn v4'
-  install_yarn_v4
-
-  section 'Installing npm global packages'
-  install_npm_global_packages
+  setup_common
 }
 
-{{/* osRelease is empty on macOS, and missingkey=error rejects reading it. */ -}}
-{{ $isSupportedDebian := false -}}
-{{ if eq .chezmoi.os "linux" -}}
-{{   $isSupportedDebian = and (eq .chezmoi.osRelease.id "debian") (or (eq .chezmoi.osRelease.versionID "12") (eq .chezmoi.osRelease.versionID "13")) -}}
-{{ end -}}
-{{ if $isSupportedDebian -}}
-function setup_debian() {
+function setup_linux() {
+  section 'Installing apt packages'
+  install_apt_packages
+
   section 'Installing Homebrew'
   install_homebrew
 
-  section 'Upgrading Homebrew packages'
-  upgrade_homebrew_packages
-
-  section 'Installing asdf'
-  install_asdf
-
-  section 'Installing Yarn v4'
-  install_yarn_v4
-
-  section 'Installing npm global packages'
-  install_npm_global_packages
+  setup_common
 }
-{{ end -}}
 
-{{ if and .myComputer.isWSL2 -}}
-function is_wsl() {
-  [[ "$(uname -s)" == "Linux" ]] \
-    && [[ -r /proc/version ]] \
-    && grep -qi microsoft /proc/version 2>/dev/null
-}
+{{/* osRelease is empty on macOS, and missingkey=error rejects reading it. */ -}}
+{{ $isSupportedLinux := false -}}
+{{ if eq .chezmoi.os "linux" -}}
+{{- /* `get`: a rolling release has no VERSION_ID, and missingkey=error would
+       fail the whole apply on it. */ -}}
+{{   $id := get .chezmoi.osRelease "id" -}}
+{{   $version := get .chezmoi.osRelease "versionID" -}}
+{{   $isSupportedLinux = or (and (eq $id "debian") (has $version (list "12" "13"))) (and (eq $id "ubuntu") (has $version (list "22.04" "24.04" "26.04"))) -}}
 {{ end -}}
-
-{{ if and .myComputer.isWSL2 -}}
-function setup_wsl2() {
-  echo 'WSL2 is not yet supported.'
-  return 1
-}
-{{ end -}}
-
-{{ if and .myComputer.isDarwin -}}
+{{ if .myComputer.isDarwin -}}
 {{   if .myComputer.isArm -}}
 setup_macos
 {{   else -}}
 echo 'Unsupported mac architecture. Only arm64 is supported.'
 exit 1
 {{   end -}}
-{{ else if .myComputer.isWSL2 -}}
-  setup_wsl2
-{{   if $isSupportedDebian -}}
-  setup_debian
-{{   else -}}
-  echo 'Unsupported linux distribution and version.'
-  exit 1
-{{   end -}}
+{{ else if $isSupportedLinux -}}
+setup_linux
 {{ else -}}
-echo 'Unsupported system'
+echo 'Unsupported system. Supported: macOS (arm64), Debian 12/13, Ubuntu 22.04/24.04/26.04 (WSL2 included).'
 exit 1
 {{ end -}}
+
 echo
+if ((${#FAILURES[@]})); then
+  echo 'Finished, but these steps failed:' >&2
+  printf '  - %s\n' "${FAILURES[@]}" >&2
+  exit 1
+fi
 echo 'Successfully completed! Open a new terminal session to apply the changes.'

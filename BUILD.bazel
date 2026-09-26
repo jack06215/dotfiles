@@ -1,20 +1,29 @@
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
-# Regenerates brewfiles/darwin from what this Mac currently has installed:
+# Regenerates the Brewfile manifest of the machine you run it on, from what it
+# currently has installed:
 #
-#     bazel run //:export_brewfile_macos
+#     bazel run //:export_brewfile_macos    # brewfiles/darwin, on a Mac
+#     bazel run //:export_brewfile_linux    # brewfiles/wsl2, on Linux/WSL2
 #
 # The script writes into the source tree, which a build action is not allowed to
-# do, so this is a run-only target. `bazel run` exports
+# do, so these are run-only targets. `bazel run` exports
 # BUILD_WORKSPACE_DIRECTORY, which the script prefers over asking chezmoi for
 # the source path.
 #
-# The WSL2 manifest comes off the same script when it runs on Linux, but it is
-# deliberately not a target here: there is no point offering a Mac a button that
-# regenerates a Linux manifest from the wrong machine's package list.
+# One target per OS, each only compatible with its own: a manifest can only be
+# dumped from the machine it describes, so a Mac is never offered a button that
+# would rewrite the Linux manifest from its own package list, or vice versa.
 sh_binary(
     name = "export_brewfile_macos",
     srcs = ["executable_generate-brewfile.sh"],
     target_compatible_with = ["@platforms//os:macos"],
+    visibility = ["//visibility:public"],
+)
+
+sh_binary(
+    name = "export_brewfile_linux",
+    srcs = ["executable_generate-brewfile.sh"],
+    target_compatible_with = ["@platforms//os:linux"],
     visibility = ["//visibility:public"],
 )

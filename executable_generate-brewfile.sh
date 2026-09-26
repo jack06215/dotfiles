@@ -3,8 +3,9 @@ set -euo pipefail -o posix
 
 # Resolved at runtime rather than templated in, so this file needs no chezmoi
 # rendering and can be both the ~/generate-brewfile.sh target and the src of
-# //:export_brewfile_macos. `bazel run` exports BUILD_WORKSPACE_DIRECTORY as the
-# workspace root; outside bazel, ask chezmoi where its source directory is.
+# //:export_brewfile_macos and //:export_brewfile_linux. `bazel run` exports
+# BUILD_WORKSPACE_DIRECTORY as the workspace root; outside bazel, ask chezmoi
+# where its source directory is.
 # Either way the manifest is written into the checkout, never into a build
 # sandbox or the target tree.
 source_dir="${BUILD_WORKSPACE_DIRECTORY:-$(chezmoi source-path)}"
@@ -40,13 +41,15 @@ function entries_of() {
   sed -nE 's/^(tap|brew|cask) "([^"]+)".*/\1 \2/p' "$1" | sort -u
 }
 
+# mktemp gets an explicit XXXXXX template: BSD `mktemp -t prefix` appends the
+# random part itself, but GNU mktemp rejects a -t template without X's.
 function warn_dropped() {
   local old_file="$1" new_file="$2"
   [[ -f "${old_file}" ]] || return 0
 
   local old_entries new_entries dropped
-  old_entries="$(mktemp -t Brewfile.old)"
-  new_entries="$(mktemp -t Brewfile.new)"
+  old_entries="$(mktemp "${TMPDIR:-/tmp}/Brewfile.old.XXXXXX")"
+  new_entries="$(mktemp "${TMPDIR:-/tmp}/Brewfile.new.XXXXXX")"
   entries_of "${old_file}" > "${old_entries}"
   entries_of "${new_file}" > "${new_entries}"
   dropped="$(comm -23 "${old_entries}" "${new_entries}")"
@@ -61,7 +64,7 @@ function warn_dropped() {
 
 function dump_brewfile() {
   local tmpfile
-  tmpfile="$(mktemp -t Brewfile)"
+  tmpfile="$(mktemp "${TMPDIR:-/tmp}/Brewfile.XXXXXX")"
   # shellcheck disable=SC2064
   trap "rm -f '${tmpfile}'" EXIT
 
