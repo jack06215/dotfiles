@@ -117,6 +117,14 @@
 {{-   $zshPythonDir = output "sh" "-c" "cd \"$1\" && poetry env info --path 2>/dev/null || true" "sh" $monorepo | trim -}}
 {{- end -}}
 
+{{- $gitSign :=
+      includeTemplate "lookup" (dict
+        "chezmoi" .chezmoi
+        "table"   $lookups.gitSign.table
+        "default" $lookups.gitSign.default
+      )
+-}}
+
 {{- $fwMonorepoPythonDir :=
       includeTemplate "lookupPath" (dict
         "chezmoi" .chezmoi
@@ -140,6 +148,8 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
     isWindows = {{ eq .chezmoi.os "windows" | toString | trim }}
     isArm = {{ eq .chezmoi.arch "arm64" | toString | trim }}
     isX86 = {{ eq .chezmoi.arch "amd64" | toString | trim }}
+    # commit.gpgsign; see lookups.toml's gitSign
+    gitSign = {{ eq $gitSign "true" }}
 # Always present, "" off WSL2, so templates can test a value without first
 # checking isWSL2 (missingkey=error rejects absent keys).
 [data.wsl]

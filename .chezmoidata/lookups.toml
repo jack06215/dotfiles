@@ -30,6 +30,16 @@
 [lookups.fwMonorepoPythonVenv.table]
   "darwin/A0229/jack.cho" = "monorepo-XYqwb38J-py3.13"
 
+# ------------------------------------------------------------------- git ----
+
+# "true"/"false": whether this machine signs commits (commit.gpgsign in
+# dot_config/git/config.tmpl). Signing needs the GPG key imported into
+# $GNUPGHOME; give a machine without it a "false" row, or every commit fails
+# with "gpg failed to sign the data".
+[lookups.gitSign]
+  default = "true"
+[lookups.gitSign.table]
+
 # --------------------------------------------------------------- firefox ----
 
 [lookups.firefoxProfilesDir]
