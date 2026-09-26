@@ -1,0 +1,426 @@
+#!/usr/bin/env pwsh
+# Windows counterpart of setup.sh. chezmoi renders this to ~/setup.ps1;
+# .chezmoiignore keeps it off macOS and Linux, and setup.sh off Windows.
+#
+# The mapping from setup.sh is one-for-one:
+#   brew bundle install  ->  choco install <packages.config>   (+ winget for the gaps)
+#   brew upgrade         ->  choco upgrade all
+#   asdf install         ->  mise install, reading the same ~/.tool-versions
+#   apt-get install      ->  nothing; no building from source happens here
+#
+# Rerunnable: every section either skips what is already present or performs an
+# in-place upgrade, and a failing section is recorded and reported at the end
+# rather than aborting the run.
+#
+#   pwsh -File ~/setup.ps1              # the normal run
+#   pwsh -File ~/setup.ps1 -IncludeMinGW    # also install the winlibs GCC toolchain
+#   pwsh -File ~/setup.ps1 -IgnoreChecksums # for packages published without one
+
+[CmdletBinding()]
+param(
+    # C++ toolchain, off by default: nothing in this repo needs it, and native
+    # development happens in WSL2. This is the old profile's Install-WinGW.
+    [switch]$IncludeMinGW,
+
+    # Chocolatey refuses packages whose published checksum is missing. The old
+    # installer menu turned allowEmptyChecksums on globally, which weakens every
+    # later install too; this keeps the relaxation to a single run.
+    [switch]$IgnoreChecksums
+)
+
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$PLEMOL_FONT_NAME = 'PlemolJP_NF'
+$PLEMOL_FONT_DISPLAY_NAME = 'PlemolJP Console NF Medium'
+$PLEMOL_FONT_VERSION = '2.0.4'
+
+# Installed with Install-Module -Scope CurrentUser. Unpinned on purpose, so a
+# rerun updates them the way `choco upgrade all` does the manifest.
+$POWERSHELL_MODULES = @(
+    'BurntToast'          # notify.zsh sends WSL2 notifications through this
+    'PSFzf'               # Ctrl+R / Ctrl+T / Alt+C in the profile
+    'PSScriptAnalyzer'    # also what the powershell_es LSP lints with
+    'Terminal-Icons'
+    'WifiTools'
+)
+
+# Tools in ~/.tool-versions that mise cannot provide on native Windows.
+#   java:  .tool-versions pins oracle-graalvm-21.0.8, and mise's Java registry
+#          has no 21.0.8 build for windows/x86_64 at all - 21.0.7 and 21.0.9
+#          exist, 21.0.8 does not, on any platform.
+#   mysql: the vfox plugin probes for libncurses/libaio/libnuma through
+#          apt/dnf/pacman and calls uname; the asdf fallback is a bash plugin.
+# Both stay WSL2/macOS-only. ~/.tool-versions is left untouched.
+$MISE_SKIP_TOOLS = @('java', 'mysql')
+
+# winget packages, for tools Chocolatey has no package for. Kept in the same
+# order as dot_config/powershell/winget/packages.json.
+$WINGET_MANIFEST = {{ joinPath .xdg.configHome "powershell/winget/packages.json" | squote }}
+$CHOCO_MANIFEST = {{ joinPath .xdg.configHome "powershell/chocolatey/packages.config" | squote }}
+$TOOL_VERSIONS = {{ joinPath .chezmoi.homeDir ".tool-versions" | squote }}
+
+# Steps that failed but did not stop the run; reported at the end.
+$script:Failures = [System.Collections.Generic.List[string]]::new()
+
+function Add-Failure {
+    param([Parameter(Mandatory)][string]$What)
+    $script:Failures.Add($What)
+    Write-Warning "$What failed; continuing"
+}
+
+function Write-Section {
+    param([Parameter(Mandatory)][string]$Message)
+    # setup.sh reaches for gum here and falls back to ANSI. There is no gum on
+    # a fresh Windows box either, and it arrives mid-run at best, so this only
+    # ever does the plain version.
+    if ($Host.UI.SupportsVirtualTerminal -and -not $env:NO_COLOR) {
+        Write-Host ''
+        Write-Host "$($PSStyle.Bold)$($PSStyle.Foreground.BrightBlue)==>$($PSStyle.Reset) $Message"
+    }
+    else {
+        Write-Host ''
+        Write-Host "==> $Message"
+    }
+}
+
+function Test-CommandExists {
+    param([Parameter(Mandatory)][string]$Name)
+    return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
+}
+
+# Chocolatey and several installers put their binaries on the machine PATH,
+# which this already-running process does not see. Re-reading both scopes is
+# what lets a later section use what an earlier one installed.
+function Update-SessionPath {
+    $machine = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+    $user = [Environment]::GetEnvironmentVariable('Path', 'User')
+    $env:Path = (@($machine, $user) | Where-Object { $_ }) -join ';'
+}
+
+function Assert-Preflight {
+    if (-not $IsWindows) {
+        throw 'setup.ps1 is the Windows setup script. Use setup.sh on macOS and Linux.'
+    }
+
+    # mise activate pwsh uses .NET APIs that need 7.2; the profile calls it.
+    $v = $PSVersionTable.PSVersion
+    if ($v.Major -lt 7 -or ($v.Major -eq 7 -and $v.Minor -lt 2)) {
+        throw "PowerShell 7.2 or newer is required (running $v). Install it with: winget install Microsoft.PowerShell"
+    }
+
+    if (-not [Environment]::Is64BitOperatingSystem) {
+        throw 'Only 64-bit Windows is supported.'
+    }
+
+    # Chocolatey installs into the machine-wide C:\ProgramData\chocolatey and
+    # needs an elevated shell for essentially every operation. Failing here
+    # beats failing 90 packages in.
+    $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
+    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    if (-not $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+        throw @'
+setup.ps1 must run as Administrator (Chocolatey requires it).
+
+Start an elevated PowerShell 7 and rerun:
+    Start-Process pwsh -Verb RunAs
+    pwsh -File ~/setup.ps1
+'@
+    }
+}
+
+function Install-Chocolatey {
+    if (Test-CommandExists choco) {
+        Write-Host 'Chocolatey is already installed; skipping.'
+        return
+    }
+
+    Set-ExecutionPolicy Bypass -Scope Process -Force
+    [Net.ServicePointManager]::SecurityProtocol =
+        [Net.ServicePointManager]::SecurityProtocol -bor 3072
+    Invoke-Expression ((New-Object Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+    Update-SessionPath
+}
+
+function Install-ChocolateyPackages {
+    if (-not (Test-CommandExists choco)) {
+        Add-Failure 'chocolatey packages (choco is not installed)'
+        return
+    }
+    if (-not (Test-Path -LiteralPath $CHOCO_MANIFEST)) {
+        Add-Failure "chocolatey packages ($CHOCO_MANIFEST missing; run 'chezmoi apply' first)"
+        return
+    }
+
+    $chocoArgs = @('install', $CHOCO_MANIFEST, '--yes', '--no-progress')
+    if ($IgnoreChecksums) { $chocoArgs += '--ignore-checksums' }
+
+    # choco exits non-zero when any single package fails, so this is recorded
+    # rather than thrown - the rest of the manifest still installed.
+    & choco @chocoArgs
+    if ($LASTEXITCODE -ne 0) {
+        Add-Failure "choco install $CHOCO_MANIFEST (exit $LASTEXITCODE)"
+    }
+
+    # The equivalent of `brew upgrade`: the manifest pins nothing, so this is
+    # what actually moves installed packages forward on a rerun.
+    & choco upgrade all --yes --no-progress
+    if ($LASTEXITCODE -ne 0) {
+        Add-Failure "choco upgrade all (exit $LASTEXITCODE)"
+    }
+
+    Update-SessionPath
+}
+
+function Get-WingetPackageIds {
+    if (-not (Test-Path -LiteralPath $WINGET_MANIFEST)) {
+        return @()
+    }
+    try {
+        $json = Get-Content -LiteralPath $WINGET_MANIFEST -Raw | ConvertFrom-Json
+    }
+    catch {
+        Add-Failure "winget manifest ($WINGET_MANIFEST is not valid JSON)"
+        return @()
+    }
+    return @($json.Sources | ForEach-Object { $_.Packages } | ForEach-Object { $_.PackageIdentifier })
+}
+
+function Install-WingetPackages {
+    if (-not (Test-CommandExists winget)) {
+        Add-Failure 'winget packages (winget is not installed; it ships with App Installer from the Microsoft Store)'
+        return
+    }
+
+    $ids = Get-WingetPackageIds
+    if (-not $ids) { return }
+
+    # `winget import` is not used, and neither is --no-upgrade: passing it for an
+    # already-installed package still reinstalls that package in place. An
+    # explicit presence check per id is what makes a rerun a genuine no-op.
+    foreach ($id in $ids) {
+        & winget list --id $id --exact --disable-interactivity > $null 2>&1
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "winget: $id is already installed; skipping."
+            continue
+        }
+
+        & winget install --id $id --exact --silent `
+            --accept-source-agreements --accept-package-agreements --disable-interactivity
+        if ($LASTEXITCODE -ne 0) {
+            Add-Failure "winget install $id (exit $LASTEXITCODE)"
+        }
+    }
+
+    Update-SessionPath
+}
+
+# ~/.tool-versions, comments and blank lines stripped, as
+# [pscustomobject]@{ Tool; Versions }. The counterpart of read_tool_versions.
+function Read-ToolVersions {
+    if (-not (Test-Path -LiteralPath $TOOL_VERSIONS)) {
+        return @()
+    }
+    Get-Content -LiteralPath $TOOL_VERSIONS |
+        ForEach-Object { ($_ -replace '\s*#.*$', '').Trim() } |
+        Where-Object { $_ } |
+        ForEach-Object {
+            $fields = @($_ -split '\s+')
+            # A name with no version would make $fields[1..0] wrap around and
+            # yield the name itself as a version, so those lines are dropped.
+            if ($fields.Count -lt 2) {
+                Write-Warning "$TOOL_VERSIONS : ignoring '$_' (no version)"
+                return
+            }
+            [pscustomobject]@{
+                Tool     = $fields[0]
+                Versions = @($fields[1..($fields.Count - 1)])
+            }
+        }
+}
+
+function Install-MiseTools {
+    if (-not (Test-CommandExists mise)) {
+        Add-Failure 'mise tools (mise is not installed; it comes from the winget manifest)'
+        return
+    }
+
+    $entries = Read-ToolVersions
+    if (-not $entries) {
+        Add-Failure "mise tools ($TOOL_VERSIONS missing or empty; run 'chezmoi apply' first)"
+        return
+    }
+
+    # One tool at a time, like setup.sh's asdf loop: a single unavailable build
+    # is reported without stopping the others.
+    foreach ($entry in $entries) {
+        if ($MISE_SKIP_TOOLS -contains $entry.Tool) {
+            Write-Host "mise: skipping $($entry.Tool) (not available on native Windows)."
+            continue
+        }
+
+        foreach ($version in $entry.Versions) {
+            $spec = "$($entry.Tool)@$version"
+            & mise install --yes $spec
+            if ($LASTEXITCODE -ne 0) {
+                Add-Failure "mise install $spec"
+            }
+        }
+    }
+}
+
+function Install-PowerShellModules {
+    # PSGallery is Untrusted by default, which makes Install-Module prompt -
+    # fatal in a non-interactive run.
+    try {
+        if ((Get-PSRepository -Name PSGallery).InstallationPolicy -ne 'Trusted') {
+            Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+        }
+    }
+    catch {
+        Write-Warning "could not mark PSGallery trusted: $_"
+    }
+
+    foreach ($module in $POWERSHELL_MODULES) {
+        try {
+            if (Get-Module -ListAvailable -Name $module) {
+                Update-Module -Name $module -ErrorAction Stop
+                Write-Host "$module is already installed; updated."
+            }
+            else {
+                Install-Module -Name $module -Scope CurrentUser -Force -SkipPublisherCheck -ErrorAction Stop
+                Write-Host "$module installed."
+            }
+        }
+        catch {
+            Add-Failure "PowerShell module $module ($_)"
+        }
+    }
+}
+
+function Install-NerdFont {
+    try {
+        Add-Type -AssemblyName System.Drawing
+        $installed = [System.Drawing.Text.InstalledFontCollection]::new().Families.Name
+        if ($installed -contains $PLEMOL_FONT_DISPLAY_NAME) {
+            Write-Host "$PLEMOL_FONT_DISPLAY_NAME is already installed; skipping."
+            return
+        }
+
+        $url = "https://github.com/yuru7/PlemolJP/releases/download/v$PLEMOL_FONT_VERSION/${PLEMOL_FONT_NAME}_v$PLEMOL_FONT_VERSION.zip"
+        $zip = Join-Path $env:TEMP "$PLEMOL_FONT_NAME.zip"
+        $extract = Join-Path $env:TEMP $PLEMOL_FONT_NAME
+
+        Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+        Expand-Archive -LiteralPath $zip -DestinationPath $extract -Force
+
+        # Shell.Application's Fonts folder (0x14) both copies the file and
+        # registers the font, which a plain Copy-Item into C:\Windows\Fonts
+        # does not. 0x10 answers "yes" to the overwrite prompt.
+        $fonts = (New-Object -ComObject Shell.Application).Namespace(0x14)
+        foreach ($ttf in Get-ChildItem -LiteralPath $extract -Recurse -Filter '*.ttf') {
+            if (-not (Test-Path -LiteralPath (Join-Path $env:SystemRoot "Fonts/$($ttf.Name)"))) {
+                $fonts.CopyHere($ttf.FullName, 0x10)
+            }
+        }
+
+        Remove-Item -LiteralPath $extract -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue
+        Write-Host "$PLEMOL_FONT_DISPLAY_NAME installed."
+    }
+    catch {
+        Add-Failure "PlemolJP Nerd Font ($_)"
+    }
+}
+
+# The old profile's Install-WinGW, kept for -IncludeMinGW. winlibs publishes no
+# installer, so this is a download-and-unpack into C:\tools.
+function Install-MinGW {
+    $gccVersion = '15.1.0'
+    $mingwVersion = '13.0.0'
+    $revision = 'r2'
+    $destination = 'C:\tools\mingw64'
+
+    if (Test-CommandExists gcc) {
+        Write-Host 'A C++ compiler is already on PATH; skipping.'
+        return
+    }
+
+    try {
+        $url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/${gccVersion}posix-${mingwVersion}-ucrt-${revision}/winlibs-x86_64-posix-seh-gcc-${gccVersion}-mingw-w64ucrt-${mingwVersion}-${revision}.zip"
+        $zip = Join-Path $env:TEMP "mingw-$mingwVersion.zip"
+        $extract = Join-Path $env:TEMP 'mingw'
+
+        Invoke-WebRequest -Uri $url -OutFile $zip -UseBasicParsing
+        Expand-Archive -LiteralPath $zip -DestinationPath $extract -Force
+
+        New-Item -ItemType Directory -Force -Path 'C:\tools' | Out-Null
+        Copy-Item -Path (Join-Path $extract 'mingw64') -Destination 'C:\tools' -Recurse -Force
+
+        Remove-Item -LiteralPath $extract -Recurse -Force -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue
+
+        $machinePath = [Environment]::GetEnvironmentVariable('Path', 'Machine')
+        $binDir = Join-Path $destination 'bin'
+        if ($machinePath -notlike "*$binDir*") {
+            [Environment]::SetEnvironmentVariable('Path', "$machinePath;$binDir", 'Machine')
+            Update-SessionPath
+        }
+        Write-Host "MinGW GCC $gccVersion installed to $destination"
+    }
+    catch {
+        Add-Failure "MinGW GCC $gccVersion ($_)"
+    }
+}
+
+# run_onchange_ scripts that found a tool missing on the first apply render
+# differently once it is installed, so a second apply is what runs them. This is
+# also what copies dot_config/powershell into Documents\PowerShell.
+function Invoke-ChezmoiApply {
+    if (-not (Test-CommandExists chezmoi)) {
+        Add-Failure 'chezmoi apply (chezmoi is not installed; it comes from the Chocolatey manifest)'
+        return
+    }
+    & chezmoi apply
+    if ($LASTEXITCODE -ne 0) {
+        Add-Failure 'chezmoi apply'
+    }
+}
+
+Assert-Preflight
+
+Write-Section 'Installing Chocolatey'
+Install-Chocolatey
+
+Write-Section 'Installing Chocolatey packages'
+Install-ChocolateyPackages
+
+Write-Section 'Installing winget packages'
+Install-WingetPackages
+
+Write-Section 'Installing mise tools'
+Install-MiseTools
+
+Write-Section 'Installing PowerShell modules'
+Install-PowerShellModules
+
+Write-Section 'Installing PlemolJP Nerd Font'
+Install-NerdFont
+
+if ($IncludeMinGW) {
+    Write-Section 'Installing MinGW GCC'
+    Install-MinGW
+}
+
+Write-Section 'Re-applying dotfiles'
+Invoke-ChezmoiApply
+
+Write-Host ''
+if ($script:Failures.Count -gt 0) {
+    Write-Warning 'Finished, but these steps failed:'
+    foreach ($failure in $script:Failures) {
+        Write-Host "  - $failure"
+    }
+    exit 1
+}
+Write-Host 'Successfully completed! Open a new terminal session to apply the changes.'

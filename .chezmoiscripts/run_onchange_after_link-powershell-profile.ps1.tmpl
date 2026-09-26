@@ -1,0 +1,82 @@
+{{- if eq .chezmoi.os "windows" -}}
+{{- /*
+    Copies ~/.config/powershell into %USERPROFILE%\Documents\PowerShell, which
+    is where pwsh looks for $PROFILE and the only PSModulePath entry under the
+    user's home - so Modules\MyModule has to be there, not under .config.
+
+    Same reasoning as the vscode and firefox scripts: symlinks on Windows need
+    admin rights or Developer Mode, so this copies. A copy is a snapshot, so the
+    script has to rerun whenever a source file changes.
+
+    The tree hash is emitted into a PowerShell comment below, not into this Go
+    template comment, because chezmoi decides whether to rerun by hashing the
+    *rendered* script - a hash inside a template comment is stripped before it
+    can have any effect. Hashing the whole tree rather than listing the
+    thirty-odd files means adding one under dot_config/powershell reruns this by
+    itself.
+*/ -}}
+#!/usr/bin/env pwsh
+{{ $h := "" -}}
+{{- range (glob (joinPath .chezmoi.sourceDir "dot_config/powershell/**")) -}}
+{{-   if not (stat .).isDir -}}
+{{-     $h = printf "%s%s" $h (include . | sha256sum) -}}
+{{-   end -}}
+{{- end -}}
+# dot_config/powershell tree hash: {{ $h | sha256sum }}
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$sourceDir = {{ joinPath .xdg.configHome "powershell" | squote }}
+
+# GetFolderPath rather than a hardcoded ~\Documents: OneDrive's "back up your
+# folders" feature redirects Documents to %OneDrive%\Documents, and pwsh follows
+# the redirection. Hardcoding would write the profile somewhere pwsh never reads.
+$documents = [Environment]::GetFolderPath('MyDocuments')
+if (-not $documents) {
+    Write-Warning 'powershell: could not resolve the Documents folder, skipping'
+    exit 0
+}
+$destDir = Join-Path $documents 'PowerShell'
+
+# The package manifests are read by setup.ps1 straight out of ~/.config and have
+# no business in the profile directory.
+$excludedTopLevel = @('chocolatey', 'winget')
+
+New-Item -ItemType Directory -Force -Path $destDir | Out-Null
+
+# Whatever was in Documents\PowerShell before chezmoi took it over is worth
+# keeping, but a copy is indistinguishable from one this script made - so back up
+# only when no backup exists yet, otherwise every content change litters the
+# directory with a new .bak on each rerun.
+$profileName = 'Microsoft.PowerShell_profile.ps1'
+$destProfile = Join-Path $destDir $profileName
+if ((Test-Path -LiteralPath $destProfile -PathType Leaf) -and
+    -not (Get-ChildItem -LiteralPath $destDir -Filter "$profileName.bak-*" -File -ErrorAction SilentlyContinue)) {
+    $backup = "$destProfile.bak-$(Get-Date -Format 'yyyyMMddHHmmss')"
+    Copy-Item -LiteralPath $destProfile -Destination $backup
+    Write-Warning "powershell: backed up pre-existing $profileName to $(Split-Path -Leaf $backup)"
+}
+
+# File by file against a relative path, not Copy-Item -Recurse on the
+# directories: Copy-Item nests rather than merges when the destination directory
+# already exists, which would give Documents\PowerShell\Modules\Modules.
+#
+# Nothing is deleted. Documents\PowerShell also holds the gallery modules
+# setup.ps1 installs and the Help\ tree Update-Help writes, neither of which is
+# managed here.
+$copied = 0
+foreach ($file in Get-ChildItem -LiteralPath $sourceDir -Recurse -File) {
+    $relative = $file.FullName.Substring($sourceDir.Length).TrimStart('\', '/')
+    $topLevel = ($relative -split '[\\/]')[0]
+    if ($excludedTopLevel -contains $topLevel) {
+        continue
+    }
+
+    $target = Join-Path $destDir $relative
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+    Copy-Item -LiteralPath $file.FullName -Destination $target -Force
+    $copied++
+}
+
+Write-Host "powershell: copied $copied files into $destDir"
+{{- end -}}

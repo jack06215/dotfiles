@@ -102,4 +102,32 @@ CHEZMOI_WINDOWS_PUSH
 push_into {{ joinPath $win "AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState" | quote }} "settings.json" << 'CHEZMOI_WINDOWS_PUSH'
 {{ include "dot_config/windows-terminal/settings.json" | trimSuffix "\n" }}
 CHEZMOI_WINDOWS_PUSH
+
+# ---- PowerShell 7 (%USERPROFILE%\Documents\PowerShell) ----
+# pwsh reads $PROFILE and its per-user PSModulePath entry only from
+# Documents\PowerShell, so the profile, MyModule and the Scripts go there rather
+# than into .config. The file list is globbed rather than spelled out, so a new
+# file under dot_config/powershell is picked up without editing this script.
+#
+# chocolatey/ and winget/ are skipped: setup.ps1 reads those manifests out of
+# ~/.config on the Windows side, and they have no business in the profile
+# directory.
+#
+# Documents is assumed not to be OneDrive-redirected here. The native-Windows
+# path (run_onchange_after_link-powershell-profile.ps1) asks Windows for the real
+# folder via GetFolderPath, which is not reachable from WSL.
+{{- /* Both sides normalised to forward slashes: joinPath uses the host
+       separator (backslashes when chezmoi runs on Windows) while glob always
+       returns forward slashes, and trimPrefix would silently match nothing. */ -}}
+{{- $psSource := joinPath .chezmoi.sourceDir "dot_config/powershell" | replace "\\" "/" }}
+{{- range (glob (printf "%s/**" $psSource)) }}
+{{-   if not (stat .).isDir }}
+{{-     $rel := trimPrefix (printf "%s/" $psSource) (. | replace "\\" "/") }}
+{{-     if not (or (hasPrefix "chocolatey/" $rel) (hasPrefix "winget/" $rel)) }}
+push {{ joinPath $win "Documents/PowerShell" $rel | quote }} << 'CHEZMOI_WINDOWS_PUSH'
+{{ include . | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
+{{-     end }}
+{{-   end }}
+{{- end }}
 {{ end -}}

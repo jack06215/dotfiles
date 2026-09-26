@@ -63,6 +63,8 @@ dot_config/
                               and cheats-nu/ (nushell), ported from pet
   vscode/, firefox/         → VS Code settings, Firefox user.js + userChrome.css
   windows-terminal/         → Windows Terminal settings (jsonnet source + json)
+  powershell/               → PowerShell 7 profile, MyModule, Scripts, and the
+                              Chocolatey/winget manifests (see docs/windows-setup.md)
 dot_glzr/
   glazewm/, zebar/          → Windows tiling WM + status bar
 ```
@@ -313,3 +315,30 @@ server config on disk.
 Managed via [asdf](https://asdf-vm.com/) (`dot_tool-versions`): dasel,
 helm, java (oracle-graalvm), jq, kind, kubectl, kustomize, node, python,
 shellcheck, shfmt, mysql, poetry.
+
+On Windows the same file is read by [mise](https://mise.jdx.dev/) instead —
+asdf is a bash program and does not run there. 11 of the 13 install; java and
+mysql are skipped, and `docs/windows-setup.md` explains why.
+
+## Windows
+
+Provisioning maps onto the Unix side one piece at a time:
+
+| Unix | manifest | Windows |
+| --- | --- | --- |
+| Homebrew | `brewfiles/` | Chocolatey, `dot_config/powershell/chocolatey/packages.config` |
+| — | — | winget, `dot_config/powershell/winget/packages.json`, for what Chocolatey lacks |
+| asdf | `dot_tool-versions` | mise, reading the same file |
+| `setup.sh` | — | `setup.ps1` (`executable_setup.ps1.tmpl`) |
+| `generate-brewfile.sh` | — | `generate-chocofile.ps1` |
+
+`setup.ps1` requires an elevated PowerShell 7, since Chocolatey installs
+machine-wide. The PowerShell profile lives in `dot_config/powershell/` and is
+copied into `Documents\PowerShell` — the only path pwsh reads `$PROFILE` and its
+per-user `PSModulePath` entry from — by
+`run_onchange_after_link-powershell-profile.ps1` on Windows, or by
+`run_onchange_after_push-windows-configs.sh` from WSL2. Neovim, VS Code and the
+language servers are deliberately absent: development happens in WSL2.
+
+See **[docs/windows-setup.md](docs/windows-setup.md)** for the bootstrap on a
+brand-new machine, the manual steps, and the known gaps.

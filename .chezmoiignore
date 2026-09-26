@@ -62,6 +62,14 @@ skills/**
 {{ if ne .chezmoi.os "windows" }}
 .glzr
 .glzr/**
+# The PowerShell 7 profile, its MyModule and the choco/winget manifests. On
+# Windows these are applied to ~/.config/powershell and then copied into
+# Documents\PowerShell by run_onchange_after_link-powershell-profile.ps1, since
+# that is the only path pwsh reads $PROFILE and PSModulePath from. On WSL2
+# run_onchange_after_push-windows-configs sends them to the Windows home
+# instead, so the Linux home gets no copy.
+.config/powershell
+.config/powershell/**
 {{ end }}
 {{ if .myComputer.isWSL2 }}
 .config/wezterm
@@ -73,7 +81,17 @@ skills/**
 {{ end }}
 
 {{ if eq .chezmoi.os "windows" }}
+# The Homebrew half of provisioning. setup.sh renders to its "Unsupported
+# system" branch on Windows and generate-brewfile.sh needs brew, so both were
+# only ever dead weight in the Windows home; setup.ps1 and
+# generate-chocofile.ps1 are what stand in for them.
 Brewfile
+setup.sh
+generate-brewfile.sh
+{{ else }}
+# The Windows half, conversely: Chocolatey, winget and mise exist nowhere else.
+setup.ps1
+generate-chocofile.ps1
 {{ end }}
 
 {{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.hostname "A0229") }}
