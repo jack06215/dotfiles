@@ -88,6 +88,13 @@ skills/**
 Brewfile
 setup.sh
 generate-brewfile.sh
+# `ya pkg install` rewrites every `hash` in package.toml from the deployed
+# files, and those come out different on Windows than on macOS/WSL2 at identical
+# `rev`s - so a managed copy makes every later apply stop on "has changed since
+# chezmoi last wrote it", which would also block setup.ps1's final apply.
+# run_onchange_after_install-yazi-packages.ps1 writes the pins instead, and ya
+# owns the hashes from there.
+.config/yazi/package.toml
 {{ else }}
 # The Windows half, conversely: Chocolatey, winget and mise exist nowhere else.
 setup.ps1

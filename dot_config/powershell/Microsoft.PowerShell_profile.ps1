@@ -324,6 +324,12 @@ if (Test-Path $ChocolateyProfile) {
 # fallback mirrors chezmoi's own default for .xdg.configHome.
 $configHome = if ($env:XDG_CONFIG_HOME) { $env:XDG_CONFIG_HOME } else { Join-Path $HOME '.config' }
 $env:STARSHIP_CONFIG = Join-Path $configHome 'starship/starship.toml'
+
+# yazi reads %APPDATA%\yazi\config on Windows, so without this it never sees the
+# config this repo manages. ~/.config/yazi is yazi's own default on Unix, which
+# is why nothing in dot_zshenv sets this. setup.ps1 also persists it at User
+# scope, for a yazi started outside pwsh.
+$env:YAZI_CONFIG_HOME = Join-Path $configHome 'yazi'
 if (Test-CommandExists starship) {
     Invoke-Expression (&starship init powershell)
 }

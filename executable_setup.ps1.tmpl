@@ -54,6 +54,18 @@ $POWERSHELL_MODULES = @(
 # Both stay WSL2/macOS-only. ~/.tool-versions is left untouched.
 $MISE_SKIP_TOOLS = @('java', 'mysql')
 
+# Persisted at User scope so a program started outside pwsh still sees them -
+# Explorer, a non-pwsh Windows Terminal profile, or WezTerm spawning a tool
+# directly. The profile sets the same values for its own session; this is the
+# fallback for everything that never reads $PROFILE.
+#
+# On Unix these are either XDG defaults or set by dot_zshenv, so this table is
+# the Windows-only half.
+$USER_ENVIRONMENT = @{
+    # yazi looks in %APPDATA%\yazi\config on Windows, not ~/.config/yazi.
+    YAZI_CONFIG_HOME = {{ joinPath .xdg.configHome "yazi" | squote }}
+}
+
 # winget packages, for tools Chocolatey has no package for. Kept in the same
 # order as dot_config/powershell/winget/packages.json.
 $WINGET_MANIFEST = {{ joinPath .xdg.configHome "powershell/winget/packages.json" | squote }}
@@ -269,6 +281,26 @@ function Install-MiseTools {
     }
 }
 
+function Set-UserEnvironment {
+    foreach ($name in $USER_ENVIRONMENT.Keys | Sort-Object) {
+        $want = $USER_ENVIRONMENT[$name]
+        $have = [Environment]::GetEnvironmentVariable($name, 'User')
+        if ($have -eq $want) {
+            Write-Host "$name is already set; skipping."
+            continue
+        }
+        try {
+            [Environment]::SetEnvironmentVariable($name, $want, 'User')
+            # Also for this process, so a later section sees it.
+            Set-Item -LiteralPath "env:$name" -Value $want
+            Write-Host "$name = $want"
+        }
+        catch {
+            Add-Failure "user environment variable $name ($_)"
+        }
+    }
+}
+
 function Install-PowerShellModules {
     # PSGallery is Untrusted by default, which makes Install-Module prompt -
     # fatal in a non-interactive run.
@@ -397,6 +429,9 @@ Install-ChocolateyPackages
 
 Write-Section 'Installing winget packages'
 Install-WingetPackages
+
+Write-Section 'Setting user environment variables'
+Set-UserEnvironment
 
 Write-Section 'Installing mise tools'
 Install-MiseTools

@@ -3,18 +3,66 @@
 # Windows counterpart of run_onchange_after_install-yazi-packages.sh.tmpl.
 #
 # That script used to carry the Windows case in an {{ "{{ else }}" }} branch, but what it
-# rendered there was still bash - and chezmoi has no sh to hand it to on
-# Windows, so `chezmoi apply` failed outright with "%1 is not a valid Win32
+# rendered there was still bash, and chezmoi has no interpreter to hand a .sh to
+# on Windows, so `chezmoi apply` failed outright with "%1 is not a valid Win32
 # application". The .sh script is now Unix-only and this is the Windows half,
 # the same split link-firefox-profile and link-vscode-config already make.
 #
-# chezmoi reruns this whenever its rendered text changes, so these two lines
-# make it rerun once `ya` gets installed (a fresh machine applies the dotfiles
-# before setup.ps1 has installed yazi) and whenever the plugin list changes:
-#   ya:           {{ lookPath "ya" | default "not installed" }}
-#   package.toml: {{ include "dot_config/yazi/package.toml.tmpl" | sha256sum }}
+# chezmoi reruns this whenever its rendered text changes. The manifest is
+# embedded below rather than hashed, so it is both the rerun trigger and what
+# gets written - see the comment on $manifestContent for why it is written here
+# at all rather than deployed by chezmoi.
+#   ya: {{ lookPath "ya" | default "not installed" }}
 
 $ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+# yazi's default config directory on Windows is %APPDATA%\yazi\config, not
+# ~/.config/yazi. Without this, `ya pkg install` reads a package.toml that is
+# not the one this repo manages - it finds none, installs nothing, and exits 0,
+# which is exactly how this went unnoticed. On Unix ~/.config/yazi is yazi's own
+# default, which is why the .sh counterpart needs no equivalent.
+#
+# Set here rather than inherited from the profile: chezmoi runs run_ scripts
+# with -NoProfile.
+$configDir = {{ joinPath .xdg.configHome "yazi" | squote }}
+$env:YAZI_CONFIG_HOME = $configDir
+
+# package.toml is .chezmoiignore'd on Windows and seeded here instead.
+#
+# `ya pkg install` rewrites the file, replacing every `hash` value with one it
+# computes from the deployed files - and those hashes come out different on
+# Windows than on macOS/WSL2 even at identical `rev`s. A chezmoi-managed
+# package.toml therefore loses a fight it cannot win: every apply after an
+# install would stop on
+#
+#     .config/yazi/package.toml has changed since chezmoi last wrote it?
+#     diff/overwrite/all-overwrite/skip/quit
+#
+# which also blocks setup.ps1, since that ends with a `chezmoi apply`.
+#
+# Seeded, not written every run: those hashes are ya's integrity record for what
+# it deployed, so overwriting the file makes ya refuse to touch the plugins at
+# all -
+#
+#     You have modified the contents of the `git.yazi` plugin.
+#     For safety, the operation has been aborted.
+#
+# On a fresh machine nothing is deployed yet, so the pins below are all ya needs
+# and it writes its own hashes on the way through. After that the file is ya's,
+# and a pin change is reported rather than forced, because reconciling one means
+# redeploying the plugin and only ya can do that safely.
+$manifestContent = @'
+{{ includeTemplate "dot_config/yazi/package.toml.tmpl" . | trimSuffix "\n" }}
+'@
+
+# use/rev pairs, ignoring hash - the pins this repo actually owns.
+function Get-Pins {
+    param([string[]]$Lines)
+    $Lines |
+        Where-Object { $_ -match '^\s*(use|rev)\s*=' } |
+        ForEach-Object { $_.Trim() }
+}
 
 if (-not (Get-Command ya -ErrorAction SilentlyContinue)) {
     # Not an error: on a fresh machine this runs before setup.ps1 has installed
@@ -25,6 +73,26 @@ if (-not (Get-Command ya -ErrorAction SilentlyContinue)) {
     exit 0
 }
 
+New-Item -ItemType Directory -Force -Path $configDir | Out-Null
+$manifest = Join-Path $configDir 'package.toml'
+
+if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
+    Set-Content -LiteralPath $manifest -Value $manifestContent -Encoding utf8
+    Write-Host "yazi: seeded $manifest"
+}
+else {
+    $onDisk = Get-Pins (Get-Content -LiteralPath $manifest)
+    $wanted = Get-Pins ($manifestContent -split "`r?`n")
+    if (Compare-Object $onDisk $wanted) {
+        # Deliberately not overwritten: ya would then refuse to touch the
+        # already-deployed plugins. `ya pkg upgrade` moves them to the newest
+        # revision, which is the usual intent behind changing a pin.
+        Write-Warning "yazi: the pins in $manifest differ from this repo's package.toml."
+        Write-Warning '      Left as-is, because overwriting it makes ya refuse to redeploy.'
+        Write-Warning '      Reconcile with: ya pkg upgrade'
+    }
+}
+
 # The sources land in .config/yazi/plugins and .config/yazi/flavors, which
 # .chezmoiignore keeps out of the managed set - package.toml pins the revisions.
 & ya pkg install
@@ -32,4 +100,31 @@ if ($LASTEXITCODE -ne 0) {
     Write-Warning "yazi: 'ya pkg install' exited $LASTEXITCODE"
     exit $LASTEXITCODE
 }
+
+# Same verification as the .sh counterpart, and the check that would have caught
+# this script installing nothing at all: `ya pkg install` exits 0 when the
+# manifest it read was empty, so the exit code alone proves nothing.
+$missing = foreach ($line in Get-Content -LiteralPath $manifest) {
+    if ($line -match '^\s*\[\[(plugin|flavor)\.deps\]\]') {
+        $kind = "$($Matches[1])s"
+    }
+    elseif ($kind -and $line -match '^\s*use\s*=\s*"[^:"]+:([^"]+)"') {
+        $relative = Join-Path $kind "$($Matches[1]).yazi"
+        if (-not (Test-Path -LiteralPath (Join-Path $configDir $relative) -PathType Container)) {
+            $relative
+        }
+    }
+}
+
+if ($missing) {
+    Write-Warning "yazi: 'ya pkg install' exited 0 but these are still missing under ${configDir}:"
+    $missing | ForEach-Object { Write-Host "        $_" }
+    Write-Warning '      init.lua require()s them, so yazi will not start. Check the fetch'
+    Write-Warning '      output above, then retry: ya pkg install'
+    exit 1
+}
+
+$plugins = @(Get-ChildItem (Join-Path $configDir 'plugins') -Directory -ErrorAction SilentlyContinue).Count
+$flavors = @(Get-ChildItem (Join-Path $configDir 'flavors') -Directory -ErrorAction SilentlyContinue).Count
+Write-Host "yazi: $plugins plugins and $flavors flavors present under $configDir"
 {{- end -}}

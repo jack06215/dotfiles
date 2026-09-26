@@ -154,6 +154,38 @@ Get-ScheduledTask | Where-Object TaskName -in 'Run on Sleep','Run on Wake up','S
 On this machine `Run on Sleep` and `Run on Wake up` exist but are **Disabled**,
 and `Start WSL` is `Ready`.
 
+### The old %APPDATA%\yazi\config
+
+yazi's default config directory on Windows is `%APPDATA%\yazi\config`, not
+`~/.config/yazi` (on Unix the latter is yazi's own default, which is why nothing
+in `dot_zshenv` sets this). `YAZI_CONFIG_HOME` now points at the chezmoi-managed
+directory, set in three places because each covers a different scope:
+
+- the PowerShell profile, for interactive shells;
+- `setup.ps1`, persisted at User scope, for a yazi started from Explorer or a
+  non-pwsh terminal;
+- `run_onchange_after_install-yazi-packages.ps1`, which chezmoi runs with
+  `-NoProfile` and so inherits neither.
+
+That leaves whatever is already in `%APPDATA%\yazi\config` unread - on this
+machine `keymaps.toml`, `theme.toml` and `yazi.toml`, an older hand-maintained
+set (note `keymaps.toml`, where this repo has `keymap.toml`). Nothing deletes it;
+remove it by hand once you are satisfied the managed config is the one in use:
+
+```powershell
+ya pkg list   # should list 6 plugins and 1 flavor
+```
+
+`package.toml` is `.chezmoiignore`'d on Windows. `ya pkg install` rewrites every
+`hash` in it from the deployed files, and those come out different on Windows
+than on macOS/WSL2 at identical `rev`s, so a managed copy would make every later
+apply stop on `has changed since chezmoi last wrote it` - which would also block
+`setup.ps1`'s final apply. The run_onchange script seeds the file on a fresh
+machine and `ya` owns it afterwards; those hashes are ya's integrity record, and
+overwriting them makes it refuse to redeploy (`You have modified the contents of
+the ... plugin`). If the repo's pins and the on-disk ones diverge, the script
+says so and leaves them alone — reconcile with `ya pkg upgrade`.
+
 ### Retiring the Chocolatey copies of mise-managed tools
 
 mise now owns node, python, jq, kubectl and helm. Chocolatey's copies of those
