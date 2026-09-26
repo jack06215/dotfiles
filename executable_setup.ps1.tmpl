@@ -51,8 +51,11 @@ $POWERSHELL_MODULES = @(
 #          exist, 21.0.8 does not, on any platform.
 #   mysql: the vfox plugin probes for libncurses/libaio/libnuma through
 #          apt/dnf/pacman and calls uname; the asdf fallback is a bash plugin.
-# Both stay WSL2/macOS-only. ~/.tool-versions is left untouched.
-$MISE_SKIP_TOOLS = @('java', 'mysql')
+#   poetry: the vfox plugin's PostInstall shells out to chmod and rm, so the
+#          install dies with "'chmod' is not recognized as an internal or
+#          external command" after the download has already succeeded.
+# All three stay WSL2/macOS-only. ~/.tool-versions is left untouched.
+$MISE_SKIP_TOOLS = @('java', 'mysql', 'poetry')
 
 # Persisted at User scope so a program started outside pwsh still sees them -
 # Explorer, a non-pwsh Windows Terminal profile, or WezTerm spawning a tool
@@ -154,6 +157,39 @@ function Install-Chocolatey {
     Update-SessionPath
 }
 
+# Git for Windows' installer will not overwrite files a running process holds
+# open. It asks to have those processes terminated, but choco passes
+# /SUPPRESSMSGBOXES, so it answers its own prompt with Cancel and exits 1 -
+# taking git.install and then git down with it, mid-manifest.
+#
+# Everything it catches is a daemon that respawns on demand: the GnuPG helpers
+# under usr\lib\gnupg (keyboxd, gpg-agent, dirmngr) and the fsmonitor daemon
+# that dot_config/git/config keeps alive with core.fsmonitor. bash.exe is
+# deliberately left running - this script may itself have been launched from a
+# shell Git provides.
+function Stop-GitDaemons {
+    $uninstallKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\Git_is1'
+    $entry = Get-ItemProperty -Path $uninstallKey -Name InstallLocation -ErrorAction SilentlyContinue
+    if (-not $entry) {
+        # No Git yet, so nothing can be holding its files - a fresh machine.
+        return
+    }
+
+    $gitRoot = $entry.InstallLocation
+    $holding = @(
+        Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
+            Where-Object {
+                $_.Name -ne 'bash.exe' -and
+                $_.ExecutablePath -and
+                $_.ExecutablePath.StartsWith($gitRoot, 'OrdinalIgnoreCase')
+            }
+    )
+    foreach ($proc in $holding) {
+        Write-Host "Stopping $($proc.Name) ($($proc.ProcessId)); it holds files under $gitRoot"
+        Stop-Process -Id $proc.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+}
+
 function Install-ChocolateyPackages {
     if (-not (Test-CommandExists choco)) {
         Add-Failure 'chocolatey packages (choco is not installed)'
@@ -163,6 +199,10 @@ function Install-ChocolateyPackages {
         Add-Failure "chocolatey packages ($CHOCO_MANIFEST missing; run 'chezmoi apply' first)"
         return
     }
+
+    # Before both the install and the upgrade below: either can be the one that
+    # moves git, and nothing in between starts those daemons up again.
+    Stop-GitDaemons
 
     $chocoArgs = @('install', $CHOCO_MANIFEST, '--yes', '--no-progress')
     if ($IgnoreChecksums) { $chocoArgs += '--ignore-checksums' }
@@ -315,9 +355,22 @@ function Install-PowerShellModules {
 
     foreach ($module in $POWERSHELL_MODULES) {
         try {
-            if (Get-Module -ListAvailable -Name $module) {
-                Update-Module -Name $module -ErrorAction Stop
-                Write-Host "$module is already installed; updated."
+            # Get-InstalledModule, not Get-Module -ListAvailable: the latter also
+            # finds modules that arrived by some other route - PSScriptAnalyzer
+            # ships bundled inside PowerShellEditorServices - and Update-Module
+            # rejects those with "was not installed by using Install-Module",
+            # every run, forever. Only a PowerShellGet install can be updated.
+            if (Get-InstalledModule -Name $module -ErrorAction SilentlyContinue) {
+                try {
+                    Update-Module -Name $module -ErrorAction Stop
+                    Write-Host "$module is already installed; updated."
+                }
+                catch {
+                    # Still reachable when the module's source repository is gone.
+                    Write-Warning "could not update $module ($_); reinstalling"
+                    Install-Module -Name $module -Scope CurrentUser -Force -SkipPublisherCheck -ErrorAction Stop
+                    Write-Host "$module reinstalled."
+                }
             }
             else {
                 Install-Module -Name $module -Scope CurrentUser -Force -SkipPublisherCheck -ErrorAction Stop

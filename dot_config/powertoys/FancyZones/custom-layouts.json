@@ -1,0 +1,34 @@
+{
+  "custom-layouts": [
+    {
+      "uuid": "{C2C3EA1C-CAE0-457E-B82E-ED2B895975D7}",
+      "name": "Custom layout 1",
+      "type": "canvas",
+      "info": {
+        "ref-width": 1920,
+        "ref-height": 1032,
+        "zones": [
+          {
+            "X": 0,
+            "Y": 3,
+            "width": 768,
+            "height": 1029
+          },
+          {
+            "X": 768,
+            "Y": 3,
+            "width": 1152,
+            "height": 500
+          },
+          {
+            "X": 768,
+            "Y": 503,
+            "width": 1152,
+            "height": 529
+          }
+        ],
+        "sensitivity-radius": 20
+      }
+    }
+  ]
+}

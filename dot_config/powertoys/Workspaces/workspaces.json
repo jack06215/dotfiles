@@ -1,0 +1,51 @@
+{
+  "workspaces": [
+    {
+      "id": "{5F06A544-723F-46FD-B73A-95622DFF2DD9}",
+      "name": "Workspace 1",
+      "creation-time": 1748876207,
+      "last-launched-time": 1748876290,
+      "is-shortcut-needed": false,
+      "move-existing-windows": false,
+      "monitor-configuration": [
+        {
+          "id": "SDC4179",
+          "instance-id": "5&33fdcedc&0&UID4355",
+          "monitor-number": 1,
+          "dpi": 120,
+          "monitor-rect-dpi-aware": {
+            "top": -357,
+            "left": -2560,
+            "width": 2560,
+            "height": 1440
+          },
+          "monitor-rect-dpi-unaware": {
+            "top": -357,
+            "left": -2560,
+            "width": 2048,
+            "height": 1152
+          }
+        },
+        {
+          "id": "BNQ78E6",
+          "instance-id": "5&33fdcedc&0&UID4356",
+          "monitor-number": 2,
+          "dpi": 96,
+          "monitor-rect-dpi-aware": {
+            "top": 0,
+            "left": 0,
+            "width": 1920,
+            "height": 1080
+          },
+          "monitor-rect-dpi-unaware": {
+            "top": 0,
+            "left": 0,
+            "width": 1920,
+            "height": 1080
+          }
+        }
+      ],
+      "applications": []
+    }
+  ]
+}

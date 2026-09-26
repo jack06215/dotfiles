@@ -62,6 +62,12 @@ skills/**
 {{ if ne .chezmoi.os "windows" }}
 .glzr
 .glzr/**
+# PowerToys' settings tree. The app exists only on Windows and reads these from
+# %LOCALAPPDATA%\Microsoft\PowerToys, which
+# run_onchange_after_link-powertoys-settings.ps1 copies them into; a macOS or
+# WSL2 home has no use for a copy.
+.config/powertoys
+.config/powertoys/**
 # The PowerShell 7 profile, its MyModule and the choco/winget manifests. On
 # Windows these are applied to ~/.config/powershell and then copied into
 # Documents\PowerShell by run_onchange_after_link-powershell-profile.ps1, since

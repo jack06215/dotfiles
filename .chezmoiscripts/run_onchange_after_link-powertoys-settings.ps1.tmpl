@@ -1,0 +1,104 @@
+{{- if eq .chezmoi.os "windows" -}}
+{{- /*
+    Copies ~/.config/powertoys into %LOCALAPPDATA%\Microsoft\PowerToys, the
+    per-module settings tree the PowerToys runtime actually reads. PowerToys has
+    no notion of a config path, so - like the vscode, firefox and powershell
+    scripts - this is a copy into the location the app owns rather than a
+    symlink, which on Windows would need admin rights or Developer Mode anyway.
+
+    A copy is a snapshot, so the script has to rerun whenever a source file
+    changes. The tree hash is emitted into a PowerShell comment below, not into
+    this Go template comment, because chezmoi decides whether to rerun by
+    hashing the *rendered* script - a hash inside a template comment is stripped
+    before it can have any effect. Hashing the whole tree rather than listing
+    fifty-odd files means adding one under dot_config/powertoys reruns this by
+    itself.
+
+    Only settings are tracked; see dot_config/powertoys/README.md for what is
+    deliberately left out (logs, caches, MRU/history, per-machine state, and
+    Mouse Without Borders' settings.json, which holds its pairing key).
+*/ -}}
+#!/usr/bin/env pwsh
+{{ $h := "" -}}
+{{- range (glob (joinPath .chezmoi.sourceDir "dot_config/powertoys/**")) -}}
+{{-   if and (not (stat .).isDir) (not (hasSuffix ".ptb" .)) (not (hasSuffix ".md" .)) -}}
+{{-     $h = printf "%s%s" $h (include . | sha256sum) -}}
+{{-   end -}}
+{{- end -}}
+# dot_config/powertoys tree hash: {{ $h | sha256sum }}
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$sourceDir = {{ joinPath .xdg.configHome "powertoys" | squote }}
+
+# The prefix comes from Windows rather than a hardcoded AppData\Local, for the
+# same reason the powershell script asks for Documents: the shell folder is the
+# authority on where it really is. Everything below hangs off this prefix plus
+# Microsoft\PowerToys - no absolute, per-user path appears in this script.
+$prefix = [Environment]::GetFolderPath('LocalApplicationData')
+if (-not $prefix) {
+    Write-Warning 'powertoys: could not resolve the Local AppData folder, skipping'
+    exit 0
+}
+$destDir = Join-Path $prefix 'Microsoft\PowerToys'
+
+# PowerToys holds its settings in memory and writes them back out when any of
+# them changes, so a file replaced underneath a running instance can simply be
+# overwritten again. Worth saying so rather than killing the app from a
+# `chezmoi apply`.
+$running = $null -ne (Get-Process PowerToys -ErrorAction SilentlyContinue)
+
+# Whatever PowerToys had before chezmoi took this over is worth keeping, but a
+# copy is indistinguishable from one this script made - so back up once, the
+# first time, and never again. One directory beside the real one, rather than
+# fifty-odd .bak files scattered through the tree.
+#
+# Logs are excluded: they are ~7,000 of the ~7,100 files in that tree, and a
+# backup of settings has no use for them.
+if (Test-Path -LiteralPath $destDir -PathType Container) {
+    $priorBackups = Get-ChildItem -LiteralPath $prefix -Directory `
+        -Filter 'PowerToys.chezmoi-backup-*' -ErrorAction SilentlyContinue
+    if (-not $priorBackups) {
+        $backupDir = Join-Path $prefix "PowerToys.chezmoi-backup-$(Get-Date -Format 'yyyyMMddHHmmss')"
+        $saved = 0
+        foreach ($file in Get-ChildItem -LiteralPath $destDir -Recurse -File) {
+            $relative = $file.FullName.Substring($destDir.Length).TrimStart('\', '/')
+            # Catches Logs\, ModuleInterface\Logs\, LogsModuleInterface\ and
+            # stray *.log files alike.
+            if ($relative -imatch 'log') {
+                continue
+            }
+            $target = Join-Path $backupDir $relative
+            New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+            Copy-Item -LiteralPath $file.FullName -Destination $target -Force
+            $saved++
+        }
+        Write-Warning "powertoys: backed up $saved pre-existing files to $(Split-Path -Leaf $backupDir)"
+    }
+}
+
+# File by file against a relative path, not Copy-Item -Recurse on the directory:
+# Copy-Item nests rather than merges when the destination already exists, which
+# would give Microsoft\PowerToys\PowerToys. Nothing is deleted - the logs, and
+# any module whose settings are not tracked, are left alone.
+$copied = 0
+foreach ($file in Get-ChildItem -LiteralPath $sourceDir -Recurse -File) {
+    # .ptb is a PowerToys "backup settings" archive, kept in the repo to be
+    # restored by hand from the settings UI; .md is this directory's README.
+    # Neither belongs in the runtime tree.
+    if ($file.Extension -in '.ptb', '.md') {
+        continue
+    }
+
+    $relative = $file.FullName.Substring($sourceDir.Length).TrimStart('\', '/')
+    $target = Join-Path $destDir $relative
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+    Copy-Item -LiteralPath $file.FullName -Destination $target -Force
+    $copied++
+}
+
+Write-Host "powertoys: copied $copied files into $destDir"
+if ($running) {
+    Write-Warning 'powertoys: PowerToys is running and rewrites its settings from memory; restart it to pick these up'
+}
+{{- end -}}
