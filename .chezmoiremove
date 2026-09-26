@@ -1,0 +1,7 @@
+# Targets that used to be managed and are now gone from the source tree;
+# `chezmoi apply` deletes them. (Paths relative to the destination, like
+# .chezmoiignore.)
+
+# WezTerm's config stopped being a template: chezmoi_tmpl.lua gave way to
+# runtime detection in wezterm.lua plus machine.lua.
+.config/wezterm/chezmoi_tmpl.lua

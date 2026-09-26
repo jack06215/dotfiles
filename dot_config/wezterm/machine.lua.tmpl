@@ -1,0 +1,17 @@
+{{- /* isWSL2 first: it exists in configs generated before the [data.wsl]
+       section did, so a Mac that has not re-run `chezmoi init` still renders. */ -}}
+{{- $distro := "" -}}
+{{- $shell := "" -}}
+{{- if .myComputer.isWSL2 -}}
+{{-   $distro = .wsl.distro -}}
+{{-   $shell = env "SHELL" | default "/bin/zsh" -}}
+{{- end -}}
+-- Per-machine facts for wezterm.lua that WezTerm cannot work out by itself,
+-- rendered by chezmoi from its machine data (.chezmoi.toml.tmpl).
+return {
+  -- WSL2 only, "" elsewhere: the distro WezTerm on Windows opens (through its
+  -- "WSL:<distro>" domain), and the login shell to start the tmux workspace
+  -- with there.
+  wsl_distro = {{ $distro | quote }},
+  wsl_shell = {{ $shell | quote }},
+}
