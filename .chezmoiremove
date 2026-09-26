@@ -5,3 +5,16 @@
 # WezTerm's config stopped being a template: chezmoi_tmpl.lua gave way to
 # runtime detection in wezterm.lua plus machine.lua.
 .config/wezterm/chezmoi_tmpl.lua
+
+# MyModule's two upstream registries (IANA ports, IEEE OUI) stopped being
+# tracked - 5.2 MB of third-party data that goes stale, which the functions
+# fetch themselves with -UpdateList. Without these entries the copies a machine
+# already received would linger and keep being copied on into
+# Documents\PowerShell, since run_onchange_after_link-powershell-profile only
+# ever adds files.
+#
+# This removes them from ~/.config only. Documents\PowerShell is deliberately
+# left alone: that is where -UpdateList writes, so nothing here should delete
+# what it puts there.
+.config/powershell/Modules/MyModule/Functions/Network/Resources/IANA_ServiceName_and_TransportProtocolPortNumber_Registry.xml
+.config/powershell/Modules/MyModule/Functions/Network/Resources/IEEE_Standards_Registration_Authority.csv

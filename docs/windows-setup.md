@@ -320,6 +320,40 @@ pushed to Windows from WSL2, where `.xdg.configHome` is a Linux path, so baking
 paths in at render time would produce a profile full of `/home/<user>/...`.
 `$env:STARSHIP_CONFIG` and friends are resolved at runtime instead.
 
+## MyModule's network data files
+
+`Invoke-IPv4PortScan` and `Invoke-IPv4NetworkScan` can label ports with service
+names and MAC addresses with vendor names, from two upstream registries:
+
+| File | Source |
+| --- | --- |
+| `IANA_ServiceName_and_TransportProtocolPortNumber_Registry.xml` | iana.org, 3.4 MB |
+| `IEEE_Standards_Registration_Authority.csv` | standards-oui.ieee.org, 1.8 MB |
+
+**Neither is in this repo.** They are third-party data rather than
+configuration, they go stale, and together they are 5.2 MB that every clone
+would carry - the same reasoning that keeps the nvim dictionary, the SKK jisyo
+and the yazi plugin checkouts out. `Resources/.gitkeep` is what makes chezmoi
+create the directory for them to land in.
+
+Both functions work without them and say so - *"This warning does not affect the
+scanning procedure"* - you just get numbers instead of names. Each fetches its
+own, writing a `.bak` first and restoring it if the download fails:
+
+```powershell
+Invoke-IPv4NetworkScan -IPv4Address 192.168.1.0 -Mask 255.255.255.0 -EnableMACResolving -UpdateList
+Invoke-IPv4PortScan -ComputerName localhost -UpdateList
+```
+
+Run either once; the file persists, and the link script never deletes it.
+
+`.chezmoiremove` drops the copies under `~/.config` that a machine received while
+these were still tracked, so they stop being copied onward. It deliberately does
+not touch `Documents\PowerShell`, since that is where `-UpdateList` writes - so a
+machine set up before this change still has the old snapshots there. They are
+valid, just frozen at whatever date they were committed; delete them or refresh
+them with `-UpdateList`.
+
 ## Troubleshooting
 
 **The profile warns that a module is not installed.** `setup.ps1` has not run, or
