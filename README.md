@@ -108,7 +108,7 @@ Highlights under `src/`:
 | `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |
 | `search.zsh` | fzf-based search helpers |
 | `aws.zsh`, `bazel.zsh`, `k8s.zsh`, `mysql.zsh`, `dart.zsh` | domain-specific shortcuts |
-| `zsh_python_init.zsh` | resolves the Poetry-managed venv under `python` per OS and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN`, `DBT_BIN`, `GDOWN_BIN` + aliases |
+| `zsh_python_init.zsh` | resolves the Poetry-managed venv under `python` per OS and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN` + aliases |
 | `executable_sleep.zsh` / `executable_wakeup.zsh` | sleepwatcher hooks (macOS); skip weekends, gate on `sleepwatcher.should_run`, drive a Teamspirit clock-in/out script |
 | `myscripts/` | standalone executables: `fzf-listprojects`, `whisper-mic`, `transcribe-yt`, `convert-mp3-to-aiff`, `ghpr-index` (rows + preview for the `ghpr` picker), AWS role listing, sleepwatcher enable/disable, etc. |
 | `BUILD.bazel`, `MODULE.bazel` | Bazel entry points for repo maintenance tasks — `bazel run //:export_brewfile_macos` / `export_brewfile_linux` regenerate `brewfiles/darwin` / `brewfiles/wsl2`. Not a build system for the dotfiles themselves; `.bazelrc` sets `--symlink_prefix=/` so no `bazel-*` symlinks appear in a chezmoi source tree |
