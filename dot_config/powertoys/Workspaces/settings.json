@@ -1,1 +1,17 @@
-{"properties":{"hotkey":{"value":{"win":false,"ctrl":false,"alt":true,"shift":true,"code":191,"key":""}},"sortby":0},"name":"Workspaces","version":"1.0"}
+{
+  "properties": {
+    "hotkey": {
+      "value": {
+        "win": false,
+        "ctrl": false,
+        "alt": true,
+        "shift": true,
+        "code": 191,
+        "key": ""
+      }
+    },
+    "sortby": 0
+  },
+  "name": "Workspaces",
+  "version": "1.0"
+}

@@ -1,1 +1,114 @@
-{"properties":{"DefaultActivationShortcut":{"win":true,"ctrl":false,"alt":false,"shift":true,"code":67,"key":""},"ActivationShortcut":{"win":true,"ctrl":false,"alt":false,"shift":true,"code":67,"key":""},"changecursor":{"value":false},"copiedcolorrepresentation":"HEX","activationaction":1,"primaryclickaction":0,"middleclickaction":1,"secondaryclickaction":2,"colorhistory":["255|178|205|255","255|253|252|255","255|3|12|16","255|254|254|254","255|178|178|178","255|140|140|140","255|102|102|102","255|226|229|231","255|137|137|137","255|255|255|255","255|243|243|243","255|224|224|224","255|96|96|97","255|240|241|242","255|30|30|30","255|0|90|255","255|22|100|192","255|161|35|178","255|249|249|249","255|248|248|249"],"colorhistorylimit":20,"visiblecolorformats":{"HEX":{"Key":true,"Value":"%Rex%Grx%Blx"},"RGB":{"Key":true,"Value":"rgb(%Re, %Gr, %Bl)"},"HSL":{"Key":true,"Value":"hsl(%Hu, %Sl%, %Ll%)"},"HSV":{"Key":false,"Value":"hsv(%Hu, %Sb%, %Va%)"},"CMYK":{"Key":false,"Value":"cmyk(%Cy%, %Ma%, %Ye%, %Bk%)"},"HSB":{"Key":false,"Value":"hsb(%Hu, %Sb%, %Br%)"},"HSI":{"Key":false,"Value":"hsi(%Hu, %Si%, %In%)"},"HWB":{"Key":false,"Value":"hwb(%Hu, %Wh%, %Bn%)"},"NCol":{"Key":false,"Value":"%Hn, %Wh%, %Bn%"},"CIELAB":{"Key":false,"Value":"CIELab(%Lc, %Ca, %Cb)"},"CIEXYZ":{"Key":false,"Value":"XYZ(%Xv, %Yv, %Zv)"},"VEC4":{"Key":false,"Value":"(%Reff, %Grff, %Blff, 1f)"},"Decimal":{"Key":false,"Value":"%Dv"},"HEX Int":{"Key":false,"Value":"0xFF%ReX%GrX%BlX"}},"showcolorname":{"value":false}},"name":"ColorPicker","version":"2.1"}
+{
+  "properties": {
+    "DefaultActivationShortcut": {
+      "win": true,
+      "ctrl": false,
+      "alt": false,
+      "shift": true,
+      "code": 67,
+      "key": ""
+    },
+    "ActivationShortcut": {
+      "win": true,
+      "ctrl": false,
+      "alt": false,
+      "shift": true,
+      "code": 67,
+      "key": ""
+    },
+    "changecursor": {
+      "value": false
+    },
+    "copiedcolorrepresentation": "HEX",
+    "activationaction": 1,
+    "primaryclickaction": 0,
+    "middleclickaction": 1,
+    "secondaryclickaction": 2,
+    "colorhistory": [
+      "255|178|205|255",
+      "255|253|252|255",
+      "255|3|12|16",
+      "255|254|254|254",
+      "255|178|178|178",
+      "255|140|140|140",
+      "255|102|102|102",
+      "255|226|229|231",
+      "255|137|137|137",
+      "255|255|255|255",
+      "255|243|243|243",
+      "255|224|224|224",
+      "255|96|96|97",
+      "255|240|241|242",
+      "255|30|30|30",
+      "255|0|90|255",
+      "255|22|100|192",
+      "255|161|35|178",
+      "255|249|249|249",
+      "255|248|248|249"
+    ],
+    "colorhistorylimit": 20,
+    "visiblecolorformats": {
+      "HEX": {
+        "Key": true,
+        "Value": "%Rex%Grx%Blx"
+      },
+      "RGB": {
+        "Key": true,
+        "Value": "rgb(%Re, %Gr, %Bl)"
+      },
+      "HSL": {
+        "Key": true,
+        "Value": "hsl(%Hu, %Sl%, %Ll%)"
+      },
+      "HSV": {
+        "Key": false,
+        "Value": "hsv(%Hu, %Sb%, %Va%)"
+      },
+      "CMYK": {
+        "Key": false,
+        "Value": "cmyk(%Cy%, %Ma%, %Ye%, %Bk%)"
+      },
+      "HSB": {
+        "Key": false,
+        "Value": "hsb(%Hu, %Sb%, %Br%)"
+      },
+      "HSI": {
+        "Key": false,
+        "Value": "hsi(%Hu, %Si%, %In%)"
+      },
+      "HWB": {
+        "Key": false,
+        "Value": "hwb(%Hu, %Wh%, %Bn%)"
+      },
+      "NCol": {
+        "Key": false,
+        "Value": "%Hn, %Wh%, %Bn%"
+      },
+      "CIELAB": {
+        "Key": false,
+        "Value": "CIELab(%Lc, %Ca, %Cb)"
+      },
+      "CIEXYZ": {
+        "Key": false,
+        "Value": "XYZ(%Xv, %Yv, %Zv)"
+      },
+      "VEC4": {
+        "Key": false,
+        "Value": "(%Reff, %Grff, %Blff, 1f)"
+      },
+      "Decimal": {
+        "Key": false,
+        "Value": "%Dv"
+      },
+      "HEX Int": {
+        "Key": false,
+        "Value": "0xFF%ReX%GrX%BlX"
+      }
+    },
+    "showcolorname": {
+      "value": false
+    }
+  },
+  "name": "ColorPicker",
+  "version": "2.1"
+}

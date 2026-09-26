@@ -1,1 +1,7 @@
-{"properties":{"default_reg_app":false},"name":"RegistryPreview","version":"1"}
+{
+  "properties": {
+    "default_reg_app": false
+  },
+  "name": "RegistryPreview",
+  "version": "1"
+}

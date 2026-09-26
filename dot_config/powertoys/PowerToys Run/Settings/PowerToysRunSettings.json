@@ -1,6 +1,6 @@
 {
-  "PreviousHotkey": "Alt \u002B Space",
-  "Hotkey": "Ctrl \u002B Space",
+  "PreviousHotkey": "Alt + Space",
+  "Hotkey": "Ctrl + Space",
   "UseCentralizedKeyboardHook": false,
   "SearchQueryResultsWithDelay": true,
   "SearchInputDelayFast": 0,

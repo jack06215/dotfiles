@@ -4,4 +4,18 @@
      run_onchange_after_link-powertoys-settings.ps1. Windows-only: .chezmoiignore
      keeps this tree out of the macOS and WSL2 homes, where LOCALAPPDATA is
      unset. */ -}}
-{"properties":{"HideFileExtension":{"value":true},"HideStartingDigits":{"value":true},"TemplateLocation":{"value":{{ joinPath (env "LOCALAPPDATA") "Microsoft/PowerToys/NewPlus/Templates" | toJson }}}},"name":"NewPlus","version":"1.0"}
+{
+  "properties": {
+    "HideFileExtension": {
+      "value": true
+    },
+    "HideStartingDigits": {
+      "value": true
+    },
+    "TemplateLocation": {
+      "value": {{ joinPath (env "LOCALAPPDATA") "Microsoft/PowerToys/NewPlus/Templates" | toJson }}
+    }
+  },
+  "name": "NewPlus",
+  "version": "1.0"
+}
