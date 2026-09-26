@@ -1,11 +1,11 @@
 {
   "properties": {
-    "awake_keep_display_on": false,
-    "awake_mode": 0,
-    "awake_hours": 0,
-    "awake_minutes": 0,
-    "tray_times": {}
+    "keepDisplayOn": false,
+    "mode": 0,
+    "intervalHours": 0,
+    "intervalMinutes": 1,
+    "customTrayTimes": {}
   },
   "name": "Awake",
-  "version": "0.0.1"
+  "version": "1.0"
 }

@@ -350,6 +350,12 @@ Set-Alias pbpaste Get-Clipboard
 Set-Alias -Name su -Value admin
 Set-Alias lg lazygit
 
+# The bazel pickers, under the names alias.zsh gives them on the other side, so
+# the muscle memory carries. The functions live in MyModule\Functions\Bazel.
+Set-Alias bzlrun Invoke-Bzlrun
+Set-Alias bzltest Invoke-Bzltest
+Set-Alias bzlbuild Invoke-Bzlbuild
+
 if (Get-Module PSReadLine) {
     $vimCommand = Get-Command vim -ErrorAction Ignore
     if ($vimCommand) {

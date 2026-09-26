@@ -4,9 +4,10 @@
 #
 #     pwsh ./generate-chocofile.ps1
 #
-# There is no Bazel target for this one. BUILD.bazel drives the Brewfile
-# exporters through sh_binary, which cannot wrap a .ps1, and adding a Windows
-# toolchain to the workspace for a single script is not worth it.
+# There is no Bazel target for this one: no rule in the workspace can wrap a
+# .ps1 - not sh_binary, and not the py_binary that //:export_powertoys_settings
+# runs on - and rewriting this in Python just to get one has not been worth it.
+# `pwsh ./generate-chocofile.ps1` is the entry point.
 #
 # Chocolatey has no `brew leaves`, so this derives one: every installed package
 # that appears as a <dependency> of another installed package is a dependency,

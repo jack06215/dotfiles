@@ -1,3 +1,4 @@
+load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
 # Regenerates the Brewfile manifest of the machine you run it on, from what it
@@ -25,5 +26,29 @@ sh_binary(
     name = "export_brewfile_linux",
     srcs = ["executable_generate-brewfile.sh"],
     target_compatible_with = ["@platforms//os:linux"],
+    visibility = ["//visibility:public"],
+)
+
+# Pulls the PowerToys settings back out of %LOCALAPPDATA%\Microsoft\PowerToys
+# and into dot_config/powertoys, reformatted the way the tracked copies are:
+#
+#     bazel run //:export_powertoys_settings              # on Windows
+#     bazel run //:export_powertoys_settings -- --dry-run # look first
+#
+# The inverse of run_onchange_after_link-powertoys-settings.ps1, and Windows-only
+# for the same reason: PowerToys exists nowhere else. Run-only, like the
+# Brewfile exporters - it writes into the source tree, which a build action may
+# not do.
+#
+# py_binary rather than sh_binary because sh_binary is run through bash on
+# Windows, and the bash on PATH there is WSL's; see MODULE.bazel. `main` is
+# spelled out because the file carries chezmoi's executable_ prefix, so its name
+# does not match the target's.
+py_binary(
+    name = "export_powertoys_settings",
+    srcs = ["executable_export-powertoys-settings.py"],
+    legacy_create_init = 0,
+    main = "executable_export-powertoys-settings.py",
+    target_compatible_with = ["@platforms//os:windows"],
     visibility = ["//visibility:public"],
 )

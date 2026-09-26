@@ -12,6 +12,43 @@ per-user absolute path is baked into the repo.
 `.chezmoiignore` keeps the tree out of the macOS and WSL2 homes, where it would
 mean nothing. PowerToys is installed by `dot_config/powershell/chocolatey/packages.config`.
 
+## Refreshing this copy from the live tree
+
+Settings changed in the PowerToys UI land in `%LOCALAPPDATA%`, not here. To
+bring them back:
+
+```console
+$ bazel run //:export_powertoys_settings                # on Windows
+$ bazel run //:export_powertoys_settings -- --dry-run   # look first
+```
+
+`python ~/export-powertoys-settings.py` runs the same script without bazel. It
+is the inverse of the link script, and three things it deliberately does not do:
+
+- **It does not decide what is tracked.** Only paths already in this directory
+  are refreshed. Live files that are neither tracked nor on the ignore list
+  below are printed as candidates and otherwise left alone, so a newly enabled
+  module is adopted on purpose and a future PowerToys release cannot slip a new
+  cache — or a new secret — into the repo just by existing.
+- **It does not touch `NewPlus/settings.json.tmpl`.** The value a template
+  action rendered to cannot be recovered from the rendered file, so the template
+  is compared rather than overwritten: the templated `TemplateLocation` matches
+  anything, and any other drift is reported by name for a hand edit.
+- **It changes nothing but the formatting**, with one exception: the
+  `VOLATILE_KEYS` table drops the session-state keys named below. It deletes
+  those keys and never edits a value. Every file is parsed, re-emitted and
+  re-parsed before it replaces the tracked copy; a half-written live file is
+  reported and skipped, never committed.
+
+The JSON comes out exactly as `jq .` renders it — two-space indent, keys in the
+order PowerToys wrote them, non-ASCII raw, LF, no BOM — so re-exporting an
+unchanged machine leaves `git status` clean. `json.dumps` does that formatting:
+PowerShell's `ConvertTo-Json` truncates at `-Depth 2` and escapes non-ASCII, and
+jq would be a runtime dependency for output the stdlib already matches
+byte-for-byte. The one rule that has to be stated is `U+007F`, which jq escapes
+and `json.dumps` does not — `PowerToys Run/settings.json` has a literal DEL in a
+plugin description, so the exporter escapes it too.
+
 ## Restarting
 
 PowerToys holds its settings in memory and writes them back out whenever one
@@ -47,6 +84,10 @@ this machine's username baked into it.
 
 ## What is deliberately not tracked
 
+The exporter's `IGNORED` list is this section in code — it is what decides
+whether an untracked live file is passed over or reported as a candidate, so
+the two have to be kept in step.
+
 **Logs.** About 7,000 of the ~7,100 files in the live tree. They appear as
 `Logs/`, `ModuleInterface/Logs/` and `LogsModuleInterface/`, plus a stray
 `File Locksmith/last-run.log`.
@@ -65,6 +106,16 @@ positions, none of which mean anything on another machine:
 - `FancyZones/applied-layouts.json`, `app-zone-history.json`,
   `editor-parameters.json`, `last-used-virtual-desktop.json`
 - `settings-placement.json`
+
+**Session state inside a file that is otherwise worth tracking** — dropped key
+by key on the way in, rather than by leaving the whole file untracked. The
+exporter's `VOLATILE_KEYS` is the list, and it only ever deletes:
+
+- `Awake/settings.json`'s `properties.expirationDateTime`, a wall-clock stamp
+  written whenever Awake is armed. It is read only in expirable mode — the
+  tracked mode is `1`, indefinite — and PowerToys writes a fresh one from memory
+  when it needs one, so the copy the link script pushes out is none the worse
+  for arriving without it.
 
 **Install bookkeeping and telemetry:** `UpdateState.json`,
 `last_version_run.json`, `experimentation.json`, `oobe_settings.json`,

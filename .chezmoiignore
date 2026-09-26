@@ -102,9 +102,11 @@ generate-brewfile.sh
 # owns the hashes from there.
 .config/yazi/package.toml
 {{ else }}
-# The Windows half, conversely: Chocolatey, winget and mise exist nowhere else.
+# The Windows half, conversely: Chocolatey, winget and mise exist nowhere else,
+# and the PowerToys exporter reads %LOCALAPPDATA%.
 setup.ps1
 generate-chocofile.ps1
+export-powertoys-settings.py
 {{ end }}
 
 {{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.hostname "A0229") }}

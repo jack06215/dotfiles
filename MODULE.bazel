@@ -12,3 +12,18 @@ bazel_dep(name = "rules_shell", version = "0.8.0")
 # via rules_shell, but a transitive dep is not visible under its own name from
 # the main repo, so it has to be declared here to be referenced by label.
 bazel_dep(name = "platforms", version = "1.0.0")
+
+# For //:export_powertoys_settings. sh_binary would have needed no new
+# dependency, but on Windows Bazel runs one through bash - and the bash on PATH
+# there is C:\Windows\System32\bash.exe, the WSL launcher, which cannot resolve
+# the C:/... path Bazel hands it. Git Bash is not on PATH at all, so the target
+# only worked when invoked from inside a Git Bash session. py_binary has a
+# native launcher and needs no shell.
+bazel_dep(name = "rules_python", version = "2.3.4")
+
+# The runtime_env toolchain runs whatever `python3` is on PATH instead of
+# downloading an interpreter: mise already pins 3.13.13 in .tool-versions, the
+# exporter is stdlib-only, and a hermetic CPython would be a large download for
+# a repo that builds nothing. It does mean `bazel run` here is not hermetic,
+# which is the right trade for a tool whose whole job is to read this machine.
+register_toolchains("@rules_python//python/runtime_env_toolchains:all")
