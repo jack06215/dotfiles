@@ -1,7 +1,5 @@
 #!/usr/bin/env zsh
 
-[[ -f "$ZDOTDIR/src/core.zsh" ]] && source "$ZDOTDIR/src/core.zsh"
-
 _ZSH_PYTHON="{{ .pypoetry.zshPythonDir }}"
 if [[ -n "$_ZSH_PYTHON" && -x "$_ZSH_PYTHON/bin/python" ]]; then
   export ZSH_PYTHON_ROOT="$_ZSH_PYTHON"

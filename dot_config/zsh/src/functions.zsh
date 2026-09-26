@@ -66,35 +66,22 @@ function pbpaste_dump() {
   echo "Saved clipboard to $filename"
 }
 
+# send_notification <message> [title] [subtitle] [sound] [url]
+#
+# Kept as the name its callers use (the notify_* shortcuts below, gh.zsh's CI
+# watchers); notify.zsh holds the per-platform backends - terminal-notifier on
+# macOS, a BurntToast toast on WSL2. Loaded on first use, since this file is
+# also sourced on its own by modules that zshfn runs without init.zsh.
 function send_notification() {
-  msg="$1"
-  title="${2:-Notification}"
-  subtitle="$3"
-  sound="$4"
-  open_url="$5"
-
-  if ! command -v terminal-notifier > /dev/null 2>&1; then
-    echo "send_notification: terminal-notifier not found (brew install terminal-notifier)" >&2
-    return 127
-  fi
-
-  if [[ -n "$sound" ]]; then
-    terminal-notifier \
-      -message "$msg" \
-      -title "$title" \
-      ${subtitle:+-subtitle "$subtitle"} \
-      -sound "$sound" \
-      ${open_url:+-open "$open_url"}
-  else
-    terminal-notifier \
-      -message "$msg" \
-      -title "$title" \
-      ${subtitle:+-subtitle "$subtitle"} \
-      ${open_url:+-open "$open_url"}
-  fi
+  (($+functions[notify])) || source "${ZDOTDIR:-$HOME/.config/zsh}/src/notify.zsh"
+  notify "$@"
 }
 
 function preview_sound() {
+  if [[ "$OSTYPE" != darwin* ]]; then
+    echo "preview_sound: plays macOS system sounds; not available here." >&2
+    return 1
+  fi
   _check_gum_cmd || return 1
 
   local sound

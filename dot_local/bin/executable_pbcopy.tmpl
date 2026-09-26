@@ -1,0 +1,20 @@
+#!/bin/sh
+# pbcopy for WSL2: stdin -> the Windows clipboard. Deployed only on WSL2 (see
+# .chezmoiignore); macOS has the real one in /usr/bin. An executable rather
+# than a shell function, so tmux, lazygit, zellij, vim and scripts find it on
+# PATH just like on macOS.
+#
+# win32yank talks to the clipboard API directly: UTF-8 in and out (clip.exe
+# mangles non-ASCII) and it can paste too. --crlf gives Windows apps the line
+# endings they expect; pbpaste's --lf undoes it, so a round trip inside WSL
+# is lossless. The path comes from `chezmoi init` (.wsl.win32yank), because
+# appendWindowsPath=false keeps Windows dirs off PATH.
+y={{ .wsl.win32yank | squote }}
+if [ -x "$y" ] || y="$(command -v win32yank.exe)"; then
+  exec "$y" -i --crlf
+fi
+
+# No win32yank: clip.exe still copies, but reads the ANSI code page, so
+# non-ASCII text comes out garbled.
+echo "pbcopy: win32yank.exe not found, falling back to clip.exe" >&2
+exec /mnt/c/Windows/System32/clip.exe

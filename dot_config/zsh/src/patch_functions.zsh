@@ -12,6 +12,10 @@
 # asdf shims dir on PATH for every shell - interactive or not. `asdf
 # which`/`asdf exec shfmt` are unaffected and still show the asdf-managed
 # version; only bare `shfmt` resolves to this one.
+#
+# `chezmoi apply` runs it whenever this file changes
+# (.chezmoiscripts/run_onchange_after_install-pinned-shfmt.zsh.tmpl); call it
+# by hand to retry a failed install.
 function s_shfmt_pinned() {
   local pinned="v3.13.1"
   local target="$HOME/.local/bin/shfmt"
