@@ -91,3 +91,52 @@ Brewfile
 .local/bin/pbpaste
 .local/bin/powershell.exe
 {{ end }}
+
+# The repo's own README describes the repo; it is not a dotfile.
+README.md
+
+# HHKB Keymap Tool exports, imported into the keyboard by hand rather than
+# read from $HOME by anything.
+keyboards
+keyboards/**
+
+# macOS-only: apps and hooks that exist only there (MeetingBar, AltTab,
+# Vorssiant, sleepwatcher's sleep/wake hooks with their Teamspirit clock-in,
+# Claude Desktop's MCP config), scripts built on macOS commands (ifconfig -lX
+# and ipconfig getsummary; ~/Library/Sounds), and the Homebrew cask snippets.
+{{ if ne .chezmoi.os "darwin" }}
+.config/meetingbar
+.config/meetingbar/**
+.config/zsh/src/meetingbar.zsh
+.config/alttab
+.config/alttab/**
+.config/vorssiant
+.config/vorssiant/**
+.config/zsh/src/sleep.zsh
+.config/zsh/src/wakeup.zsh
+.config/zsh/src/myscripts/enable_sleepwatcher
+.config/zsh/src/myscripts/disable_sleepwatcher
+.config/zsh/src/myscripts/set_run_on_sleep
+.config/zsh/src/myscripts/set_run_on_wake
+.config/zsh/src/myscripts/connected-wifi-ssid
+.config/zsh/src/myscripts/convert-mp3-to-aiff
+.config/myscripts/set_mcp_server_claude_desktop.py
+.config/navi/cheats/homebrew-macos.cheat
+.config/pet/snippets-macos
+.config/pet/snippets-macos/**
+{{ end }}
+
+# Termux's own config, for the Android phone only.
+{{ if ne .chezmoi.os "android" }}
+.config/termux
+.config/termux/**
+{{ end }}
+
+# Not wanted on the WSL2 box: local Whisper transcription (whisper-mic,
+# transcribe-yt) and ZenNotes, a desktop app not installed there.
+{{ if .myComputer.isWSL2 }}
+.config/zsh/src/myscripts/whisper-mic
+.config/zsh/src/myscripts/transcribe-yt
+.config/zennotes
+.config/zennotes/**
+{{ end }}
