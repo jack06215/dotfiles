@@ -211,7 +211,7 @@ function setup_macos() {
 {{/* osRelease is empty on macOS, and missingkey=error rejects reading it. */ -}}
 {{ $isSupportedDebian := false -}}
 {{ if eq .chezmoi.os "linux" -}}
-{{   $isSupportedDebian = and (eq .chezmoi.osRelease.id "debian") (or (eq .chezmoi.osRelease.versionId "12") (eq .chezmoi.osRelease.versionId "13")) -}}
+{{   $isSupportedDebian = and (eq .chezmoi.osRelease.id "debian") (or (eq .chezmoi.osRelease.versionID "12") (eq .chezmoi.osRelease.versionID "13")) -}}
 {{ end -}}
 {{ if $isSupportedDebian -}}
 function setup_debian() {

@@ -12,15 +12,24 @@ config files.
 ## Quick start
 
 ```sh
-chezmoi init --apply <this-repo>
+git clone https://github.com/jack06215/dotfiles ~/workspace/jack06215/dotfiles
+chezmoi init --apply --source ~/workspace/jack06215/dotfiles
 ```
 
-chezmoi prompts derive from `dot_config/chezmoi/chezmoi.toml.tmpl`, which
-detects OS/arch, whether the machine is a "company machine"
-(`IS_COMPANY_MACHINE` env var), and XDG paths, then exposes them to every
-template as `.myComputer.*` / `.xdg.*`. `.chezmoiignore` uses the same data
-to skip OS-inapplicable files (e.g. `AppData/**` is skipped everywhere
-except Windows) and to drop `.tool-versions` on one specific hostname.
+`chezmoi init` renders `.chezmoi.toml.tmpl` into
+`~/.config/chezmoi/chezmoi.toml` (recording the `--source` checkout as
+`sourceDir`, so later commands need no flag). The template detects OS/arch,
+WSL2, whether the machine is a "company machine" (`IS_COMPANY_MACHINE` env
+var), XDG paths and the per-machine paths in `.chezmoidata/lookups.toml`,
+then exposes them to every template as `.myComputer.*` / `.wsl.*` /
+`.xdg.*` / `.pypoetry.*` / `.firefox.*` / `.vscode.*`. On WSL2 it also finds
+the Windows home (`.wsl.windowsHome`, e.g. `/mnt/c/Users/<you>`) and
+`win32yank.exe`, and resolves the Firefox and VS Code paths on the Windows
+side, since those apps run on Windows. The values are baked in at init time:
+after editing the template or `lookups.toml`, run `chezmoi init` again
+(`chezmoi apply` warns when the template has changed).
+`.chezmoiignore` uses the same data to skip OS-inapplicable files and to
+drop `.tool-versions` on one specific hostname.
 
 ## Layout
 
@@ -31,12 +40,13 @@ Everything follows the [XDG base directory spec](https://specifications.freedesk
 `$HOME` stays clean.
 
 ```
+.chezmoi.toml.tmpl          → chezmoi config template (machine data; see Quick start)
+.chezmoidata/, .chezmoitemplates/ → lookup tables + the lookup/lookupPath helpers
 .chezmoiscripts/            → run_ scripts (executed, never placed in ~)
 dot_zshenv                  → ~/.zshenv (XDG + tool env vars, ZDOTDIR)
 dot_tool-versions           → ~/.tool-versions (asdf-managed toolchain)
 dot_config/
   zsh/                      → shell config (see below)
-  chezmoi/                  → chezmoi.toml.tmpl (prompt/data source)
   claude/                   → Claude Code settings; skills/ symlinks to ../../skills
   git/, gh-dash/, lazygit/  → git tooling
   starship/                 → prompt theme (Nord palette)

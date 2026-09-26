@@ -1,0 +1,180 @@
+{{- /*
+    chezmoi's config template: `chezmoi init` renders it to
+    ~/.config/chezmoi/chezmoi.toml before any other template runs, so
+    `chezmoi init --apply` works in one pass on a fresh machine. Re-run
+    `chezmoi init` after editing this file; `chezmoi apply` warns when it has
+    changed since the config was last generated.
+
+    Machine-specific values come from .chezmoidata/lookups.toml. chezmoi has
+    not loaded .chezmoidata yet when it runs this template, so the file is read
+    directly; the tables hold paths relative to a base dir (plain TOML cannot
+    call joinPath), and `lookupPath` does the join and returns "" when the
+    machine has no entry.
+*/ -}}
+{{- $lookups := (include ".chezmoidata/lookups.toml" | fromToml).lookups -}}
+{{- $home := .chezmoi.homeDir -}}
+
+{{- /*
+    WSL2: chezmoi runs inside Linux, but the terminal, browser and editor are
+    Windows apps that read C:\Users\<user>. cmd.exe goes by absolute path
+    because appendWindowsPath=false keeps it off PATH, and runs from /mnt/c
+    because it refuses a UNC working directory. Both fall back to "" (never
+    fail init) when interop is off.
+*/ -}}
+{{- $isWSL2 := false -}}
+{{- if eq .chezmoi.os "linux" -}}
+{{-   $isWSL2 = .chezmoi.kernel.osrelease | lower | contains "microsoft" -}}
+{{- end -}}
+{{- $wslDistro := "" -}}
+{{- $windowsHome := "" -}}
+{{- $windowsUser := "" -}}
+{{- $win32yank := "" -}}
+{{- if $isWSL2 -}}
+{{-   $wslDistro = env "WSL_DISTRO_NAME" -}}
+{{-   $windowsHome = output "sh" "-c" "p=\"$(cd /mnt/c && /mnt/c/Windows/System32/cmd.exe /d /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\\r')\"; [ -n \"$p\" ] && wslpath -u \"$p\" || true" | trim -}}
+{{-   if $windowsHome -}}
+{{-     $windowsUser = base $windowsHome -}}
+{{-   end -}}
+{{- /* The real binary before chocolatey's .NET shim, which costs ~1s on
+         its first call. */ -}}
+{{-   $candidates := list
+        "/mnt/c/ProgramData/chocolatey/lib/win32yank/tools/win32yank.exe"
+        "/mnt/c/ProgramData/chocolatey/bin/win32yank.exe" -}}
+{{-   if $windowsHome -}}
+{{-     $candidates = append $candidates (joinPath $windowsHome "scoop/shims/win32yank.exe") -}}
+{{-   end -}}
+{{-   range $candidates -}}
+{{-     if and (not $win32yank) (stat .) -}}
+{{-       $win32yank = . -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}
+
+{{- /*
+    Windows apps' paths. On WSL2 the tables are read as if on Windows (so the
+    `windows` rows apply) and joined onto the Windows home; per-machine rows
+    for WSL are keyed `windows/<hostname>/<linux user>`.
+*/ -}}
+{{- $appChezmoi := .chezmoi -}}
+{{- $appHome := $home -}}
+{{- if $windowsHome -}}
+{{-   $appChezmoi = merge (dict "os" "windows") .chezmoi -}}
+{{-   $appHome = $windowsHome -}}
+{{- end -}}
+
+{{- $pypoetryDir :=
+      includeTemplate "lookupPath" (dict
+        "chezmoi" .chezmoi
+        "base"    $home
+        "table"   $lookups.pypoetryDir.table
+        "default" $lookups.pypoetryDir.default
+      )
+-}}
+
+{{- $firefoxProfilesDir :=
+      includeTemplate "lookupPath" (dict
+        "chezmoi" $appChezmoi
+        "base"    $appHome
+        "table"   $lookups.firefoxProfilesDir.table
+        "default" $lookups.firefoxProfilesDir.default
+      )
+-}}
+
+{{- /* a profile id, not a path, so it goes through `lookup` directly */ -}}
+{{- $firefoxProfileId :=
+      includeTemplate "lookup" (dict
+        "chezmoi" $appChezmoi
+        "table"   $lookups.firefoxProfileId.table
+        "default" $lookups.firefoxProfileId.default
+      )
+-}}
+
+{{- $vscodeUserDir :=
+      includeTemplate "lookupPath" (dict
+        "chezmoi" $appChezmoi
+        "base"    $appHome
+        "table"   $lookups.vscodeUserDir.table
+        "default" $lookups.vscodeUserDir.default
+      )
+-}}
+
+{{- /* poetry venv names are per-machine hashes, so these key on the username
+       too; they hang off the resolved pypoetryDir rather than $home */ -}}
+{{- $zshPythonDir :=
+      includeTemplate "lookupPath" (dict
+        "chezmoi" .chezmoi
+        "base"    $pypoetryDir
+        "table"   $lookups.zshPythonVenv.table
+        "default" $lookups.zshPythonVenv.default
+      )
+-}}
+{{- /* No table row: ask poetry for the monorepo's venv instead, so a new
+       machine needs no hash copied into lookups.toml. "" when the monorepo,
+       poetry or the venv is missing; re-run `chezmoi init` after
+       `poetry install`. */ -}}
+{{- $monorepo := joinPath $home "workspace/jack06215/monorepo" -}}
+{{- if and (not $zshPythonDir) (ne .chezmoi.os "windows") (stat (joinPath $monorepo "pyproject.toml")) (lookPath "poetry") -}}
+{{-   $zshPythonDir = output "sh" "-c" "cd \"$1\" && poetry env info --path 2>/dev/null || true" "sh" $monorepo | trim -}}
+{{- end -}}
+
+{{- $fwMonorepoPythonDir :=
+      includeTemplate "lookupPath" (dict
+        "chezmoi" .chezmoi
+        "base"    $pypoetryDir
+        "table"   $lookups.fwMonorepoPythonVenv.table
+        "default" $lookups.fwMonorepoPythonVenv.default
+      )
+-}}
+
+sourceDir = {{ .chezmoi.sourceDir | quote }}
+
+[data.myComputer]
+    hostname = {{ .chezmoi.hostname | quote }}
+    username = {{ .chezmoi.username | quote }}
+    arch = {{ .chezmoi.arch | quote }}
+    homeDir = {{ .chezmoi.homeDir | quote }}
+    isCompanyMachine = {{ env "IS_COMPANY_MACHINE" | eq "true" | toString | trim }}
+    isDarwin = {{ eq .chezmoi.os "darwin" | toString | trim }}
+    isLinux = {{ eq .chezmoi.os "linux" | toString | trim }}
+    isWSL2 = {{ $isWSL2 }}
+    isWindows = {{ eq .chezmoi.os "windows" | toString | trim }}
+    isArm = {{ eq .chezmoi.arch "arm64" | toString | trim }}
+    isX86 = {{ eq .chezmoi.arch "amd64" | toString | trim }}
+# Always present, "" off WSL2, so templates can test a value without first
+# checking isWSL2 (missingkey=error rejects absent keys).
+[data.wsl]
+    distro = {{ $wslDistro | quote }}
+    windowsHome = {{ $windowsHome | quote }}
+    windowsUser = {{ $windowsUser | quote }}
+    win32yank = {{ $win32yank | quote }}
+[data.pypoetry]
+    pypoetryDir = {{ $pypoetryDir | quote }}
+    zshPythonDir = {{ $zshPythonDir | quote }}
+    fwMonorepoPythonDir = {{ $fwMonorepoPythonDir | quote }}
+[data.firefox]
+    profile = {{ $firefoxProfileId | quote }}
+    profileDirBase = {{ $firefoxProfilesDir | quote }}
+    profileDir = {{ joinPath $firefoxProfilesDir $firefoxProfileId | quote }}
+[data.vscode]
+    userDir = {{ $vscodeUserDir | quote }}
+[data.xdg]
+    configHome = {{ env "XDG_CONFIG_HOME" | default (joinPath .chezmoi.homeDir ".config") | quote }}
+    dataHome = {{ env "XDG_DATA_HOME" | default (joinPath .chezmoi.homeDir ".local/share") | quote }}
+    cacheHome = {{ env "XDG_CACHE_HOME" | default (joinPath .chezmoi.homeDir ".cache") | quote }}
+[template]
+    options = ["missingkey=error"]
+{{ if eq .chezmoi.os "windows" }}
+[interpreters.ps1]
+    # chezmoi's built-in default for .ps1 is Windows PowerShell 5.1
+    # (powershell.exe -NoLogo); point it at PowerShell 7 instead. -NoProfile
+    # keeps run_ scripts independent of $PROFILE.
+    command = "pwsh"
+    args = ["-NoLogo", "-NoProfile"]
+{{ end }}
+
+[diff]
+    # run_onchange_ scripts embed dotfile content via `include`, so any dotfile
+    # edit changes the script's hash and chezmoi diff would otherwise dump the
+    # entire script body as a "new file". Excluding scripts keeps diff output
+    # to actual file changes only.
+    exclude = ["scripts"]
