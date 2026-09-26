@@ -391,6 +391,13 @@ per-user `PSModulePath` entry from — by
 `run_onchange_after_push-windows-configs.sh` from WSL2. Neovim, VS Code and the
 language servers are deliberately absent: development happens in WSL2.
 
+`Modules/MyModule/Functions/Bazel/` ports the fzf target pickers from
+`bazel.zsh`: `Invoke-Bzlrun`, `Invoke-Bzltest` and `Invoke-Bzlbuild`, aliased in
+the profile to `bzlrun` / `bzltest` / `bzlbuild` as on the zsh side. The zsh
+originals queue the assembled command with `print -z` for editing; PowerShell
+has no equivalent from inside a function, so these print the line and run it,
+and `-Print` returns it as a string instead.
+
 **Window management:** `dot_glzr/glazewm/config.yaml` + `dot_glzr/zebar/`
 configure [GlazeWM](https://github.com/glzr-io/glazewm) (tiling WM) and
 [Zebar](https://github.com/glzr-io/zebar) (status bar).
