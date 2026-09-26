@@ -12,6 +12,7 @@ config files.
 ## Quick start
 
 ```sh
+mkdir -p ~/workspace/jack06215
 git clone https://github.com/jack06215/dotfiles ~/workspace/jack06215/dotfiles
 chezmoi init --apply --source ~/workspace/jack06215/dotfiles
 ```
