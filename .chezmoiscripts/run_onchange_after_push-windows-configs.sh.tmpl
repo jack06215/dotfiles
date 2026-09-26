@@ -1,0 +1,105 @@
+{{- /*
+  WSL2 only: copies the config of the Windows apps this repo manages into the
+  Windows home (.wsl.windowsHome, found by `chezmoi init`). WezTerm, GlazeWM,
+  Zebar, VS Code, Firefox and Windows Terminal all run on Windows, read their
+  config from C:\Users\<user>, and cannot follow a symlink into the WSL
+  filesystem - so a normal `chezmoi apply` inside WSL never reached them.
+  .chezmoiignore keeps these sources out of the Linux home on WSL2.
+
+  Each file's rendered content is embedded below, so chezmoi reruns this
+  whenever any of them changes. Per file, the copy on Windows is:
+  - already identical: left alone;
+  - still exactly what this script last wrote: replaced;
+  - anything else - edited on the Windows side since, or there before this
+    script ever ran (the hand-written configs it takes over): kept next to
+    the new file as <name>.chezmoi-backup-<timestamp>, then replaced.
+  Folders owned by the app (VS Code's User dir, the Firefox profile, Windows
+  Terminal's LocalState) are only written into when they exist.
+*/ -}}
+{{- if and .myComputer.isWSL2 .wsl.windowsHome -}}
+{{- $win := .wsl.windowsHome -}}
+#!/bin/bash
+set -euo pipefail
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/chezmoi/windows-push"
+mkdir -p "$state_dir"
+stamp=$(date +%Y%m%d-%H%M%S)
+
+# push <dest> < content
+function push() {
+  local dest="$1" tmp state_file new current last
+  tmp=$(mktemp)
+  cat > "$tmp"
+  new=$(sha256sum < "$tmp" | cut -d' ' -f1)
+  state_file="$state_dir/$(printf '%s' "$dest" | sha256sum | cut -c1-32)"
+
+  if [[ -f "$dest" ]]; then
+    current=$(sha256sum < "$dest" | cut -d' ' -f1)
+    if [[ "$current" == "$new" ]]; then
+      echo "$new" > "$state_file"
+      rm -f "$tmp"
+      return 0
+    fi
+    last=$(cat "$state_file" 2> /dev/null || true)
+    if [[ "$current" != "$last" ]]; then
+      cp -p "$dest" "$dest.chezmoi-backup-$stamp"
+      echo "windows-push: kept the previous $dest as $(basename "$dest").chezmoi-backup-$stamp" >&2
+    fi
+  fi
+
+  mkdir -p "$(dirname "$dest")"
+  cp "$tmp" "$dest"
+  echo "$new" > "$state_file"
+  rm -f "$tmp"
+  echo "windows-push: updated $dest"
+}
+
+# push_into <existing app dir> <relative path> < content
+function push_into() {
+  local dir="$1" rel="$2"
+  if [[ ! -d "$dir" ]]; then
+    cat > /dev/null
+    echo "windows-push: $dir does not exist (app not installed?), skipping $rel" >&2
+    return 0
+  fi
+  push "$dir/$rel"
+}
+
+# ---- WezTerm (%USERPROFILE%\.config\wezterm) ----
+push {{ joinPath $win ".config/wezterm/wezterm.lua" | quote }} << 'CHEZMOI_WINDOWS_PUSH'
+{{ include "dot_config/wezterm/wezterm.lua" | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
+push {{ joinPath $win ".config/wezterm/machine.lua" | quote }} << 'CHEZMOI_WINDOWS_PUSH'
+{{ includeTemplate "dot_config/wezterm/machine.lua.tmpl" . | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
+
+# ---- GlazeWM + Zebar (%USERPROFILE%\.glzr) ----
+push {{ joinPath $win ".glzr/glazewm/config.yaml" | quote }} << 'CHEZMOI_WINDOWS_PUSH'
+{{ includeTemplate "dot_glzr/glazewm/config.yaml.tmpl" . | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
+{{- range list "config.yaml" "settings.json" "styles.css" "vanilla-clear.html" "vanilla-clear.zebar.json" "dot_marketplace/emptope.attaquer-modified.json" }}
+push {{ joinPath $win ".glzr/zebar" (. | replace "dot_marketplace" ".marketplace") | quote }} << 'CHEZMOI_WINDOWS_PUSH'
+{{ include (joinPath "dot_glzr/zebar" .) | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
+{{- end }}
+
+# ---- VS Code (%APPDATA%\Code\User; Remote-WSL uses these too) ----
+{{- range list "settings.json" "keybindings.json" }}
+push_into {{ $.vscode.userDir | quote }} {{ . | quote }} << 'CHEZMOI_WINDOWS_PUSH'
+{{ include (joinPath "dot_config/vscode" .) | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
+{{- end }}
+
+# ---- Firefox (profile {{ .firefox.profile }}) ----
+push_into {{ .firefox.profileDir | quote }} "user.js" << 'CHEZMOI_WINDOWS_PUSH'
+{{ includeTemplate "dot_config/firefox/profile/user.js.tmpl" . | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
+push_into {{ .firefox.profileDir | quote }} "chrome/userChrome.css" << 'CHEZMOI_WINDOWS_PUSH'
+{{ include "dot_config/firefox/profile/chrome/userChrome.css" | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
+
+# ---- Windows Terminal (Store install's LocalState) ----
+push_into {{ joinPath $win "AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState" | quote }} "settings.json" << 'CHEZMOI_WINDOWS_PUSH'
+{{ include "dot_config/windows-terminal/settings.json" | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
+{{ end -}}

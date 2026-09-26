@@ -52,7 +52,7 @@ dot_config/
   starship/                 → prompt theme (Nord palette)
   tock/                     → time tracker (tock.yaml; SQLite db under XDG_DATA_HOME)
   tmux/, tmux-powerline/    → multiplexer config, which-key menu, status bar
-  wezterm/                  → terminal emulator config (Lua, templated)
+  wezterm/                  → terminal emulator config (plain Lua + a rendered machine.lua)
   nvim/                     → LazyVim-based Neovim config
   zellij/                   → terminal multiplexer keybinds
   bottom/, btop/, htop/     → system monitors
@@ -61,9 +61,10 @@ dot_config/
   myscripts/, private_pet/  → misc scripts + `pet` snippet manager
   private_navi/             → `navi` cheatsheets: config.yaml, cheats/ (zsh)
                               and cheats-nu/ (nushell), ported from pet
+  vscode/, firefox/         → VS Code settings, Firefox user.js + userChrome.css
+  windows-terminal/         → Windows Terminal settings (jsonnet source + json)
 dot_glzr/
   glazewm/, zebar/          → Windows tiling WM + status bar
-AppData/                    → Windows-only app config (ignored elsewhere)
 ```
 
 ## Shell (zsh)
@@ -103,7 +104,7 @@ Highlights under `src/`:
 | `pet.zsh` | binds `Ctrl-O` to `pet search` snippet lookup (`Ctrl-S` is tmux's prefix, so a `^S` binding never reaches zsh) |
 | `navi.zsh` | binds `Ctrl-G` to the `navi` widget — cheatsheet search over `dot_config/private_navi/cheats/*.cheat`, a port of pet's `snippet.toml`. Runs alongside pet rather than replacing it; `NAVI_CONFIG` in `dot_zshenv` pins the config path because navi otherwise resolves it per-platform (`~/Library/Application Support/navi` on macOS). nushell gets the same `Ctrl-G` from `dot_config/nushell/function.nu`, whose `navi` wrapper passes `--path` for `cheats-nu/` so the nu pipelines stay out of the zsh picker — the same split pet makes with `snippet.nu.toml` |
 | `tock.zsh` | time tracking: `tk` (start/switch, project inferred from the git root, prompts for tag + note), `tockpick`/`tkr` (gum picker over history, shows last note and asks for a new one), `tkn`/`tkd` + `tks`/`tkc`/`tkl`/`tkw`/`tka` |
-| `wezterm.zsh` | `wezterm_config`: gum-driven live tuning of WezTerm opacity/blur, persisted per-machine in `$XDG_STATE_HOME/wezterm/appearance.json` |
+| `wezterm.zsh` | `wezterm_config`: gum-driven live tuning of WezTerm opacity, macOS blur / Windows backdrop, persisted in `~/.local/state/wezterm/appearance.json` of the machine WezTerm runs on (on WSL2 the Windows home) |
 | `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |
 | `search.zsh` | fzf-based search helpers |
 | `aws.zsh`, `bazel.zsh`, `k8s.zsh`, `mysql.zsh`, `dart.zsh` | domain-specific shortcuts |
@@ -132,16 +133,21 @@ all Python tooling invoked from zsh:
 
 ## Terminal & editor
 
-- **wezterm** (`dot_config/wezterm/wezterm.lua.tmpl`) — templated via a
-  small helper module (`chezmoi_tmpl.lua.tmpl`) that exposes chezmoi's
-  `myComputer.*` data to Lua; picks the login shell per OS, defines
-  hyperlink rules (including a custom `TICKET-123/branch-name` →
-  GitHub monorepo tree link rule for Flywheel branches).
-  Background opacity and macOS blur are not hard-coded: `chezmoi_tmpl`
-  reads them from `$XDG_STATE_HOME/wezterm/appearance.json` (falling back
-  to committed defaults), and `wezterm_config` tunes them live — each step
-  re-applies the two wezterm targets, and WezTerm's own config watcher
-  reloads. Opacities are authored 0–100 and divided by 100 in `tmpl.pct`.
+- **wezterm** (`dot_config/wezterm/wezterm.lua`) — one plain-Lua config for
+  macOS and Windows, deciding per OS at runtime (`wezterm.target_triple`):
+  the "Cmd" key layer is CMD on macOS and CTRL+SHIFT elsewhere (plain CTRL
+  would take Ctrl-C/W/V/... from the shell); on Windows it opens the WSL2
+  distro through WezTerm's `WSL:<distro>` domain, and the first tab runs the
+  tmux dev workspace, as on macOS. The per-machine facts it cannot work out
+  itself (the distro, the login shell there) come from `machine.lua`,
+  rendered from chezmoi data. It also defines hyperlink rules (including a
+  custom `TICKET-123/branch-name` → GitHub monorepo tree link rule for
+  Flywheel branches). Opacity, macOS blur and the Windows backdrop are read
+  at runtime from `~/.local/state/wezterm/appearance.json` (falling back to
+  the defaults at the top of wezterm.lua) and watched, so `wezterm_config`
+  just writes that file - on WSL2 on the Windows side - and WezTerm reloads.
+  On WSL2 the files reach `%USERPROFILE%\.config\wezterm` through the
+  Windows push below.
 - **nvim** (`dot_config/nvim/`) — [LazyVim](https://github.com/LazyVim/LazyVim) starter, own fork at
   `jack06215/lazyvim-starter`.
 - **Dictionary completion** (`dot_config/nvim/lua/plugins/blink/`) — English
@@ -274,6 +280,16 @@ merge helpers for unmerged files).
 `dot_glzr/glazewm/config.yaml` + `dot_glzr/zebar/` configure
 [GlazeWM](https://github.com/glzr-io/glazewm) (tiling WM) and
 [Zebar](https://github.com/glzr-io/zebar) (status bar) for Windows machines.
+
+On a WSL2 machine the Windows apps read their config from the Windows home,
+which `chezmoi apply` inside WSL never touches (and which cannot follow a
+symlink into the WSL filesystem). `run_onchange_after_push-windows-configs`
+copies WezTerm, GlazeWM, Zebar, VS Code (`%APPDATA%\Code\User`), Firefox
+(the profile in `.chezmoidata/lookups.toml`) and Windows Terminal settings
+there instead, from the repo directly. It reruns whenever one of them
+changes; a Windows-side copy that differs from what it last wrote (edited on
+Windows, or there before it) is kept as `<name>.chezmoi-backup-<timestamp>`
+before being replaced.
 
 ## Claude Code
 

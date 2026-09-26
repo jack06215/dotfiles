@@ -52,11 +52,24 @@ brewfiles/**
 skills
 skills/**
 
+# Windows-app configs. GlazeWM and Zebar only mean anything on Windows. On
+# WSL2, run_onchange_after_push-windows-configs copies them - and WezTerm's,
+# VS Code's and Firefox's - into the Windows home straight from the source, so
+# the Linux home gets no copy. Windows Terminal's settings exist only to be
+# pushed that way.
+.config/windows-terminal
+.config/windows-terminal/**
 {{ if ne .chezmoi.os "windows" }}
-AppData/**
-.glzr/zebar
-.starship/**
-.wezterm.lua
+.glzr
+.glzr/**
+{{ end }}
+{{ if .myComputer.isWSL2 }}
+.config/wezterm
+.config/wezterm/**
+.config/vscode
+.config/vscode/**
+.config/firefox
+.config/firefox/**
 {{ end }}
 
 {{ if eq .chezmoi.os "windows" }}
