@@ -1,0 +1,47 @@
+{{- /*
+    zshPythonModule — a myscripts wrapper that runs a monorepo module under
+    zsh_python the way pycli.zsh.tmpl's pycli() runs packages.cli: from the
+    monorepo, with the venv activated, so the module's imports resolve and the
+    venv's own commands come first on PATH.
+
+    Arguments (a dict):
+      chezmoi   the caller's .chezmoi variable
+      pypoetry  the caller's .pypoetry data; zshPythonDir is the venv
+      module    the module to run, e.g. packages.sleepwatcher.set_run_on_wake
+      dir       optional: where under the monorepo to run it from. Modules
+                that import each other as `packages.*` run from the root, as
+                pycli does; the older ones that import `sleepwatcher.*` or
+                `common.*` need "packages", which is how Bazel builds them.
+      args      optional: shell text after the module, e.g. "$@"
+
+    Without the monorepo or its venv (zshPythonDir is "") the script still
+    renders, and says what is missing when run, as pycli does.
+*/ -}}
+{{- $repo := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo" -}}
+{{- $dir := $repo -}}
+{{- /* .chezmoi.toml sets missingkey=error: optional keys go through get. */ -}}
+{{- if get . "dir" -}}
+{{-   $dir = joinPath $repo (get . "dir") -}}
+{{- end -}}
+#!/usr/bin/env zsh
+# Runs {{ .module }} under zsh_python. Rendered by chezmoi from
+# .chezmoitemplates/zshPythonModule.
+
+set -euo pipefail
+
+dir={{ $dir | quote }}
+venv={{ .pypoetry.zshPythonDir | quote }}
+
+if [[ ! -d $dir ]]; then
+  print -u2 "${0:t}: monorepo not found: $dir"
+  exit 1
+fi
+if [[ ! -f $venv/bin/activate ]]; then
+  print -u2 "${0:t}: venv activate script not found: ${venv:-(no venv)}/bin/activate"
+  print -u2 "${0:t}: run 'poetry install' or check .pypoetry.zshPythonDir in chezmoi"
+  exit 1
+fi
+
+cd "$dir"
+source "$venv/bin/activate"
+exec python -m {{ .module }}{{ with get . "args" }} {{ . }}{{ end }}
