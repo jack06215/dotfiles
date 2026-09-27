@@ -181,6 +181,16 @@ sourceDir = {{ .chezmoi.sourceDir | quote }}
     command = "pwsh"
     args = ["-NoLogo", "-NoProfile"]
 {{ end }}
+{{- if eq .chezmoi.os "android" }}
+[interpreters.sh]
+    # Termux has no /bin/bash or /usr/bin/env, and chezmoi (Go) execs scripts
+    # directly, bypassing termux-exec's shebang rewriting - so the scripts'
+    # shebangs point nowhere. Run them through PATH instead of editing the
+    # shebangs, which would change every script's hash on the other machines.
+    command = "bash"
+[interpreters.zsh]
+    command = "zsh"
+{{ end }}
 
 [diff]
     # run_onchange_ scripts embed dotfile content via `include`, so any dotfile
