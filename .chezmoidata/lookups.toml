@@ -39,6 +39,7 @@
 [lookups.gitSign]
   default = "true"
 [lookups.gitSign.table]
+  android = "false"
 
 # --------------------------------------------------------------- firefox ----
 

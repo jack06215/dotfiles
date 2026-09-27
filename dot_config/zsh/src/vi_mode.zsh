@@ -102,6 +102,17 @@ function zvm_config() {
   # normal/visual, underline in operator-pending. tmux.conf already passes
   # the shape sequences through (`terminal-overrides '*:Ss=...:Se=...'`), so
   # these survive inside tmux too.
+
+  # zvm_cursor_style spots a cursor colour (`\e]12;<colour>\a`, kept as
+  # literal text) with the regex '\e\][0-9]+;.+\a', and POSIX regexes have no
+  # \e or \a. glibc and macOS read them as a plain `e` and `a`; Android's libc
+  # (termux) and FreeBSD reject a backslash before a letter, so every <Enter>
+  # printed "zvm_cursor_style:34: failed to compile regex: trailing backslash
+  # (\)" - jeffreytse/zsh-vi-mode#159, whose fix (#269) was never merged.
+  # Swap in that fix: escaped backslashes match the same text on every libc.
+  # A no-op once upstream changes the line.
+  local bad='\e\][0-9]+;.+\a' good='\\e\][0-9]+;.+\\a'
+  functions[zvm_cursor_style]=${functions[zvm_cursor_style]/"'$bad'"/"'$good'"}
 }
 
 # =============================================================================
