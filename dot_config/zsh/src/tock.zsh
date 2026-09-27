@@ -19,7 +19,7 @@
 #
 # Callers must use `_check_gum_cmd || return 1`: on its own the call reports the
 # problem but does not stop the caller from running on without gum.
-source "$ZDOTDIR/src/functions.zsh"
+source "$ZDOTDIR/src/gum.zsh"
 
 # The tag vocabulary, and the *only* one - these six must stay identical to
 # theme.tag_colors in ~/.config/tock/tock.yaml, which is what gives each of them

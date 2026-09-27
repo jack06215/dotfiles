@@ -69,6 +69,7 @@ fi
 if [[ "${ZSH_RUBY_MANAGER:-asdf}" == "rbenv" ]]; then
   [ -f "$ZDOTDIR/src/rbenv.zsh" ] && source "$ZDOTDIR/src/rbenv.zsh"
 fi
+[ -f "$ZDOTDIR/src/gum.zsh" ] && source "$ZDOTDIR/src/gum.zsh"
 [ -f "$ZDOTDIR/src/functions.zsh" ] && source "$ZDOTDIR/src/functions.zsh"
 
 # Version overrides for tools whose pin (company .tool-versions, etc.) can't
@@ -126,6 +127,7 @@ fi
 [ -f "$ZDOTDIR/src/navi.zsh" ] && source "$ZDOTDIR/src/navi.zsh"
 [ -f "$ZDOTDIR/src/notify.zsh" ] && source "$ZDOTDIR/src/notify.zsh"
 [ -f "$ZDOTDIR/src/pet.zsh" ] && source "$ZDOTDIR/src/pet.zsh"
+[ -f "$ZDOTDIR/src/pip.zsh" ] && source "$ZDOTDIR/src/pip.zsh"
 [ -f "$ZDOTDIR/src/search.zsh" ] && source "$ZDOTDIR/src/search.zsh"
 # Sources cobra's `#compdef tock`, so it has to come after carapace.zsh above -
 # see the note at the bottom of tock.zsh.

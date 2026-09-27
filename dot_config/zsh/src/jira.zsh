@@ -3,7 +3,7 @@
 
 # Callers must use `_check_gum_cmd || return 1`: on its own the call reports
 # the problem but does not stop the caller from running on without gum.
-source "$ZDOTDIR/src/functions.zsh"
+source "$ZDOTDIR/src/gum.zsh"
 
 function jira_workitem() {
   local input="$1"

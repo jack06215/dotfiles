@@ -18,7 +18,9 @@ Prerequisite: [chezmoi](https://www.chezmoi.io/).
 
 ```sh
 mkdir -p ~/workspace/jack06215
+mkdir -p ~/workspace/jack06215/monorepo
 git clone https://github.com/jack06215/dotfiles ~/workspace/jack06215/dotfiles
+git clone https://github.com/jack06215/monorepo.git ~/workspace/jack06215/monorepo
 chezmoi init --apply --source ~/workspace/jack06215/dotfiles
 ```
 

@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # shellcheck disable=SC1091
 
-source "$ZDOTDIR/src/functions.zsh"
+source "$ZDOTDIR/src/gum.zsh"
 
 # The appearance values wezterm_config tunes, keyed by the name the state file
 # and wezterm.lua both use, as

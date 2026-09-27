@@ -6,7 +6,9 @@
 mkdir -p "$XDG_CACHE_HOME"
 echo "$(date) sleepwatcher triggered ($0)" >> "$XDG_CACHE_HOME/sleepwatcher.log"
 source "$ZDOTDIR/src/darwin_pre_init.zsh"
-export PYTHONPATH="$HOME/workspace/jack06215/monorepo/python"
+# packages/, not the monorepo root: the sleepwatcher modules import each other
+# as `sleepwatcher.*` (Bazel builds them with packages/ as the import root).
+export PYTHONPATH="$HOME/workspace/jack06215/monorepo/packages"
 
 # Get the day of the week (0 = Sunday, 6 = Saturday)
 day_of_week=$(date +%w)
@@ -24,8 +26,10 @@ if [[ -z "$SYS_PYTHON_BIN" || ! -x "$SYS_PYTHON_BIN" ]]; then
   exit 1
 fi
 
-# Skip if disabled in DB
-if ! "$SYS_PYTHON_BIN" -m sleepwatcher.should_run wake; then
+# Skip if disabled in DB. should_run exits 1 for "disabled", and so does
+# Python when it can't import the module at all - so its stderr goes to the log,
+# or a broken PYTHONPATH reads as "disabled" and nothing ever runs.
+if ! "$SYS_PYTHON_BIN" -m sleepwatcher.should_run wake 2>> "$XDG_CACHE_HOME/sleepwatcher.log"; then
   exit 0
 fi
 

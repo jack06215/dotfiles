@@ -1,0 +1,240 @@
+{{- $runtime := "" -}}
+{{- if .pypoetry.zshPythonDir -}}
+{{- $runtime = joinPath .pypoetry.zshPythonDir "bin/python" -}}
+{{- end -}}
+{{- $helper := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo/packages/myscripts/fpip_helper.py" -}}
+source "$ZDOTDIR/src/gum.zsh"
+
+# name, description, handler
+typeset -ga _PIPF_COMMANDS=(
+  list 'Filter installed packages; the picks print as name==version' _pipf_list
+  outdated 'Pick outdated packages to upgrade' _pipf_outdated
+  versions 'Install another version of a package' _pipf_versions
+  cd "cd into a package's source" _pipf_cd
+)
+
+function pipf() {
+  local -a o_help o_python
+  zparseopts -D -E -F -- h=o_help -help=o_help p:=o_python -python:=o_python 2> /dev/null || {
+    print -u2 "pipf: unknown option; try 'pipf --help'"
+    return 2
+  }
+
+  if ((${#o_help})) || [[ ${1:-} == help ]]; then
+    _pipf_usage
+    return 0
+  fi
+
+  local py=${o_python[-1]:-python3} cmd=${1:-} prefix i
+  whence -p -- "$py" > /dev/null || {
+    print -u2 "pipf: no such interpreter: $py"
+    return 2
+  }
+
+  if [[ -z $cmd ]]; then
+    _check_gum_cmd || return 1
+    prefix=$(_pip_prefix "$py") || return
+    _gum_menu "pip in ${(D)prefix}" "${_PIPF_COMMANDS[@]}" -- "$py"
+    return
+  fi
+
+  shift
+  for ((i = 1; i < ${#_PIPF_COMMANDS}; i += 3)); do
+    if [[ ${_PIPF_COMMANDS[i]} == "$cmd" ]]; then
+      "${_PIPF_COMMANDS[i + 2]}" "$py" "$@"
+      return
+    fi
+  done
+
+  print -u2 "pipf: unknown command '$cmd'; try 'pipf --help'"
+  return 2
+}
+
+function _pipf_usage() {
+  local i
+
+  print -r -- "usage: pipf [-p <python>] [<command> [<package>]]"
+  print -r -- ""
+  print -r -- "With no command, pick one from a search menu."
+  print -r -- ""
+  for ((i = 1; i < ${#_PIPF_COMMANDS}; i += 3)); do
+    printf '  %-10s %s\n' "${_PIPF_COMMANDS[i]}" "${_PIPF_COMMANDS[i + 1]}"
+  done
+  print -r -- ""
+  print -r -- "versions and cd take a package name; without one, they ask."
+  print -r -- ""
+  print -r -- "  -p, --python <python>  run pip under this interpreter (default: python3,"
+  print -r -- "                         which is the active venv's when there is one)"
+  print -r -- "  -h, --help             this message"
+}
+
+# Not `_pip`: zsh ships its own completion function under that name.
+function _pip_run() {
+  local py=$1
+  shift
+  "$py" -m pip --disable-pip-version-check "$@"
+}
+
+function _pip_prefix() {
+  "$1" -c 'import sys; print(sys.prefix)'
+}
+
+function _pip_installed() {
+  _pip_run "$1" list --format json | jq -r '.[] | "\(.name)\t\(.version)"'
+}
+
+# fzf over name<TAB>... rows on stdin, with `pip show` for the highlighted one
+# in the preview and the environment in the header, so a -p pick is never
+# mistaken for the active venv. The tab stop is set just past the longest
+# name, which lines the second column up. Extra arguments go to fzf.
+function _pip_pick() {
+  local py=$1 rows prefix width
+  shift
+
+  rows=$(cat)
+  [[ -n $rows ]] || return 1
+  prefix=$(_pip_prefix "$py") || return
+  width=$(awk -F'\t' 'length($1) > w { w = length($1) } END { print w + 2 }' <<< "$rows")
+
+  # fzf runs the preview through a shell, hence ${(q)py}.
+  fzf \
+    --delimiter='\t' \
+    --tabstop="$width" \
+    --prompt='pip> ' \
+    --header="${(D)prefix}" \
+    --preview="${(q)py} -m pip show {1}" \
+    --preview-window=right:60%:wrap \
+    "$@" <<< "$rows"
+}
+
+# gum confirm naming the environment. When Poetry manages it, warn first and
+# default to No: poetry.lock never hears of a pip change, and the next
+# `poetry install` puts the locked versions back.
+function _pip_confirm() {
+  local py=$1 question=$2 prefix
+  prefix=$(_pip_prefix "$py") || return
+
+  if [[ $prefix == */pypoetry/virtualenvs/* || -f $prefix:h/poetry.lock ]]; then
+    gum log --level warn "Poetry manages this environment" \
+      hint "poetry add / poetry remove keep poetry.lock in step"
+    gum confirm --default=false "$question in ${(D)prefix}?"
+  else
+    gum confirm "$question in ${(D)prefix}?"
+  fi
+}
+
+# Filter installed packages. Tab marks several; the picks print as
+# name==version so they can go straight into a requirements file.
+function _pipf_list() {
+  local py=$1
+
+  _pip_installed "$py" | _pip_pick "$py" --multi | awk -F'\t' '{print $1 "==" $2}'
+}
+
+# Upgrade only the outdated packages you pick, rather than all of them or
+# whichever you can name. The check asks the index about every installed
+# package, so it takes a while and sits behind a spinner.
+function _pipf_outdated() {
+  _check_gum_cmd || return 1
+  local py=$1 json
+  local -a picks
+
+  # gum spin runs a command, not a shell function, hence pip spelled out.
+  json=$(_gum_spin "Checking for newer versions..." \
+    "$py" -m pip --disable-pip-version-check list --outdated --format json) || return
+
+  if jq -e 'length == 0' <<< "$json" > /dev/null; then
+    gum log --level info "Everything is up to date"
+    return 0
+  fi
+
+  picks=(${(f)"$(jq -r '.[] | "\(.name)\t\(.version) → \(.latest_version)"' <<< "$json" \
+    | _pip_pick "$py" --multi \
+    | cut -f1)"})
+  ((${#picks})) || return
+
+  _pip_confirm "$py" "Upgrade ${(j:, :)picks}" || return 1
+  _pip_run "$py" install --upgrade "${picks[@]}"
+}
+
+# Install a chosen version of one package: to pin it, or to back out of an
+# upgrade that broke something. Without a name, pick one from what is
+# installed.
+function _pipf_versions() {
+  _check_gum_cmd || return 1
+  local py=$1 pkg=${2:-} out line installed v ver
+  local -a versions rows
+
+  if [[ -z $pkg ]]; then
+    pkg=$(_pip_installed "$py" | _pip_pick "$py" | cut -f1)
+    [[ -n $pkg ]] || return
+  fi
+
+  out=$(_gum_spin "Fetching versions of $pkg..." \
+    "$py" -m pip --disable-pip-version-check index versions "$pkg") || return
+
+  # Plain text is all pip 21 offers. The INSTALLED line only appears when the
+  # package is installed.
+  for line in "${(@f)out}"; do
+    case $line in
+      'Available versions: '*) versions=(${(s:, :)line#Available versions: }) ;;
+      *'INSTALLED: '*) installed=${line##* } ;;
+    esac
+  done
+  ((${#versions})) || {
+    print -u2 "pipf versions: no versions of $pkg found"
+    return 1
+  }
+
+  for v in "${versions[@]}"; do
+    [[ $v == "$installed" ]] && v+=$'\t(installed)'
+    rows+=("$v")
+  done
+
+  # --no-sort keeps newest first while filtering. The preview is `pip show`
+  # of the version string, which is meaningless here.
+  ver=$(print -rl -- "${rows[@]}" \
+    | _pip_pick "$py" --no-sort --prompt="$pkg> " --preview-window=hidden \
+    | cut -f1)
+  [[ -n $ver ]] || return
+
+  if [[ $ver == "$installed" ]]; then
+    gum log --level info "$pkg $ver is already installed"
+    return 0
+  fi
+
+  _pip_confirm "$py" "Install $pkg==$ver" || return 1
+  _pip_run "$py" install "$pkg==$ver"
+}
+
+# cd into an installed package's source, to read the library code.
+# Without a name, pick one from what is installed.
+function _pipf_cd() {
+  local py=$1
+  local pkg=${2:-}
+  local dir
+  local runtime="{{ $runtime }}"
+  local helper="{{ $helper }}"
+  local -a paths
+
+  [[ -n $runtime && -x $runtime ]] || {
+    print -u2 "pipf cd: zsh_python not found${runtime:+ at $runtime}; run 'poetry install' in the monorepo, then 'chezmoi init'"
+    return 1
+  }
+  [[ -r $helper ]] || {
+    print -u2 "pipf cd: $helper not found; is the monorepo checked out?"
+    return 1
+  }
+
+  if [[ -z $pkg ]]; then
+    pkg=$(_pip_installed "$py" | _pip_pick "$py" | cut -f1)
+    [[ -n $pkg ]] || return
+  fi
+
+  paths=("${(@f)$("$py" -c 'import sys; print("\n".join(p for p in sys.path if p))')}") || return
+
+  # --select-1 skips the picker for the usual single directory
+  # --exit-0 returns quietly after the helper has explained a failure.
+  dir=$("$runtime" "$helper" "$pkg" "${paths[@]}" | fzf --select-1 --exit-0 --prompt="$pkg> ") || return
+  cd -- "$dir"
+}
