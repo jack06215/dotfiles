@@ -1,4 +1,5 @@
 source "$ZDOTDIR/src/functions.zsh"
+source "$ZDOTDIR/src/gum.zsh"
 
 # Print the profile to act on: <profile> when one is passed in, otherwise one
 # picked from the configured profiles. <header> labels the picker. Returns

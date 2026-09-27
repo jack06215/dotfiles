@@ -69,6 +69,7 @@ fi
 if [[ "${ZSH_RUBY_MANAGER:-asdf}" == "rbenv" ]]; then
   [ -f "$ZDOTDIR/src/rbenv.zsh" ] && source "$ZDOTDIR/src/rbenv.zsh"
 fi
+[ -f "$ZDOTDIR/src/gum.zsh" ] && source "$ZDOTDIR/src/gum.zsh"
 [ -f "$ZDOTDIR/src/functions.zsh" ] && source "$ZDOTDIR/src/functions.zsh"
 
 # Version overrides for tools whose pin (company .tool-versions, etc.) can't

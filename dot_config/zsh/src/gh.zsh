@@ -3,6 +3,7 @@
 # filetype=sh
 
 source "$ZDOTDIR/src/functions.zsh"
+source "$ZDOTDIR/src/gum.zsh"
 
 function gh_pr_list() {
   local limit=300
@@ -137,8 +138,7 @@ function ghpr_create() {
   # offer the fix rather than repeating the diagnosis.
   if ! check_pushed_to_remote; then
     gum confirm "Push this branch to origin first?" || return 1
-    gum spin --spinner=minidot --show-error --title="Pushing..." -- \
-      git push -u origin HEAD || return 1
+    _gum_spin "Pushing..." git push -u origin HEAD || return 1
   fi
 
   local base
@@ -207,8 +207,7 @@ function ghpr_checks_watch() {
     # gum spin passes the wrapped command's stdout through when its own stdout
     # is not a terminal, so $(...) still captures the JSON while the spinner
     # draws on stderr. --show-error keeps that quiet unless the fetch breaks.
-    checks=$(gum spin --spinner=minidot --show-error \
-      --title="Checking CI${pr:+ on PR #$pr}..." -- \
+    checks=$(_gum_spin "Checking CI${pr:+ on PR #$pr}..." \
       gh pr checks "${args[@]}" --json name,state,bucket)
     rc=$?
 
