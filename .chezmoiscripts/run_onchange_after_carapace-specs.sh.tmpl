@@ -3,8 +3,11 @@
   monorepo's packages/carapace: `pycli` and the per-tool wrappers that
   dot_config/zsh/src/pycli.zsh.tmpl defines, read off the tools' own argparse
   parsers, and every command declared in packages/carapace/specs - this repo's
-  zsh functions and myscripts among them. The specs are not in this repo:
-  packages/carapace/README.md covers adding one.
+  zsh functions and myscripts among them. Alongside them, the overlays in
+  packages/carapace/overlays go to ~/.config/carapace/overlays, adding to
+  completers carapace-bin already has: every workspace target for `bazel
+  build|test|run`. The specs are not in this repo: packages/carapace/README.md
+  covers adding one.
 
   Building every spec imports every tool (~1.4s), so this template renders
   only two checksums: the generator's --fingerprint (~30ms, a hash of every .py
@@ -31,5 +34,6 @@ set -euo pipefail
 
 cd "{{ $repo }}"
 "{{ $python }}" -m packages.carapace \
-  --out "${XDG_CONFIG_HOME:-$HOME/.config}/carapace/specs"
+  --out "${XDG_CONFIG_HOME:-$HOME/.config}/carapace/specs" \
+  --overlays "${XDG_CONFIG_HOME:-$HOME/.config}/carapace/overlays"
 {{ end -}}
