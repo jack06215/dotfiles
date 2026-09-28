@@ -1,30 +1,27 @@
-{{- /* the company machine has the 1M-context Opus entitlement; personal doesn't */ -}}
-{{- $model :=
-      includeTemplate "lookup" (dict
-        "chezmoi" .chezmoi
-        "default" "opus"
-        "table" (dict
-          "darwin/A0229/jack.cho" "opus[1m]"
-          "darwin/jack06215/nacho" "opus"
-        )
-      )
--}}
-{{- /* read scope outside the cwd; empty on machines without that checkout */ -}}
-{{- $monorepo :=
-      includeTemplate "lookup" (dict
-        "chezmoi" .chezmoi
-        "table" (dict
-          "darwin/jack06215/nacho" (joinPath .chezmoi.homeDir "workspace/jack06215/monorepo")
-          "linux/MSI/nacho" (joinPath .chezmoi.homeDir "workspace/jack06215/monorepo")
-        )
-      )
--}}
+{{- /* the company account has the 1M-context Opus entitlement; personal doesn't */ -}}
+{{- $model := ternary "opus[1m]" "opus" .myComputer.isCompanyMachine -}}
+{{- /* read scope outside the cwd: the personal monorepo, on personal machines
+       that have it checked out; empty everywhere else */ -}}
+{{- $monorepo := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo" -}}
+{{- if or .myComputer.isCompanyMachine (not (stat $monorepo)) -}}
+{{-   $monorepo = "" -}}
+{{- end -}}
+{{- /*
+    Permissions. Rules are checked deny, then ask, then allow; the first match
+    wins, so an allow can never carve an exception out of a deny or an ask.
+    Unanchored Read/Edit rules match at any depth under the cwd; ~/ anchors
+    to $HOME. The sandbox also applies the Read and Edit rules to every Bash
+    command it runs.
+
+    On the company machine, remote managed settings add their own deny and
+    ask lists on top of these, and user settings can't loosen them.
+*/ -}}
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "preferredNotifChannel": "terminal_bell",
   "statusLine": {
     "type": "command",
-    "command": "${XDG_CONFIG_HOME}/claude/statusline_command.sh",
+    "command": {{ joinPath .chezmoi.homeDir ".config/claude/statusline_command.sh" | quote }},
     "padding": 2
   },
   "enabledPlugins": {
@@ -34,54 +31,200 @@
   "editorMode": "vim",
   "permissions": {
     "allow": [
-      "Bash(gh pr view:*)",
-      "Bash(gh pr checks:*)",
-      "Bash(gh api *annotations*)",
-      "Bash(gh api *commits*)",
-      "Bash(gh api *comments*)",
-      "Bash(gh api *reviews*)",
-      "Bash(gh api *status*)",
-      "Bash(gh run list:*)",
-      "Bash(gh run view:*)",
-      "Bash(git log:*)",
-      "Bash(git --no-pager log:*)",
-      "Bash(git show:*)",
-      "Bash(git --no-pager show:*)",
-      "Bash(git diff:*)",
-      "Bash(git --no-pager diff:*)",
-      "Bash(sed -n:*)",
+      {{- /* excludedCommands run outside the sandbox, so autoAllowBashIfSandboxed
+             doesn't cover them: their read-only forms go here */}}
+      "Bash(bazel build *)",
+      "Bash(bazel cquery *)",
+      "Bash(bazel info *)",
+      "Bash(bazel query *)",
       "Bash(bazel run //tools/*)",
-      "Bash(bazel test:*)",
-      "Bash(npx markdownlint-cli:*)",
-      "Bash(NO_UPDATE_NOTIFIER=1 npx markdownlint-cli:*)",
-      "Bash(python -m pytest:*)",
-      "Bash(mypy:*)",
-      "Bash(pyright:*)",
-      "Bash(poetry run ruff:*)"
+      "Bash(bazel test *)",
+      "Bash(docker compose logs *)",
+      "Bash(docker compose ps *)",
+      "Bash(docker images *)",
+      "Bash(docker logs *)",
+      "Bash(docker ps *)",
+      "Bash(gh api *)",
+      "Bash(gh issue list *)",
+      "Bash(gh issue view *)",
+      "Bash(gh pr checks *)",
+      "Bash(gh pr diff *)",
+      "Bash(gh pr list *)",
+      "Bash(gh pr view *)",
+      "Bash(gh repo view *)",
+      "Bash(gh run list *)",
+      "Bash(gh run view *)",
+      "Bash(gh search *)",
+      "Bash(git --no-pager diff *)",
+      "Bash(git --no-pager log *)",
+      "Bash(git --no-pager show *)",
+      "Bash(git branch --show-current)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git ls-files *)",
+      "Bash(git merge-base *)",
+      "Bash(git reflog)",
+      "Bash(git remote -v)",
+      "Bash(git rev-parse *)",
+      "Bash(git show *)",
+      "Bash(git stash list *)",
+      "Bash(git status *)",
+      {{- /* these run sandboxed, where they're allowed anyway; the rules only
+             save prompts on a machine without the sandbox */}}
+      "Bash(mypy *)",
+      "Bash(npx markdownlint-cli *)",
+      "Bash(poetry run ruff *)",
+      "Bash(pyright *)",
+      "Bash(python -m pytest *)",
+      "Bash(sed -n *)",
+      {{- /* MCP reads; the writes are in ask */}}
+      "mcp__claude_ai_Atlassian__fetch",
+      "mcp__claude_ai_Atlassian__get*",
+      "mcp__claude_ai_Atlassian__search*",
+      "mcp__claude_ai_Slack__slack_read_*",
+      "mcp__claude_ai_Slack__slack_search_*"
     ],
     "deny": [
-      "Bash(git add -A)",
-      "Bash(git add -A *)",
-      "Bash(git add --all)",
-      "Bash(git add --all *)",
+      {{- /* git: no history rewrites, hook bypasses or bulk staging */}}
+      "Bash(*--no-verify*)",
+      "Bash(git -c *)",
+      "Bash(git add --all*)",
+      "Bash(git add -A*)",
       "Bash(git add .)",
-      "Read(./.env)",
-      "Read(./.env.*)",
-      "Read(**/.env)",
-      "Read(**/.env.*)",
-      "Read(~/.ssh/**)",
-      "Read(~/.gnupg/**)",
+      "Bash(git branch -D*)",
+      "Bash(git clean *)",
+      "Bash(git commit *--amend*)",
+      "Bash(git commit -a*)",
+      "Bash(git commit -n*)",
+      "Bash(git config *)",
+      "Bash(git filter-branch *)",
+      "Bash(git filter-repo *)",
+      "Bash(git push * +*)",
+      "Bash(git push * -f*)",
+      "Bash(git push *--force*)",
+      "Bash(git push *--mirror*)",
+      "Bash(git push -f*)",
+      "Bash(git rebase *)",
+      "Bash(git reflog delete *)",
+      "Bash(git reflog expire *)",
+      "Bash(git reset *)",
+      "Bash(git stash clear*)",
+      {{- /* git runs outside the sandbox, so these would read or write files
+             that the sandbox and the Read/Edit rules otherwise keep it from */}}
+      "Bash(git *--no-index*)",
+      "Bash(git *--output*)",
+      {{- /* gh: token disclosure and deletes */}}
+      "Bash(gh *--show-token*)",
+      "Bash(gh auth token*)",
+      "Bash(gh release delete *)",
+      "Bash(gh repo delete *)",
+      {{- /* a nested shell hides its command from the rules. timeout, time,
+             nice, nohup, stdbuf, xargs, command and builtin are stripped
+             before matching, so they need no rule; env is not */}}
+      "Bash(bash -*c *)",
+      "Bash(bash -i*)",
+      "Bash(env *)",
+      "Bash(eval *)",
+      "Bash(sh -*c *)",
+      "Bash(zsh -*c *)",
+      {{- /* privilege, network, and deletes that git can't bring back */}}
+      "Bash(*/curl *)",
+      "Bash(*/sudo *)",
+      "Bash(*/wget *)",
+      "Bash(brew autoremove*)",
+      "Bash(brew bundle cleanup*)",
+      "Bash(brew remove *)",
+      "Bash(brew rm *)",
+      "Bash(brew uninstall *)",
+      "Bash(brew untap *)",
+      "Bash(chezmoi destroy *)",
+      "Bash(chezmoi purge *)",
+      "Bash(chown *)",
+      "Bash(curl *)",
+      "Bash(docker system prune*)",
+      "Bash(docker volume prune*)",
+      "Bash(docker volume rm *)",
+      "Bash(find *-delete*)",
+      "Bash(find *-exec*rm *)",
+      "Bash(mv * /dev/null*)",
+      "Bash(printenv*)",
+      "Bash(rm --recursive*)",
+      "Bash(rm -R*)",
+      "Bash(rm -fR*)",
+      "Bash(rm -fr*)",
+      "Bash(rm -r*)",
+      "Bash(sudo *)",
+      "Bash(wget *)",
+      {{- /* secrets in whichever project is the cwd */}}
+      "Edit(**/.env*)",
+      "Edit(**/.git/**)",
+      "Edit(**/.ssh/**)",
+      "Edit(**/secrets/**)",
+      "Read(**/*.key)",
+      "Read(**/*.pem)",
+      "Read(**/*.tfvars*)",
+      "Read(**/*.token)",
+      "Read(**/.env*)",
+      "Read(**/.ssh/**)",
+      "Read(**/credentials.json)",
+      "Read(**/id_ecdsa*)",
+      "Read(**/id_ed25519*)",
+      "Read(**/id_rsa*)",
+      "Read(**/secrets/**)",
+      "Read(**/token)",
+      "Read(**/token.json)",
+      {{- /* secrets at fixed places in $HOME */}}
+      "Edit(~/.ssh/**)",
       "Read(~/.aws/credentials)",
-      "Read(**/*.pem)"
+      "Read(~/.config/gh/hosts.yml)",
+      "Read(~/.docker/config.json)",
+      "Read(~/.git-credentials)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.kube/config)",
+      "Read(~/.netrc)",
+      "Read(~/.ssh/**)"
     ],
     "ask": [
-      "Bash(gh api *-X*)",
+      {{- /* every unsandboxed retry prompts, even for a command an allow rule
+             covers */}}
+      "Bash(dangerouslyDisableSandbox:true)",
+      {{- /* outward-facing, or throws away uncommitted work. Most of these
+             prompt anyway; an ask rule also holds in auto mode and against a
+             broader allow added later */}}
+      "Bash(chezmoi apply *)",
+      "Bash(chezmoi update *)",
+      "Bash(chmod *)",
+      "Bash(gh * comment *)",
+      "Bash(gh * create *)",
+      "Bash(gh * merge *)",
+      "Bash(gh * review *)",
+      "Bash(gh workflow run *)",
+      "Bash(git checkout -- *)",
+      "Bash(git checkout .)",
+      "Bash(git push *)",
+      "Bash(git restore *)",
+      "Bash(git stash drop*)",
+      {{- /* gh api is a GET until one of these makes it a write; -f also
+             catches --field and --raw-field */}}
+      "Bash(gh api *--input*)",
       "Bash(gh api *--method*)",
-      "Bash(gh api *-f*)",
-      "Bash(gh api *--field*)",
       "Bash(gh api *-F*)",
-      "Bash(gh api *--raw-field*)",
-      "Bash(gh api *--input*)"
+      "Bash(gh api *-X*)",
+      "Bash(gh api *-f*)",
+      {{- /* MCP writes, on any server */}}
+      "mcp__*__*add*",
+      "mcp__*__*create*",
+      "mcp__*__*delete*",
+      "mcp__*__*edit*",
+      "mcp__*__*label*",
+      "mcp__*__*schedule*",
+      "mcp__*__*send*",
+      "mcp__*__*share*",
+      "mcp__*__*transition*",
+      "mcp__*__*trash*",
+      "mcp__*__*update*",
+      "mcp__*__copy_file",
+      "mcp__*__respond_to_event"
     ],
 {{- if $monorepo }}
     "additionalDirectories": [{{ $monorepo | quote }}],
@@ -91,12 +234,14 @@
   "sandbox": {
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
+    {{- /* patterns, as in the docs' "docker *": with a bare "git", every git
+           command still ran inside the sandbox */}}
     "excludedCommands": [
-      "bazel",
-      "chezmoi",
-      "docker",
-      "gh",
-      "git"
+      "bazel *",
+      "chezmoi *",
+      "docker *",
+      "gh *",
+      "git *"
     ],
     "network": {
       "allowLocalBinding": true
@@ -105,7 +250,8 @@
   "env": {
     "BASH_DEFAULT_TIMEOUT_MS": "300000",
     "BASH_MAX_TIMEOUT_MS": "1800000",
-    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet"
+    "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+    "NO_UPDATE_NOTIFIER": "1"
   },
   "attribution": {
     "sessionUrl": false
