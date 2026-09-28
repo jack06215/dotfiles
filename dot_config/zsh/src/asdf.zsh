@@ -6,6 +6,14 @@
 #
 # CLI changes from the bash asdf: `asdf set` (-u for the home .tool-versions)
 # replaces global/local, and `asdf shell` is gone (set ASDF_<TOOL>_VERSION).
+#
+# Something earlier in startup may still `source ~/.asdf/asdf.sh` from a bash
+# asdf clone left in ~/.asdf (the flywheel monorepo's config.zsh, via
+# .zprofile). That defines an `asdf` function and puts the clone's bin/ ahead
+# of Homebrew's, so every `asdf` call - `asdf completion zsh` below included -
+# runs the old CLI. Drop both so `asdf` is the Homebrew binary again.
+(($+functions[asdf])) && unfunction asdf
+path=(${path:#${ASDF_DIR:-$HOME/.asdf}/bin})
 path=("${ASDF_DATA_DIR:-$HOME/.asdf}/shims" $path)
 
 # Completion ships inside the binary. Regenerate it when asdf is newer than
