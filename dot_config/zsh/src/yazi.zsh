@@ -8,6 +8,23 @@
 # the shell that owns the prompt can change its own working directory. yazi
 # itself just writes the path it exited from to --cwd-file.
 if command -v yazi > /dev/null 2>&1; then
+  # Inside tuios (WezTerm's ruby tab), make yazi place its images directly.
+  # When tuios can forward kitty graphics it sets TERM_PROGRAM=ghostty in its
+  # panes. yazi then treats the terminal as Ghostty and draws with kitty
+  # Unicode placeholders. tuios passes those to WezTerm unchanged, WezTerm
+  # cannot draw them, and the preview fills with boxes. yazi uses direct
+  # placement (its KgpOld driver) only for Konsole, which it recognises by
+  # KONSOLE_VERSION when TERM_PROGRAM is a name it does not know. tuios
+  # forwards direct placements, and WezTerm draws them. The two variables reach
+  # only yazi and the programs it starts.
+  function yazi() {
+    if [[ -n "${TUIOS_SESSION:-}" && "${TERM_PROGRAM:-}" == ghostty ]]; then
+      TERM_PROGRAM=TUIOS KONSOLE_VERSION=1 command yazi "$@"
+    else
+      command yazi "$@"
+    fi
+  }
+
   function y() {
     local tmp cwd
     tmp=$(mktemp -t yazi-cwd.XXXXXX) || return 1

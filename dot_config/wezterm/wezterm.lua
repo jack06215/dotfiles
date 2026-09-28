@@ -167,26 +167,36 @@ end
 -- =============================================================
 local is_maximized = false
 
+-- Spawn arguments that run a workspace script (a path under $HOME) through the
+-- login shell, or nil where there is no shell to run it: Windows without a WSL
+-- distro.
+local function workspace_spawn(script)
+  if wsl_domain then
+    -- Absolute shell path: WezTerm starts the command inside the distro
+    -- without its login PATH, where Homebrew's zsh is not on it yet.
+    return {
+      domain = { DomainName = wsl_domain },
+      args = { machine.wsl_shell or "/bin/zsh", "-lc", "exec ~/" .. script },
+    }
+  elseif not is_windows then
+    local shell = default_prog or { os.getenv("SHELL") or "/bin/sh", "--login" }
+    local argv = { table.unpack(shell) }
+    table.insert(argv, "-c")
+    table.insert(argv, "exec " .. wezterm.home_dir .. "/" .. script)
+    return { args = argv }
+  end
+  return nil
+end
+
 wezterm.on("gui-startup", function(cmd)
   -- A plain launch opens the tmux dev workspace in the first tab; `wezterm
   -- start -- prog` (cmd ~= nil) runs what was asked for instead.
   local spawn_args = cmd or {}
   local workspace = false
   if cmd == nil then
-    if wsl_domain then
-      -- Absolute shell path: WezTerm starts the command inside the distro
-      -- without its login PATH, where Homebrew's zsh is not on it yet.
-      spawn_args = {
-        domain = { DomainName = wsl_domain },
-        args = { machine.wsl_shell or "/bin/zsh", "-lc", "exec ~/.config/tmux/dev-workspace.sh" },
-      }
-      workspace = true
-    elseif not is_windows then
-      local shell = default_prog or { os.getenv("SHELL") or "/bin/sh", "--login" }
-      local argv = { table.unpack(shell) }
-      table.insert(argv, "-c")
-      table.insert(argv, "exec " .. wezterm.home_dir .. "/.config/tmux/dev-workspace.sh")
-      spawn_args = { args = argv }
+    local opal = workspace_spawn(".config/tmux/dev-workspace.sh")
+    if opal then
+      spawn_args = opal
       workspace = true
     end
   end
@@ -198,9 +208,14 @@ wezterm.on("gui-startup", function(cmd)
   window1:gui_window():maximize()
 
   wezterm.time.call_after(0.3, function()
-    local tab2, pane2 = window1:spawn_tab({})
+    -- The top/bottom split, as a tuios session (dot_config/tuios). Where no
+    -- shell can run the script, WezTerm's own split stands in.
+    local ruby = workspace_spawn(".config/tuios/ruby-workspace.sh")
+    local tab2, pane2 = window1:spawn_tab(ruby or {})
     tab2:set_title("ruby")
-    pane2:split({ direction = "Bottom", size = 0.3 })
+    if not ruby then
+      pane2:split({ direction = "Bottom", size = 0.3 })
+    end
 
     tab1:activate()
   end)
@@ -256,6 +271,14 @@ else
   config.front_end = "WebGpu"
   config.webgpu_power_preference = "HighPerformance"
 end
+
+-- Images. tuios (the ruby tab) passes images through to WezTerm only as kitty
+-- graphics, and WezTerm answers kitty graphics only with this on. Off, tuios
+-- sees no kitty support, tells its panes they are in WezTerm, and yazi there
+-- picks iTerm2 inline images, which tuios drops, so previews stay blank. On,
+-- the panes are told ghostty and yazi uses kitty graphics. Outside tuios,
+-- yazi still sees WezTerm and keeps using iTerm2 images.
+config.enable_kitty_graphics = true
 
 -- Misc
 config.use_resize_increments = false

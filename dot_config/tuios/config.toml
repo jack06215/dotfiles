@@ -1,0 +1,54 @@
+# tuios (https://github.com/Gaurav-Gosain/tuios), the multiplexer behind
+# WezTerm's "ruby" tab. ruby-workspace.sh next to this file builds that
+# session; this file decides how every tuios session looks and behaves.
+#
+# Only options that change a default, or that must be spelled out, are set
+# here. `tuios list-options` prints every option with its type and default, and
+# the settings page (leader, then ",") edits them live. Both the settings page
+# and `tuios set-config` save by rewriting this whole file with every option
+# written out. After using them, copy the lines you want into the chezmoi
+# source by hand. `chezmoi re-add` would pin every default as well.
+
+[startup]
+# Set explicitly because tuios reads a file with no [startup] table as the old
+# pre-0.8 behaviour: a standalone session that dies with its tab, with floating
+# panes. ruby-workspace.sh needs the daemon so the tab can re-attach.
+daemon = true
+tiled = true
+layout = "bsp"
+open_default_window = true
+# Typing goes straight to the shell, as in a WezTerm pane, instead of landing
+# in window-management mode first.
+start_in_terminal_mode = true
+
+[appearance]
+# No theme and no painted background: panes keep WezTerm's Catppuccin Mocha
+# colours and show its translucent, blurred window through.
+theme = ""
+background = "off"
+# Catppuccin Mocha blue and surface2, to match the rest of the setup.
+border_focused_color = "#89b4fa"
+border_unfocused_color = "#585b70"
+# One separator line between tiled panes, as in tmux, instead of a full box
+# around each pane. It looks like the WezTerm split this replaced and gives the
+# panes back the rows and columns a box would take.
+shared_borders = true
+hide_window_buttons = true
+
+[appearance.sidebar]
+# The rail on the right (sessions, terminals, files, agents) is on by default
+# since 0.8.0. Off, the panes get the full width, as the WezTerm split had.
+# Leader, then b, still shows it when needed.
+enabled = false
+
+[keybindings]
+# The same prefix as tmux.conf, so the opal tab (tmux) and the ruby tab (tuios)
+# use the same keys. Like tmux, it keeps Ctrl-S from the programs in the panes,
+# such as zsh's forward history search.
+leader_key = "ctrl+s"
+
+[keybindings.global]
+# tuios takes Ctrl-P for its command palette in every mode by default. This
+# gives it back to zsh (previous history line) and nvim (completion). The
+# palette is still on leader, then P.
+command_palette = []

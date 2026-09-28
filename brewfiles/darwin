@@ -292,6 +292,8 @@ brew "tmux"
 brew "tock"
 # Display directories as trees (with optional color/HTML output)
 brew "tree"
+# Terminal UI OS (Terminal Multiplexer)
+brew "tuios"
 # Validating, recursive, caching DNS resolver
 brew "unbound"
 # ODBC 3 connectivity for UNIX
