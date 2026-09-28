@@ -29,11 +29,15 @@ background = "off"
 # Catppuccin Mocha blue and surface2, to match the rest of the setup.
 border_focused_color = "#89b4fa"
 border_unfocused_color = "#585b70"
-# One separator line between tiled panes, as in tmux, instead of a full box
-# around each pane. It looks like the WezTerm split this replaced and gives the
-# panes back the rows and columns a box would take.
-shared_borders = true
-hide_window_buttons = true
+# A full box around every pane, with the minimize / maximize / close controls
+# at the top right, tiled or not (the default puts them on the left, macOS
+# style). "pill" draws them as - □ ✕; "dots" would be traffic lights. On a
+# tiled pane □ toggles the zoom (appearance.window_button_zoom). The box costs
+# each pane two columns and two rows over shared_borders = true.
+shared_borders = false
+hide_window_buttons = false
+window_button_position = "right"
+window_button_style = "pill"
 
 [appearance.sidebar]
 # The rail on the right (sessions, terminals, files, agents) is on by default
