@@ -15,11 +15,20 @@ if command -v yazi > /dev/null 2>&1; then
   # cannot draw them, and the preview fills with boxes. yazi uses direct
   # placement (its KgpOld driver) only for Konsole, which it recognises by
   # KONSOLE_VERSION when TERM_PROGRAM is a name it does not know. tuios
-  # forwards direct placements, and WezTerm draws them. The two variables reach
-  # only yazi and the programs it starts.
+  # forwards direct placements, and WezTerm draws them.
+  #
+  # When the host has sixel but no kitty graphics (Termux), tuios sets
+  # TERM_PROGRAM=WezTerm instead. yazi reads that as WezTerm, whose first choice
+  # is iTerm2 inline images, and tuios drops those, so the preview stays blank.
+  # BlackBox is the name yazi maps to sixel alone, which tuios does forward.
+  # yazi reads TERM_PROGRAM before WEZTERM_EXECUTABLE and friends, so a daemon
+  # started from WezTerm cannot pull it back. These variables reach only yazi
+  # and the programs it starts.
   function yazi() {
     if [[ -n "${TUIOS_SESSION:-}" && "${TERM_PROGRAM:-}" == ghostty ]]; then
       TERM_PROGRAM=TUIOS KONSOLE_VERSION=1 command yazi "$@"
+    elif [[ -n "${TUIOS_SESSION:-}" && "${TERM_PROGRAM:-}" == WezTerm ]]; then
+      TERM_PROGRAM=BlackBox command yazi "$@"
     else
       command yazi "$@"
     fi
