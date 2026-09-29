@@ -125,6 +125,36 @@ checks each package and skips the installed ones; mise installs the pinned
 versions; PowerShell modules are updated with `Update-Module`; the font is
 skipped if the family is already registered.
 
+## Hosts that apply from WSL2
+
+On a machine whose dotfiles are applied from inside WSL2, `chezmoi apply` on the
+Windows side is switched off. `run_onchange_after_push-windows-configs.sh` in
+WSL already writes every Windows-app config into `C:\Users\<user>`, and a
+second, native-Windows apply overwrites those copies with its own rendering —
+which, being outside WSL, cannot know the distro. `machine.lua` then comes out
+with empty `wsl_*` fields, and every alternating apply leaves another
+`.chezmoi-backup-<timestamp>` file behind.
+
+The switch is one hostname row in `.chezmoidata/lookups.toml`:
+
+```toml
+[lookups.deferToWSL.table]
+  "windows/MSI" = "true"
+```
+
+`run_before_defer-to-wsl.ps1` then stops `chezmoi apply` and `chezmoi update`
+with an explanation, before any file is written. `chezmoi cd`, `chezmoi edit`,
+`chezmoi status`, `chezmoi diff` and git all still work, so editing the source
+from Windows stays fine: commit and push there, then pull and apply on the WSL
+side. Two things to know:
+
+- `chezmoi apply <path>` scoped to a single target skips `run_before_` scripts,
+  so it is not blocked. Apply from WSL for that too.
+- The flag is read straight from `.chezmoidata` rather than from
+  `.myComputer`, so adding a host needs no `chezmoi init` — and no other
+  machine breaks on a `chezmoi.toml` that predates the key, which
+  `missingkey=error` would otherwise turn into a hard failure.
+
 ## Manual steps `setup.ps1` deliberately does not take
 
 ### Windows Terminal settings

@@ -1,0 +1,40 @@
+{{- /*
+    Stops a native-Windows `chezmoi apply` on a host whose dotfiles are applied
+    from inside WSL2 (lookups.deferToWSL in .chezmoidata/lookups.toml, which
+    says why). Renders empty everywhere else, and chezmoi skips an empty script.
+
+    run_before_ so it aborts before any file is written. .chezmoiignore ignores
+    everything else on such a host, so this script is all that is left to run -
+    and the reason reaches the terminal instead of a silent no-op.
+
+    The flag is resolved here rather than read from .myComputer, so that it
+    takes effect without `chezmoi init`: .chezmoidata is re-read on every apply,
+    while a key added to .chezmoi.toml.tmpl would be missing from every
+    chezmoi.toml rendered before it - and missingkey=error turns that into a
+    hard failure on the other machines.
+*/ -}}
+{{- $deferToWSL := includeTemplate "lookup" (dict
+      "chezmoi" .chezmoi
+      "table"   .lookups.deferToWSL.table
+      "default" .lookups.deferToWSL.default
+    ) -}}
+{{- if eq $deferToWSL "true" }}
+Write-Host ''
+Write-Host 'chezmoi: this machine is applied from inside WSL2, not from Windows.'
+Write-Host ''
+Write-Host '  The WSL side owns these dotfiles: its push-windows-configs script'
+Write-Host '  copies WezTerm, GlazeWM, Zebar, VS Code, Firefox, Windows Terminal'
+Write-Host '  and the PowerShell profile into this Windows home. Applying here as'
+Write-Host '  well overwrites those copies with a rendering that cannot see WSL,'
+Write-Host '  which leaves WezTerm opening PowerShell instead of the distro.'
+Write-Host ''
+Write-Host '  Run it in WSL instead:'
+Write-Host '      wsl -- zsh -lc "chezmoi apply"'
+Write-Host ''
+Write-Host '  Editing the source from Windows is fine - commit and push here,'
+Write-Host '  then pull and apply on the WSL side. To turn Windows back on,'
+Write-Host '  drop this hostname from lookups.deferToWSL in'
+Write-Host '  .chezmoidata/lookups.toml.'
+Write-Host ''
+exit 1
+{{- end }}

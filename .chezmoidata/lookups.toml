@@ -41,6 +41,23 @@
 [lookups.gitSign.table]
   android = "false"
 
+# -------------------------------------------------------------- chezmoi ----
+
+# "true"/"false": whether chezmoi on this machine leaves the work to the WSL2
+# side. On a Windows box whose dotfiles are applied from inside WSL,
+# run_onchange_after_push-windows-configs already copies every Windows-app
+# config into C:\Users\<user>. A second, native-Windows apply overwrites those
+# copies with its own rendering - and from outside WSL it cannot know the
+# distro, so machine.lua's wsl_* fields come out empty and WezTerm drops to
+# PowerShell instead of opening WSL. So the Windows side is switched off:
+# .chezmoiignore ignores everything there, and run_before_defer-to-wsl stops
+# `chezmoi apply` with an explanation. Only ever "true" under a `windows` key -
+# WSL2 itself is `linux`, and shares the hostname.
+[lookups.deferToWSL]
+  default = "false"
+[lookups.deferToWSL.table]
+  "windows/MSI" = "true"
+
 # --------------------------------------------------------------- firefox ----
 
 [lookups.firefoxProfilesDir]

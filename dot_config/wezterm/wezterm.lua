@@ -65,9 +65,54 @@ end
 -- WezTerm creates for every installed distro. A domain rather than a
 -- `wsl.exe` default_prog, so new tabs and splits open in the same distro at
 -- the pane's directory (the shell reports it with OSC 7, see wsl.zsh).
+local wsl_distro = machine.wsl_distro
+if is_windows and (not wsl_distro or wsl_distro == "") then
+  -- machine.lua names the distro only when chezmoi rendered it from inside
+  -- WSL; a chezmoi that ran on the Windows side renders those fields empty and
+  -- overwrites the pushed copy. So ask WezTerm which distros it found and take
+  -- the first rather than dropping to PowerShell - with more than one
+  -- installed, machine.lua still decides which.
+  local ok, domains = pcall(wezterm.default_wsl_domains)
+  if ok and type(domains) == "table" and domains[1] then
+    wsl_distro = domains[1].distribution
+  end
+end
+
 local wsl_domain = nil
-if is_windows and machine.wsl_distro and machine.wsl_distro ~= "" then
-  wsl_domain = "WSL:" .. machine.wsl_distro
+if is_windows and wsl_distro and wsl_distro ~= "" then
+  wsl_domain = "WSL:" .. wsl_distro
+end
+
+-- The distro's login shell, for workspace_spawn: machine.lua's value where
+-- chezmoi ran in WSL, otherwise the passwd entry inside the distro - asked for
+-- once, and only when a workspace is really spawned, because config load runs
+-- again on every reload and a WSL round trip does not belong there.
+local wsl_shell_resolved = nil
+local function wsl_login_shell()
+  if machine.wsl_shell and machine.wsl_shell ~= "" then
+    return machine.wsl_shell
+  end
+  if wsl_shell_resolved == nil then
+    wsl_shell_resolved = false
+    local ok, success, stdout = pcall(wezterm.run_child_process, {
+      "wsl.exe",
+      "-d",
+      wsl_distro,
+      "--",
+      "sh",
+      "-c",
+      'getent passwd "$(id -un)" | cut -d: -f7',
+    })
+    if ok and success then
+      local shell = stdout:gsub("%s+$", "")
+      if shell:sub(1, 1) == "/" then
+        wsl_shell_resolved = shell
+      end
+    end
+  end
+  -- Debian's zsh, if the passwd entry could not be read; Homebrew's lives
+  -- elsewhere, so this is a fallback, not the expected path.
+  return wsl_shell_resolved or "/bin/zsh"
 end
 
 local default_prog = nil
@@ -176,7 +221,7 @@ local function workspace_spawn(script)
     -- without its login PATH, where Homebrew's zsh is not on it yet.
     return {
       domain = { DomainName = wsl_domain },
-      args = { machine.wsl_shell or "/bin/zsh", "-lc", "exec ~/" .. script },
+      args = { wsl_login_shell(), "-lc", "exec ~/" .. script },
     }
   elseif not is_windows then
     local shell = default_prog or { os.getenv("SHELL") or "/bin/sh", "--login" }
