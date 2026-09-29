@@ -1,0 +1,7 @@
+{{- /* The distro is chezmoi's .wsl.distro, as in MyModule's zsh.ps1.tmpl; with
+       none to give, -d is left off and wsl starts the default distro. */ -}}
+{{- $distro := "" -}}
+{{- if .myComputer.isWSL2 -}}
+{{-   $distro = .wsl.distro -}}
+{{- end -}}
+wsl{{ with $distro }} -d {{ . }}{{ end }} -- exec /bin/bash -lc true

@@ -11,6 +11,12 @@ function Invoke-Bzltest {
         Anything after the function name is passed to bazel verbatim; see
         Invoke-Bzlrun about PowerShell consuming the first `--`.
 
+        .PARAMETER Print
+        Return the command line instead of running it.
+
+        .PARAMETER Arguments
+        Everything after the function name, passed to bazel after the targets.
+
         .EXAMPLE
         Invoke-Bzltest
 

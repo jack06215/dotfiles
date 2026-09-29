@@ -1,9 +1,10 @@
 {{- /*
   WSL2 only: copies the config of the Windows apps this repo manages into the
-  Windows home (.wsl.windowsHome, found by `chezmoi init`). WezTerm, GlazeWM,
-  Zebar, VS Code, Firefox and Windows Terminal all run on Windows, read their
-  config from C:\Users\<user>, and cannot follow a symlink into the WSL
-  filesystem - so a normal `chezmoi apply` inside WSL never reached them.
+  Windows home (.wsl.windowsHome, found by `chezmoi init`). WezTerm, starship
+  (for PowerShell's prompt), GlazeWM, Zebar, VS Code, Firefox and Windows
+  Terminal all run on Windows, read their config from C:\Users\<user>, and
+  cannot follow a symlink into the WSL filesystem - so a normal `chezmoi apply`
+  inside WSL never reached them.
   .chezmoiignore keeps these sources out of the Linux home on WSL2.
 
   Each file's rendered content is embedded below, so chezmoi reruns this
@@ -73,6 +74,13 @@ push {{ joinPath $win ".config/wezterm/machine.lua" | quote }} << 'CHEZMOI_WINDO
 {{ includeTemplate "dot_config/wezterm/machine.lua.tmpl" . | trimSuffix "\n" }}
 CHEZMOI_WINDOWS_PUSH
 
+# ---- starship (%USERPROFILE%\.config\starship) ----
+# The PowerShell profile points $env:STARSHIP_CONFIG here, the same path as on
+# the Linux side.
+push {{ joinPath $win ".config/starship/starship.toml" | quote }} << 'CHEZMOI_WINDOWS_PUSH'
+{{ include "dot_config/starship/starship.toml" | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
+
 # ---- GlazeWM + Zebar (%USERPROFILE%\.glzr) ----
 push {{ joinPath $win ".glzr/glazewm/config.yaml" | quote }} << 'CHEZMOI_WINDOWS_PUSH'
 {{ includeTemplate "dot_glzr/glazewm/config.yaml.tmpl" . | trimSuffix "\n" }}
@@ -100,7 +108,7 @@ CHEZMOI_WINDOWS_PUSH
 
 # ---- Windows Terminal (Store install's LocalState) ----
 push_into {{ joinPath $win "AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState" | quote }} "settings.json" << 'CHEZMOI_WINDOWS_PUSH'
-{{ include "dot_config/windows-terminal/settings.json" | trimSuffix "\n" }}
+{{ includeTemplate "dot_config/windows-terminal/settings.json.tmpl" . | trimSuffix "\n" }}
 CHEZMOI_WINDOWS_PUSH
 
 # ---- PowerShell 7 (%USERPROFILE%\Documents\PowerShell) ----
@@ -113,6 +121,10 @@ CHEZMOI_WINDOWS_PUSH
 # ~/.config on the Windows side, and they have no business in the profile
 # directory.
 #
+# A .tmpl is rendered and pushed without the suffix, as chezmoi itself would
+# apply it. Those are the few files that need WSL-side data (the distro name in
+# .wsl.distro); nothing that bakes in a Linux path belongs among them.
+#
 # Documents is assumed not to be OneDrive-redirected here. The native-Windows
 # path (run_onchange_after_link-powershell-profile.ps1) asks Windows for the real
 # folder via GetFolderPath, which is not reachable from WSL.
@@ -124,8 +136,12 @@ CHEZMOI_WINDOWS_PUSH
 {{-   if not (stat .).isDir }}
 {{-     $rel := trimPrefix (printf "%s/" $psSource) (. | replace "\\" "/") }}
 {{-     if not (or (hasPrefix "chocolatey/" $rel) (hasPrefix "winget/" $rel)) }}
-push {{ joinPath $win "Documents/PowerShell" $rel | quote }} << 'CHEZMOI_WINDOWS_PUSH'
+push {{ joinPath $win "Documents/PowerShell" (trimSuffix ".tmpl" $rel) | quote }} << 'CHEZMOI_WINDOWS_PUSH'
+{{- if hasSuffix ".tmpl" $rel }}
+{{ includeTemplate (printf "dot_config/powershell/%s" $rel) $ | trimSuffix "\n" }}
+{{- else }}
 {{ include . | trimSuffix "\n" }}
+{{- end }}
 CHEZMOI_WINDOWS_PUSH
 {{-     end }}
 {{-   end }}

@@ -15,6 +15,15 @@ function Select-BazelTarget {
         Returns the selected label(s), or nothing if the query matched nothing
         or the selection was cancelled.
 
+        .PARAMETER Query
+        The bazel query whose labels are offered, such as '...' for all.
+
+        .PARAMETER Prompt
+        The fzf prompt. Default 'Select a target > '.
+
+        .PARAMETER Multi
+        Allow more than one target: TAB marks one, Ctrl-A marks them all.
+
         .EXAMPLE
         Select-BazelTarget -Query 'kind(".*_binary", ...)'
 

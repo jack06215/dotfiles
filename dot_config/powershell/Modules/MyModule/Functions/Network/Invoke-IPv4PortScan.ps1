@@ -1,5 +1,47 @@
-function Invoke-IPv4PortScan 
+function Invoke-IPv4PortScan
 {
+    <#
+        .SYNOPSIS
+        Scan a host for open TCP ports.
+
+        .DESCRIPTION
+        Tries a TCP connection to each port from -StartPort to -EndPort, up to
+        -Threads at a time, and lists the ports that accept. UDP is not
+        scanned.
+
+        Open ports are named from the IANA service name and port number
+        registry when it is in Functions\Network\Resources. -UpdateList
+        downloads it.
+
+        A host that does not answer ping may only be blocking ICMP, so rather
+        than give up, this asks whether to scan anyway. -Force scans without
+        asking.
+
+        .PARAMETER ComputerName
+        Host name or IPv4 address to scan.
+
+        .PARAMETER StartPort
+        First port to scan. Default 1.
+
+        .PARAMETER EndPort
+        Last port to scan. Default 65535.
+
+        .PARAMETER Threads
+        Ports tried at the same time. Default 500.
+
+        .PARAMETER Force
+        Scan without asking when the host does not answer ping.
+
+        .PARAMETER UpdateList
+        Download the IANA port registry, used to name services, before
+        scanning.
+
+        .EXAMPLE
+        Invoke-IPv4PortScan -ComputerName 192.168.1.10 -EndPort 1024
+
+        .EXAMPLE
+        Invoke-IPv4PortScan fileserver -StartPort 3389 -EndPort 3389 -Force
+    #>
     [CmdletBinding()]
     param(
         [Parameter(

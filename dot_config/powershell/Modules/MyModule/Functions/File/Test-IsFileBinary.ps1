@@ -1,5 +1,26 @@
 function Test-IsFileBinary
 {
+	<#
+		.SYNOPSIS
+		Guess whether a file is binary or text from its first 1024 bytes.
+
+		.DESCRIPTION
+		A file that starts with a UTF-8, UTF-16 or UTF-32 byte-order mark is
+		text. Otherwise it is binary if those bytes contain a NUL - the same
+		heuristic GNU grep and diff use - and text if they do not.
+
+		Returns $true for binary, $false for text. Find-StringInFile uses it
+		to flag matches inside binaries.
+
+		.PARAMETER FilePath
+		The file to check. Must exist and must not be a folder.
+
+		.EXAMPLE
+		Test-IsFileBinary -FilePath C:\Windows\notepad.exe
+
+		.EXAMPLE
+		Get-ChildItem -File | Where-Object { -not (Test-IsFileBinary $_.FullName) }
+	#>
 	[CmdletBinding()]
 	[OutputType('System.Boolean')]
 	Param(
@@ -31,7 +52,7 @@ function Test-IsFileBinary
         # Get the first 1024 bytes from the file
         $ByteCount = 1024
         		
-		$ByteArray = Get-Content -Path $FilePath -Encoding Byte -TotalCount $ByteCount
+		$ByteArray = Get-Content -Path $FilePath -AsByteStream -TotalCount $ByteCount
 
         if($ByteArray.Count -ge $ByteCount)
         {

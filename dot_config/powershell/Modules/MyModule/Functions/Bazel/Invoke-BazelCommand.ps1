@@ -14,6 +14,18 @@ function Invoke-BazelCommand {
         instead, and -Print returns it as a string for a caller that wants to
         edit, pipe or copy it rather than run it.
 
+        .PARAMETER Command
+        The bazel command: build, run or test.
+
+        .PARAMETER Target
+        One or more target labels, such as //:export_powertoys_settings.
+
+        .PARAMETER Arguments
+        Anything else for bazel, placed after the targets.
+
+        .PARAMETER Print
+        Return the command line instead of running it.
+
         .EXAMPLE
         Invoke-BazelCommand -Command run -Target '//:export_powertoys_settings'
 

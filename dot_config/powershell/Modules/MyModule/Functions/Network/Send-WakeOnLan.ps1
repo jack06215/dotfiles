@@ -1,5 +1,35 @@
 function Send-WakeOnLan
 {
+    <#
+        .SYNOPSIS
+        Wake a computer by sending it a Wake-on-LAN magic packet.
+
+        .DESCRIPTION
+        Broadcasts the magic packet - six 0xFF bytes followed by the MAC
+        address sixteen times - over UDP. A broadcast does not cross a
+        router, so to wake a computer in another subnet, name a Windows
+        computer in that subnet with -UseComputer and the packet is sent from
+        there, through PowerShell remoting.
+
+        .PARAMETER MACAddress
+        One or more MAC addresses, as 00:11:22:33:44:55, 00-11-22-33-44-55 or
+        001122334455.
+
+        .PARAMETER Port
+        UDP port to send to. Default 7; 9 is the other common choice.
+
+        .PARAMETER UseComputer
+        A Windows computer in the target's subnet to send the packet from.
+
+        .PARAMETER Credential
+        Credentials for -UseComputer.
+
+        .EXAMPLE
+        Send-WakeOnLan -MACAddress 00:11:22:33:44:55
+
+        .EXAMPLE
+        Send-WakeOnLan 00-11-22-33-44-55 -UseComputer server01 -Credential (Get-Credential)
+    #>
     [CmdletBinding()]
     param(
         [Parameter(

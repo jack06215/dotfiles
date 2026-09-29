@@ -1,5 +1,20 @@
 function Get-ARPCache
 {
+    <#
+        .SYNOPSIS
+        List the ARP cache as objects.
+
+        .DESCRIPTION
+        Parses `arp -a` into one object per entry: the Interface address it
+        was learned on, the IPv4Address and MACAddress, and its Type, dynamic
+        or static.
+
+        .EXAMPLE
+        Get-ARPCache
+
+        .EXAMPLE
+        Get-ARPCache | Where-Object Type -eq 'dynamic'
+    #>
     [CmdletBinding()]
     param(
 

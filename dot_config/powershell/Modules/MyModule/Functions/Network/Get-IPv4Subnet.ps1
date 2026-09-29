@@ -1,5 +1,32 @@
 function Get-IPv4Subnet
 {
+    <#
+        .SYNOPSIS
+        Calculate the network address, host range and broadcast address of a subnet.
+
+        .DESCRIPTION
+        Give any address in the subnet and its size, as a CIDR prefix length
+        or a subnet mask. Shows NetworkID, Broadcast, IPs (addresses in the
+        subnet) and Hosts (those left for hosts). FirstIP and LastIP, the
+        first and last host address, are there too but hidden by default;
+        pipe to Select-Object * to see them.
+
+        .PARAMETER IPv4Address
+        Any address in the subnet.
+
+        .PARAMETER CIDR
+        The prefix length, 0 to 31, without the slash.
+
+        .PARAMETER Mask
+        The subnet mask, such as 255.255.255.0.
+
+        .EXAMPLE
+        Get-IPv4Subnet -IPv4Address 192.168.24.96 -CIDR 27
+        # NetworkID 192.168.24.96, Broadcast 192.168.24.127, IPs 32, Hosts 30
+
+        .EXAMPLE
+        Get-IPv4Subnet 10.0.0.1 -Mask 255.255.0.0 | Select-Object *
+    #>
     [CmdletBinding(DefaultParameterSetName='CIDR')]
     param(
         [Parameter(

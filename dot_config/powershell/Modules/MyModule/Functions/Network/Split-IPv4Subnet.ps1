@@ -1,5 +1,36 @@
 function Split-IPv4Subnet
 {
+    <#
+        .SYNOPSIS
+        Split a subnet into smaller subnets of equal size.
+
+        .DESCRIPTION
+        Returns one Get-IPv4Subnet result per smaller subnet, in order. The new
+        prefix must be longer than the current one: a /24 splits into /25s or
+        /26s, not /24s or /23s.
+
+        .PARAMETER IPv4Address
+        Any address in the subnet to split.
+
+        .PARAMETER CIDR
+        Prefix length of the subnet to split, without the slash.
+
+        .PARAMETER NewCIDR
+        Prefix length of the subnets to split it into, without the slash.
+
+        .PARAMETER Mask
+        Subnet mask of the subnet to split, such as 255.255.255.0.
+
+        .PARAMETER NewMask
+        Subnet mask of the subnets to split it into, such as 255.255.255.128.
+
+        .EXAMPLE
+        Split-IPv4Subnet -IPv4Address 192.168.0.0 -CIDR 22 -NewCIDR 24
+        # 192.168.0.0/24 through 192.168.3.0/24
+
+        .EXAMPLE
+        Split-IPv4Subnet 10.0.0.0 -Mask 255.255.255.0 -NewMask 255.255.255.192
+    #>
     [CmdletBinding(DefaultParameterSetName='CIDR')]
     param(
         [Parameter(

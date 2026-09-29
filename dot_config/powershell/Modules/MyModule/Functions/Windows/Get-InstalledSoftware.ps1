@@ -1,5 +1,35 @@
 function Get-InstalledSoftware
 	{
+	<#
+		.SYNOPSIS
+		List the software installed on this or a remote computer.
+
+		.DESCRIPTION
+		Reads the machine-wide Uninstall keys in the registry, for 64-bit and
+		32-bit programs alike, and lists each entry that has a display name
+		and an uninstall command: DisplayName, Publisher, UninstallString,
+		InstallLocation and InstallDate. Programs installed for one user only
+		(the HKCU Uninstall key) and Store apps are not included.
+
+		A remote computer is read through PowerShell remoting, so it must
+		answer ping and have WinRM enabled.
+
+		.PARAMETER Search
+		Keep only entries whose display name matches this wildcard pattern,
+		such as '*Visual Studio*'.
+
+		.PARAMETER ComputerName
+		The computer to query. Defaults to this one.
+
+		.PARAMETER Credential
+		Credentials for a remote computer.
+
+		.EXAMPLE
+		Get-InstalledSoftware -Search '*Python*'
+
+		.EXAMPLE
+		Get-InstalledSoftware -ComputerName server01 -Credential (Get-Credential)
+	#>
 	[CmdletBinding()]
 	param(
 		[Parameter(

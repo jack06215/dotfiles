@@ -1,5 +1,30 @@
 function Get-LastBootTime
 {
+    <#
+        .SYNOPSIS
+        Show when this or a remote computer last booted.
+
+        .DESCRIPTION
+        Reads LastBootUpTime from Win32_OperatingSystem. With Fast Startup on,
+        a shutdown is a partial hibernation rather than a boot, so only a
+        restart moves this time.
+
+        Remote computers are read through PowerShell remoting, so they must
+        answer ping and have WinRM enabled; one that fails is reported as an
+        error and skipped.
+
+        .PARAMETER ComputerName
+        One or more computers to query. Defaults to this one.
+
+        .PARAMETER Credential
+        Credentials for the remote computers.
+
+        .EXAMPLE
+        Get-LastBootTime
+
+        .EXAMPLE
+        Get-LastBootTime -ComputerName server01, server02
+    #>
     [CmdletBinding()]
     param(
         [Parameter(

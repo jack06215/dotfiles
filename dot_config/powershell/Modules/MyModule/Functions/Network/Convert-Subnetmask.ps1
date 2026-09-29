@@ -1,5 +1,26 @@
 function Convert-Subnetmask
 {
+    <#
+        .SYNOPSIS
+        Convert between a CIDR prefix length and a dotted subnet mask.
+
+        .DESCRIPTION
+        Either direction returns an object with both forms, Mask and CIDR.
+
+        .PARAMETER CIDR
+        A prefix length from 0 to 32, without the slash: 24, not /24.
+
+        .PARAMETER Mask
+        A subnet mask, such as 255.255.255.0. Its one bits must be contiguous.
+
+        .EXAMPLE
+        Convert-Subnetmask -CIDR 24
+        # Mask 255.255.255.0, CIDR 24
+
+        .EXAMPLE
+        Convert-Subnetmask -Mask 255.255.255.192
+        # Mask 255.255.255.192, CIDR 26
+    #>
     [CmdLetBinding(DefaultParameterSetName='CIDR')]
     param( 
         [Parameter( 

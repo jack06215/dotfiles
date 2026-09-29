@@ -1,5 +1,17 @@
 function Clear-ARPCache
 {
+    <#
+        .SYNOPSIS
+        Flush the local ARP cache.
+
+        .DESCRIPTION
+        Runs `netsh interface ip delete arpcache`, which needs administrator
+        rights. netsh is always started elevated, so from a non-elevated
+        session this warns and then raises a UAC prompt.
+
+        .EXAMPLE
+        Clear-ARPCache
+    #>
     [CmdletBinding()]
     param(
 

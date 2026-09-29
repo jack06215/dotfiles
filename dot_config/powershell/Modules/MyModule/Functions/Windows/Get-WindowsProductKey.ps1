@@ -1,5 +1,31 @@
 function Get-WindowsProductKey
 {
+	<#
+		.SYNOPSIS
+		Show the Windows product key of this or a remote computer.
+
+		.DESCRIPTION
+		Decodes the key from DigitalProductId under
+		HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion, and returns it
+		with the edition, version, architecture, build and serial number from
+		Win32_OperatingSystem.
+
+		Remote computers are read through PowerShell remoting, so they must
+		answer ping and have WinRM enabled; one that fails is reported as an
+		error and skipped.
+
+		.PARAMETER ComputerName
+		One or more computers to query. Defaults to this one.
+
+		.PARAMETER Credential
+		Credentials for the remote computers.
+
+		.EXAMPLE
+		Get-WindowsProductKey
+
+		.EXAMPLE
+		Get-WindowsProductKey -ComputerName server01 -Credential (Get-Credential)
+	#>
 	[CmdletBinding()]
 	param(
 		[Parameter(

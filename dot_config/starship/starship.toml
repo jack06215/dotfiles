@@ -122,12 +122,14 @@ format = 'via [󱃾 $context\($namespace\)](bold purple) '
 disabled = true
 
 # ---
+# The version comes from `python --version`: asdf provides python on macOS and
+# WSL2, mise on Windows, and pyenv nowhere. pyenv_version_name used to be on,
+# which on Windows ran a stray pyenv-win's pyenv.bat - slow enough to blow
+# command_timeout and print a warning above every prompt.
 [python]
 style = 'teal'
 symbol = ' '
-format = 'via [${symbol}${pyenv_prefix}(${version} )(\($virtualenv\) )]($style)'
-pyenv_version_name = true
-pyenv_prefix = ''
+format = 'via [${symbol}(${version} )(\($virtualenv\) )]($style)'
 
 [lua]
 disabled = true

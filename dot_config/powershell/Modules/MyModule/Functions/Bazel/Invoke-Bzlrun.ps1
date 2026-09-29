@@ -12,6 +12,12 @@ function Invoke-Bzlrun {
         for the program being run - rather than for bazel - needs two: the first
         ends PowerShell's parameter parsing, the second is what bazel sees.
 
+        .PARAMETER Print
+        Return the command line instead of running it.
+
+        .PARAMETER Arguments
+        Everything after the function name, passed to bazel after the target.
+
         .EXAMPLE
         Invoke-Bzlrun
 

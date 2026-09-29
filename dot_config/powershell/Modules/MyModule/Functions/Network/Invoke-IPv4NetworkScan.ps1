@@ -1,5 +1,62 @@
 function Invoke-IPv4NetworkScan
 {
+    <#
+        .SYNOPSIS
+        Ping-sweep an IPv4 range or subnet and list the devices that answer.
+
+        .DESCRIPTION
+        Give either a start and end address, or any address in a subnet with
+        its CIDR prefix length or mask. Every address is pinged in parallel,
+        up to -Threads at a time, and each one that answers comes back with
+        its Status and, unless -DisableDNSResolving is given, its Hostname.
+
+        -EnableMACResolving adds each device's MAC address, from the ARP cache
+        or nbtstat, and its Vendor when the IEEE OUI list is in
+        Functions\Network\Resources. -UpdateList downloads that list.
+
+        .PARAMETER StartIPv4Address
+        First address of the range, such as 192.168.1.10.
+
+        .PARAMETER EndIPv4Address
+        Last address of the range, such as 192.168.1.100.
+
+        .PARAMETER IPv4Address
+        Any address in the subnet to scan.
+
+        .PARAMETER CIDR
+        Prefix length of the subnet, 0 to 31, without the slash.
+
+        .PARAMETER Mask
+        Subnet mask of the subnet, such as 255.255.255.0.
+
+        .PARAMETER Tries
+        Pings per address before it counts as down. Default 2.
+
+        .PARAMETER Threads
+        Addresses pinged at the same time. Default 256.
+
+        .PARAMETER DisableDNSResolving
+        Skip the reverse DNS lookup of each address.
+
+        .PARAMETER EnableMACResolving
+        Look up each device's MAC address, and its vendor if the OUI list is
+        present.
+
+        .PARAMETER ExtendedInformations
+        Add BufferSize, ResponseTime and TTL from the ping reply.
+
+        .PARAMETER IncludeInactive
+        Also list the addresses that did not answer, with Status Down.
+
+        .PARAMETER UpdateList
+        Download the IEEE OUI list, used to name MAC vendors, before scanning.
+
+        .EXAMPLE
+        Invoke-IPv4NetworkScan -IPv4Address 192.168.1.0 -CIDR 24
+
+        .EXAMPLE
+        Invoke-IPv4NetworkScan -StartIPv4Address 192.168.1.10 -EndIPv4Address 192.168.1.50 -EnableMACResolving
+    #>
     [CmdletBinding(DefaultParameterSetName='CIDR')]
     Param(
         [Parameter(
@@ -285,7 +342,7 @@ function Invoke-IPv4NetworkScan
             # +++ Send ICMP requests +++
             $Status = [String]::Empty
 
-            for($i = 0; $i -lt $Tries; i++)
+            for($i = 0; $i -lt $Tries; $i++)
             {
                 try{
                     $PingObj = New-Object System.Net.NetworkInformation.Ping

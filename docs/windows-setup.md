@@ -29,8 +29,12 @@ directories, and `setup.ps1` refuses to run on 5.1.
 wsl --install
 ```
 
-Reboot when it asks. This machine's distro is `ubuntu_default2404`; the WezTerm
-config and `Scripts\start_wsl.ps1` both refer to it by that name.
+Reboot when it asks. This machine's distro is `ubuntu_default2404`. Nothing
+spells that name out: `chezmoi init` inside WSL2 records it as `.wsl.distro`
+(from `WSL_DISTRO_NAME`), and the WezTerm config, `Scripts\start_wsl.ps1`,
+MyModule's `zsh` and the Windows Terminal profile are templates rendered from
+it. A native-Windows apply cannot see the distro, so there the scripts fall back
+to WSL's default one.
 
 ### 2. PowerShell 7
 
@@ -108,9 +112,9 @@ Useful switches:
 
 ### 8. Reopen the terminal
 
-Open a **normal, non-elevated** PowerShell 7. The profile should print
-`Use 'Show-Help' to display help`, and starship, zoxide and mise should all be
-active. `Show-Help` lists what the profile provides.
+Open a **normal, non-elevated** PowerShell 7. starship, zoxide and mise should
+all be active. `fman` picks any command - MyModule's included - with fzf and
+shows its help.
 
 ## Re-running
 
@@ -159,17 +163,22 @@ side. Two things to know:
 
 ### Windows Terminal settings
 
-`dot_config/windows-terminal/settings.json` is only pushed from WSL2, by
-`run_onchange_after_push-windows-configs.sh`. A native-Windows apply does not
-place it. Copy it by hand if you are not provisioning from WSL2:
+`dot_config/windows-terminal/settings.json.tmpl` is only pushed from WSL2, by
+`run_onchange_after_push-windows-configs.sh`, which renders the WSL profile's
+name from `.wsl.distro`. A native-Windows apply does not place it. If you are
+not provisioning from WSL2, copy it by hand and replace `{{ .wsl.distro }}` with
+the distro's name:
 
 ```powershell
 $ws = "$env:LOCALAPPDATA\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState"
-Copy-Item $HOME\.config\windows-terminal\settings.json $ws\settings.json
+$src = Join-Path (chezmoi source-path) 'dot_config\windows-terminal\settings.json.tmpl'
+(Get-Content $src -Raw) -replace '\{\{ \.wsl\.distro \}\}', 'ubuntu_default2404' |
+    Set-Content $ws\settings.json
 ```
 
-`settings.jsonnet` is the source; regenerate `settings.json` with
-`jsonnet` (which is not packaged for Windows — do it in WSL2).
+`settings.jsonnet` is the source; regenerate `settings.json.tmpl` with
+`jsonnet` (which is not packaged for Windows — do it in WSL2). It emits the
+`{{ .wsl.distro }}` placeholder as it is.
 
 ### Scheduled tasks
 

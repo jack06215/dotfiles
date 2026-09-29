@@ -9,10 +9,13 @@
       name: 'PowerShell',
       source: 'Windows.Terminal.PowershellCore',
     },
+    // The output is settings.json.tmpl: chezmoi fills in the name from
+    // .wsl.distro when the WSL2 push renders it. The guid is the one Windows
+    // Terminal assigned this distro; another distro gets another guid.
     {
       guid: '{bf2a0656-2c0e-586b-8e6b-6e5509a0c984}',
       hidden: false,
-      name: 'ubuntu_default2404',
+      name: '{{ .wsl.distro }}',
       source: 'Microsoft.WSL',
     },
     // {

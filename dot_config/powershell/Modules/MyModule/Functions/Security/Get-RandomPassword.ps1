@@ -1,5 +1,47 @@
 function Get-RandomPassword
 {
+	<#
+		.SYNOPSIS
+		Generate one or more random passwords.
+
+		.DESCRIPTION
+		Draws from lower case letters, upper case letters, digits and the
+		special characters $%&/()=?+*#[]{}-_@. Each -Disable switch drops one
+		of those sets; leave at least one. The letters j, o, q, I, J, O and Q
+		are never used.
+
+		A single password comes back as an object with a Password property;
+		with a -Count above 1, each also carries its number in Count.
+		-CopyToClipboard is for a single password, so it cannot be combined
+		with -Count.
+
+		.PARAMETER Length
+		Characters per password. Default 8.
+
+		.PARAMETER Count
+		Number of passwords to generate. Default 1.
+
+		.PARAMETER CopyToClipboard
+		Also copy the password to the clipboard.
+
+		.PARAMETER DisableLowerCase
+		Leave out lower case letters.
+
+		.PARAMETER DisableUpperCase
+		Leave out upper case letters.
+
+		.PARAMETER DisableNumbers
+		Leave out digits.
+
+		.PARAMETER DisableSpecialChars
+		Leave out special characters.
+
+		.EXAMPLE
+		Get-RandomPassword -Length 20 -CopyToClipboard
+
+		.EXAMPLE
+		Get-RandomPassword -Length 12 -Count 5 -DisableSpecialChars
+	#>
 	[CmdletBinding(DefaultParameterSetName='NoClipboard')]
 	param(
 		[Parameter(

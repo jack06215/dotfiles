@@ -1,0 +1,25 @@
+{{- /* The distro is chezmoi's .wsl.distro, which .chezmoi.toml.tmpl reads from
+       WSL_DISTRO_NAME. A native-Windows apply has none to give, so -d is left
+       off and wsl.exe opens the default distro. isWSL2 first, as in
+       machine.lua.tmpl, for configs generated before [data.wsl] existed. */ -}}
+{{- $distro := "" -}}
+{{- if .myComputer.isWSL2 -}}
+{{-   $distro = .wsl.distro -}}
+{{- end -}}
+function zsh {
+    <#
+        .SYNOPSIS
+        Open zsh in WSL, starting in the Linux home directory.
+
+        .DESCRIPTION
+        Runs zsh in {{ with $distro }}the {{ . }} distro{{ else }}the default WSL distro{{ end }}.
+        A login shell loads the profile and changes to ~ - WSL otherwise
+        starts in the current Windows directory - then replaces itself with
+        an interactive zsh.
+
+        .EXAMPLE
+        zsh
+    #>
+    wsl.exe{{ with $distro }} -d {{ . }}{{ end }} zsh -lc 'cd ~; exec zsh'
+}
+

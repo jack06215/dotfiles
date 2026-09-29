@@ -1,5 +1,29 @@
 function Get-MACAddress
 {
+    <#
+        .SYNOPSIS
+        Find the MAC address of a device on the local network.
+
+        .DESCRIPTION
+        Pings the device to refresh the ARP cache, resolves a host name to its
+        IPv4 address, then looks that address up in `arp -a`, falling back to
+        `nbtstat -A` when ARP has no entry. Only a device in the same subnet
+        can be found this way: beyond a router, ARP sees the router.
+
+        Returns ComputerName, IPv4Address, MACAddress and Vendor. Vendor comes
+        from Get-MACVendor, and is empty until the IEEE OUI list it reads has
+        been downloaded.
+
+        .PARAMETER ComputerName
+        One or more host names or IPv4 addresses. localhost, 127.0.0.1 and .
+        mean this computer.
+
+        .EXAMPLE
+        Get-MACAddress -ComputerName 192.168.1.1
+
+        .EXAMPLE
+        Get-MACAddress fileserver, printer01
+    #>
     [CmdletBinding()]
     param(
         [Parameter(
@@ -96,7 +120,12 @@ function Get-MACAddress
                 }
             }
            
-            [String]$Vendor = (Get-MACVendor -MACAddress $MAC | Select-Object -First 1).Vendor 
+            [String]$Vendor = [String]::Empty
+
+            if(-not([String]::IsNullOrEmpty($MAC)))
+            {
+                $Vendor = (Get-MACVendor -MACAddress $MAC | Select-Object -First 1).Vendor
+            }
          
             [pscustomobject] @{
                 ComputerName = $ComputerName2
