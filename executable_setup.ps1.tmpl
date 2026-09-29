@@ -84,24 +84,72 @@ function Add-Failure {
     Write-Warning "$What failed; continuing"
 }
 
+function Test-CommandExists {
+    param([Parameter(Mandatory)][string]$Name)
+    return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
+}
+
+# gum when it is on PATH and output goes to a terminal, the plain path when it
+# is not. The fallback is not optional here: gum comes from the winget
+# manifest, so on a fresh machine every section up to and including that one
+# runs before it exists. This is checked at each call rather than once, so the
+# sections after winget pick it up within that same first run.
+function Test-Gum {
+    return (Test-CommandExists gum) -and -not [Console]::IsOutputRedirected
+}
+
 function Write-Section {
     param([Parameter(Mandatory)][string]$Message)
-    # setup.sh reaches for gum here and falls back to ANSI. There is no gum on
-    # a fresh Windows box either, and it arrives mid-run at best, so this only
-    # ever does the plain version.
+
+    if ((Test-Gum) -and -not $env:NO_COLOR) {
+        & gum style --foreground=39 --bold --border=rounded '--padding=0 2' '--margin=1 0' $Message
+        return
+    }
+
+    Write-Host ''
     if ($Host.UI.SupportsVirtualTerminal -and -not $env:NO_COLOR) {
-        Write-Host ''
         Write-Host "$($PSStyle.Bold)$($PSStyle.Foreground.BrightBlue)==>$($PSStyle.Reset) $Message"
     }
     else {
-        Write-Host ''
         Write-Host "==> $Message"
     }
 }
 
-function Test-CommandExists {
-    param([Parameter(Mandatory)][string]$Name)
-    return $null -ne (Get-Command $Name -ErrorAction SilentlyContinue)
+# Run a native command under a spinner when gum is available, announcing it and
+# running it plainly when it is not. $LASTEXITCODE is the command's own either
+# way - gum spin exits with it - so callers keep testing it directly. The
+# counterpart of setup.sh's run_step.
+#
+# --show-error is what makes the spinner safe to wrap slow network commands in:
+# silent while they succeed, full output the moment one fails.
+#
+# gum probes the terminal on startup (ESC[?2026$p ESC[?2027$p, on Windows as on
+# Unix) and spin never reads the replies, so each step would leave one queued,
+# to be typed at the prompt once the script ends. They are cleared after every
+# step; the 100ms wait stands in for run_step's `stty time 1`, so a reply still
+# in flight lands before the flush rather than after it.
+function Invoke-Step {
+    param(
+        [Parameter(Mandatory)][string]$Title,
+        [Parameter(Mandatory)][string[]]$Command
+    )
+
+    if (-not (Test-Gum)) {
+        Write-Host $Title
+        $exe, $rest = $Command
+        & $exe @rest
+        return
+    }
+
+    & gum spin --spinner=dot --show-error "--title=$Title" '--' @Command
+    try {
+        Start-Sleep -Milliseconds 100
+        $Host.UI.RawUI.FlushInputBuffer()
+    }
+    catch {
+        # A host with no console input buffer, which has nothing queued either.
+        Write-Verbose "could not flush console input: $_"
+    }
 }
 
 # Chocolatey and several installers put their binaries on the machine PATH,
@@ -209,6 +257,11 @@ function Install-ChocolateyPackages {
 
     # choco exits non-zero when any single package fails, so this is recorded
     # rather than thrown - the rest of the manifest still installed.
+    #
+    # Neither choco run goes through Invoke-Step, as brew bundle does not in
+    # setup.sh: one pass over the whole manifest can take the better part of an
+    # hour, and choco's per-package lines are the only sign of which installer
+    # it is on.
     & choco @chocoArgs
     if ($LASTEXITCODE -ne 0) {
         Add-Failure "choco install $CHOCO_MANIFEST (exit $LASTEXITCODE)"
@@ -257,8 +310,10 @@ function Install-WingetPackages {
             continue
         }
 
-        & winget install --id $id --exact --silent `
-            --accept-source-agreements --accept-package-agreements --disable-interactivity
+        Invoke-Step -Title "winget: installing $id" -Command @(
+            'winget', 'install', '--id', $id, '--exact', '--silent',
+            '--accept-source-agreements', '--accept-package-agreements', '--disable-interactivity'
+        )
         if ($LASTEXITCODE -ne 0) {
             Add-Failure "winget install $id (exit $LASTEXITCODE)"
         }
@@ -313,7 +368,7 @@ function Install-MiseTools {
 
         foreach ($version in $entry.Versions) {
             $spec = "$($entry.Tool)@$version"
-            & mise install --yes $spec
+            Invoke-Step -Title "mise: installing $spec" -Command @('mise', 'install', '--yes', $spec)
             if ($LASTEXITCODE -ne 0) {
                 Add-Failure "mise install $spec"
             }
