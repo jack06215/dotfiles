@@ -38,12 +38,56 @@ shared_borders = false
 hide_window_buttons = false
 window_button_position = "right"
 window_button_style = "pill"
+# Powerline caps on tuios's own dock pills (mode, the window list), to match
+# the arrows in the two cells dock/powerline.sh draws. See [dock] below.
+dock_pill_caps = true
 
 [appearance.sidebar]
 # The rail on the right (sessions, terminals, files, agents) is on by default
 # since 0.8.0. Off, the panes get the full width, as the WezTerm split had.
 # Leader, then b, still shows it when needed.
 enabled = false
+
+[dock]
+# The top bar, laid out like the opal tab's tmux bar
+# (dot_config/tmux-powerline/themes/mocha.sh): who and where on the left, the
+# windows in the middle, what needs you and the clock on the right.
+#
+#   custom/left   user, host, git, tock
+#   custom/right  Claude sessions, pwd, battery, day, date, time
+#
+# dock/powerline.sh draws both by running tmux-powerline itself on that theme,
+# so a change there shows up in both tabs. tmux's mode tile cannot run outside
+# tmux, and the built-in mode pill stands in for it. trail, tape,
+# notifications and copy-help are tuios's own indicators, kept where the
+# default puts them. Left out, with nothing matching them in the tmux bar:
+# workspaces (alt+1..9 still switches), cpu, ram, clock (the right cell has
+# one) and session-controls. Put a name back in a list to get it back.
+left = ["mode", "trail", "tape", "custom/left"]
+center = ["windows"]
+right = ["notifications", "copy-help", "custom/right"]
+
+# Every five seconds, as TMUX_POWERLINE_STATUS_INTERVAL in
+# tmux-powerline/config.sh. One run is one pass of the plugin over that side,
+# about 0.3 s. As in tmux, a change of pane focus shows at the next run rather
+# than at once. `tuios list-dock-components` says why a side is not drawing.
+#
+# max-width must be set: a custom cell is cut to 24 columns by default, which
+# took the right side down to "Wed …". 80 is the most tuios allows, and a
+# larger number is not clamped to it: it is refused, with a warning, and the
+# cell gets the 24 again. Only visible columns count, not the colour escapes.
+# tmux gives the sides 170 and 140 (tmux-powerline/config.sh), so
+# dock/powerline.sh shortens pwd to keep the clock on the right inside 80. On
+# the left the cut falls on tock, last there so that it goes first.
+[dock.custom.left]
+command = "~/.config/tuios/dock/powerline.sh left"
+refresh = "5s"
+max-width = 80
+
+[dock.custom.right]
+command = "~/.config/tuios/dock/powerline.sh right"
+refresh = "5s"
+max-width = 80
 
 [keybindings]
 # The same prefix as tmux.conf, so the opal tab (tmux) and the ruby tab (tuios)

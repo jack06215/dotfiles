@@ -7,17 +7,13 @@ $directory\
 $git_branch\
 $git_status\
 $fill\
-$time\
 $python\
 $lua\
 $nodejs\
 $golang\
-$haskell\
 $rust\
 $ruby\
 $package\
-$aws\
-$docker_context\
 $jobs\
 $cmd_duration\
 $line_break\

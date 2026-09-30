@@ -18,6 +18,12 @@
 # NOTE Changes here take effect on the next status refresh, but tmux caches the
 # window-status formats, so run `prefix + r` (or `tmux source-file
 # ~/.config/tmux/tmux.conf`) after editing.
+#
+# NOTE The ruby tab's tuios dock draws the two segment lists below as well
+# (dot_config/tuios/dock/powerline.sh), minus mode_indicator. The window list
+# formats are tmux's alone. A segment there cannot print a #{…} format, since
+# nothing expands it outside tmux; the script's header lists the two it
+# handles.
 
 # Catppuccin Mocha {
 rosewater="#f5e0dc"
