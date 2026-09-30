@@ -27,7 +27,19 @@
            no NORMAL counterpart; the script draws every vim mode instead */}}
     "hideVimModeIndicator": true
   },
+{{- /* the company's managed strictKnownMarketplaces only allows its own
+       marketplace, so third-party ones are personal-machine only */}}
+{{- if not .myComputer.isCompanyMachine }}
+  "extraKnownMarketplaces": {
+    "mattpocock": {
+      "source": { "source": "github", "repo": "mattpocock/skills" }
+    }
+  },
+{{- end }}
   "enabledPlugins": {
+{{- if not .myComputer.isCompanyMachine }}
+    "mattpocock-skills@mattpocock": true,
+{{- end }}
     "pyright-lsp@claude-plugins-official": true,
     "clangd-lsp@claude-plugins-official": true
   },
