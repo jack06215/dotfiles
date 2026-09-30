@@ -1,0 +1,53 @@
+{{- /*
+  Installs the VS Code extensions listed in .chezmoidata/vscode.toml that are
+  missing. Install-only: an extension dropped from the list, or installed by
+  hand, is left alone.
+
+  macOS: the app's own `code` CLI.
+  WSL2: VS Code is only ever opened from WSL (Remote-WSL), and that is where
+  these extensions run -- vscode-neovim included, see remote.extensionKind in
+  settings.json. Windows VS Code's bin/code, run from inside WSL, installs into
+  the WSL-side VS Code Server rather than into Windows, which is what we want.
+*/ -}}
+{{- if and (hasKey . "vscode") (or .myComputer.isDarwin .myComputer.isWSL2) -}}
+{{- $code := "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" -}}
+{{- if .myComputer.isWSL2 -}}
+{{-   $code = joinPath .wsl.windowsHome "AppData/Local/Programs/Microsoft VS Code/bin/code" -}}
+{{- end -}}
+#!/bin/bash
+set -euo pipefail
+
+# chezmoi reruns this whenever its rendered text changes: when the list below
+# changes, and once VS Code gets installed (a fresh machine applies the
+# dotfiles before setup.sh's brew bundle installs the cask):
+#   code CLI: {{ if stat $code }}present{{ else }}not installed{{ end }}
+
+code={{ $code | quote }}
+
+if [[ ! -x "$code" ]]; then
+  echo "vscode: no code CLI at $code, skipping extension install" >&2
+  exit 0
+fi
+
+wanted=(
+{{- range .vscodeExtensions }}
+  {{ . | quote }}
+{{- end }}
+)
+
+# IDs are case-insensitive, and --list-extensions does not promise a case
+installed=$("$code" --list-extensions | tr '[:upper:]' '[:lower:]')
+
+failed=()
+for ext in "${wanted[@]}"; do
+  if ! grep -qxF "$(tr '[:upper:]' '[:lower:]' <<< "$ext")" <<< "$installed"; then
+    "$code" --install-extension "$ext" || failed+=("$ext")
+  fi
+done
+
+if ((${#failed[@]})); then
+  echo "vscode: could not install:" >&2
+  printf '        %s\n' "${failed[@]}" >&2
+  exit 1
+fi
+{{ end -}}

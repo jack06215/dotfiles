@@ -1,0 +1,45 @@
+# VS Code extensions that dot_config/vscode/{settings,keybindings}.json and
+# nvim's lua/config/keymaps/vscode.lua call into. Installed where missing by
+# run_onchange_after_install-vscode-extensions.sh.tmpl on macOS and WSL2;
+# dropping an entry here does not uninstall anything. Plain data, read on every
+# apply: no `chezmoi init` needed after an edit here.
+#
+# Not `[vscode]`: that key is already the config data from .chezmoi.toml.tmpl
+# (.vscode.userDir).
+vscodeExtensions = [
+  # the Vim engine: real nvim with ~/.config/nvim
+  "asvetliakov.vscode-neovim",
+
+  # git: <leader>g* (blame, history, browse, compare), <leader>gl, octo's <leader>o*
+  "eamodio.gitlens",
+  "mhutchie.git-graph",
+  "github.vscode-pull-request-github",
+
+  # ]t/[t, <leader>xt/st; nvim's diagnostic virtual text, <leader>ud;
+  # harpoon keys; <leader>us and the shared nvim spell file
+  "gruntfuggly.todo-tree",
+  "usernamehw.errorlens",
+  "tobias-z.vscode-harpoon",
+  "streetsidesoftware.code-spell-checker",
+
+  # conform / nvim-lint parity
+  "ms-python.python",
+  "ms-python.vscode-pylance",
+  "charliermarsh.ruff",
+  "ms-python.mypy-type-checker",
+  "xaver.clang-format",
+  "bazelbuild.vscode-bazel",
+  "johnnymorganz.stylua",
+  "foxundermoon.shell-format",
+  "timonwong.shellcheck",
+  "esbenp.prettier-vscode",
+  "dbaeumer.vscode-eslint",
+  "davidanson.vscode-markdownlint",
+
+  # files.associations targets (jinja, jinja-sql)
+  "samuelcolvin.jinjahtml",
+
+  # workbench.colorTheme / iconTheme
+  "jdinhlife.gruvbox",
+  "pkief.material-icon-theme",
+]
