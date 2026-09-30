@@ -28,4 +28,26 @@ if (($+commands[asdf])); then
   fi
   fpath=("$_asdf_comp_dir" $fpath)
   unset _asdf_comp_dir
+
+  # Any other asdf that installs or reshims - the bash clone above, or the one
+  # the monorepo's Bazel rules fetch, both sharing ASDF_DATA_DIR - rewrites the
+  # shims to exec itself by absolute path. The bash one costs ~120ms a call,
+  # enough for the python shim to blow starship's command_timeout. Homebrew's
+  # asdf writes `exec asdf exec ...`, so a shim with `exec /...` is someone
+  # else's: reshim. Only shims changed since the last check get read - the glob
+  # just stats them, so a startup where nothing changed forks nothing. The stamp
+  # is left alone when reshim fails, so the next shell tries again.
+  _asdf_shims="${ASDF_DATA_DIR:-$HOME/.asdf}/shims"
+  _asdf_stamp="$XDG_CACHE_HOME/zsh/asdf-shims-checked"
+  if [[ -e "$_asdf_stamp" ]]; then
+    _asdf_changed=("$_asdf_shims"/*(N.e:'[[ $REPLY -nt $_asdf_stamp ]]':))
+  else
+    _asdf_changed=("$_asdf_shims"/*(N.))
+  fi
+  if (($#_asdf_changed)); then
+    if ! grep -qs '^exec /' $_asdf_changed || asdf reshim; then
+      mkdir -p "${_asdf_stamp:h}" && touch "$_asdf_stamp"
+    fi
+  fi
+  unset _asdf_shims _asdf_stamp _asdf_changed
 fi
