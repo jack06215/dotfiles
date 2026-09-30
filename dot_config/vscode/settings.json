@@ -254,6 +254,15 @@
     "*.ipynb": "jupyter-notebook"
   },
 
+  // ------------------------------------------------------ todo comments ----
+  // Todo Tree only looks for VS Code's bundled rg under
+  // node_modules[.asar.unpacked]/{vscode-ripgrep,@vscode/ripgrep}/bin/rg. VS
+  // Code now ships it as @vscode/ripgrep-universal/bin/<os>-<arch>/rg, so
+  // every lookup misses and the tree refuses to scan. Homebrew's rg
+  // (brewfiles/darwin) stands in. A path that does not exist is skipped, so
+  // off Apple-silicon macOS this is a no-op and the bundled lookup still runs.
+  "todo-tree.ripgrep.ripgrep": "/opt/homebrew/bin/rg",
+
   // ----------------------------------------------------------- terminal ----
   "terminal.integrated.defaultProfile.windows": "PowerShell 7",
   "terminal.integrated.defaultProfile.osx": "zsh",
