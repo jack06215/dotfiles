@@ -107,42 +107,6 @@ function notify_news() { send_notification "$1" "Take a look" "" "Glass"; }
 function notify_error() { send_notification "$1" "Attention!" "" "Basso"; }
 function notify_youve_got_mail() { send_notification "$1" "You've got mail" "" "YouveGotMail"; }
 
-function activate_poetry_env() {
-  local venv_path
-  venv_path="$(poetry env info --path 2> /dev/null)"
-
-  if [[ -z "$venv_path" ]]; then
-    echo "No Poetry environment found."
-    return 1
-  fi
-
-  source "$venv_path/bin/activate"
-
-  if [[ ":$PATH:" != *":$venv_path/bin:"* ]]; then
-    export PATH="$venv_path/bin:$PATH"
-  fi
-
-  export VIRTUAL_ENV="$venv_path"
-  echo "Activated Poetry venv from $venv_path"
-}
-
-function deactivate_poetry_env() {
-  if [[ -z "$VIRTUAL_ENV" ]]; then
-    echo "No Poetry venv is currently active."
-    return 1
-  fi
-
-  local venv_path="$VIRTUAL_ENV"
-  export PATH="$(echo "$PATH" | sed "s#$venv_path/bin:##")"
-  unset VIRTUAL_ENV
-
-  if type deactivate &> /dev/null; then
-    deactivate 2> /dev/null
-  fi
-
-  echo "Deactivated Poetry venv ← $venv_path"
-}
-
 function ls_stats() {
   (
     echo "permissions,size,user,date,name"

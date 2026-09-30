@@ -137,7 +137,7 @@ Set `ZSH_DEBUG_INIT=1` or `ZSH_PROFILE_STARTUP=1` to trace/profile startup.
 | `core.zsh` | history opts, fallback `bindkey -v`, `is_macos`/`is_wsl`/`is_termux` predicates |
 | `vi_mode.zsh` | settings for `zsh-vi-mode` (text objects, surround, `^A`/`^X` keyword switching, per-mode cursor, fast `<ESC>`); sourced before `zinit.zsh` because the plugin reads its `ZVM_*` options at source time. `ZVM_INIT_MODE=sourcing` + `ZVM_LAZY_KEYBINDINGS=false` are what stop it clobbering the atuin/fzf/pet/keybinds bindings made later. Also points `vv` (visual-mode `v`, edit the line in an editor) at nvim, copies yanks to the system clipboard with per-platform commands for WSL/termux, and themes the visual selection to Catppuccin Mocha |
 | `zinit.zsh` | plugin manager bootstrap; `zsh-vi-mode` (must stay first), `fzf-tab`, `fast-syntax-highlighting`, `zsh-autosuggestions`, `zsh-completions` |
-| `functions.zsh` | `fman`, `mkcd`, `topcmds`, `csv2json`, `ls_stats`, Poetry venv activate/deactivate, `send_notification` |
+| `functions.zsh` | `fman`, `mkcd`, `topcmds`, `csv2json`, `ls_stats`, `send_notification` |
 | `notify.zsh` | cross-platform `notify()` (terminal-notifier on macOS, BurntToast over `pwsh` on WSL) |
 | `gh.zsh` | `gh`-based PR helpers: `ghpr` (fzf picker + gum action menu; fetches nothing until you type, then searches GitHub across every PR state — `#1234` for one PR, `ctrl-r` for the newest N; rows and preview come from `myscripts/ghpr-index`), CI watchers (`ghpr_watch`, `ghpr_checks_watch`), draft PR creation |
 | `git.zsh` | git helper functions |
@@ -151,6 +151,7 @@ Set `ZSH_DEBUG_INIT=1` or `ZSH_PROFILE_STARTUP=1` to trace/profile startup.
 | `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |
 | `search.zsh` | fzf-based search helpers |
 | `aws.zsh`, `bazel.zsh`, `k8s.zsh`, `mysql.zsh`, `dart.zsh` | domain-specific shortcuts |
+| `poetry.zsh` | `activate_poetry_env [query]`: fzf over every Poetry env, labelled with its project; the current project's env is marked `*` and listed first. Works it out without running Poetry. `deactivate_poetry_env` |
 | `zsh_python_init.zsh` | resolves the Poetry-managed venv under `python` per OS and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN` + aliases |
 | `executable_sleep.zsh` / `executable_wakeup.zsh` | sleepwatcher hooks (macOS); skip weekends, gate on `sleepwatcher.should_run`, drive a Teamspirit clock-in/out script |
 | `myscripts/` | standalone executables: `fzf-listprojects`, `whisper-mic`, `transcribe-yt`, `convert-mp3-to-aiff`, `ghpr-index` (rows + preview for the `ghpr` picker), AWS role listing, sleepwatcher enable/disable, etc. |
