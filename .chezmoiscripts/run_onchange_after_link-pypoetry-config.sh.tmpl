@@ -1,0 +1,29 @@
+{{- if eq .chezmoi.os "darwin" -}}
+#!/bin/bash
+set -euo pipefail
+
+# Poetry reads config.toml from platformdirs' user config dir: $XDG_CONFIG_HOME
+# on Linux, where chezmoi puts the file directly, but always
+# ~/Library/Application Support/pypoetry on macOS. It is symlinked there rather
+# than redirected with POETRY_CONFIG_DIR, because auth.toml lives in the same
+# dir and would move with it. `poetry config <key> <value>` writes through the
+# link into the chezmoi-managed copy, so `chezmoi re-add` picks changes up.
+
+config_dir="${HOME}/Library/Application Support/pypoetry"
+source_file={{ joinPath .xdg.configHome "pypoetry/config.toml" | quote }}
+dest="${config_dir}/config.toml"
+
+mkdir -p "${config_dir}"
+
+# A regular file here is the config Poetry has been using - keep a timestamped
+# copy alongside rather than silently discarding it.
+if [ -e "${dest}" ] && [ ! -L "${dest}" ]; then
+  backup="${dest}.bak-$(date +%Y%m%d%H%M%S)"
+  mv "${dest}" "${backup}"
+  echo "pypoetry: backed up pre-existing config.toml to $(basename "${backup}")" >&2
+fi
+
+ln -sf "${source_file}" "${dest}"
+
+echo "pypoetry: linked config.toml into ${config_dir}"
+{{- end -}}

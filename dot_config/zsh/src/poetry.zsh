@@ -157,7 +157,7 @@ for d in scan:
   elif [[ -z $base ]]; then
     REPLY="${(D)root}: could not work out its env name (python >= 3.11 needed)"
   else
-    REPLY="${(D)root} has no env yet ($base-py$minor): run poetry install"
+    REPLY="${(D)root} has no env yet: run poetry install"
   fi
   [[ -n ${VIRTUAL_ENV:-} ]] && REPLY+="  ·  active: ${VIRTUAL_ENV:t}"
   return 0
