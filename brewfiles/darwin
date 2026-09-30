@@ -5,13 +5,18 @@ tap "cockroachdb/tap", trusted: true
 tap "dbcli/tap"
 tap "derailed/k9s", trusted: true
 tap "hashicorp/tap", trusted: true
+tap "homebrew/bundle"
+tap "homebrew/services"
 tap "kdash-rs/kdash", trusted: true
 tap "leoafarias/fvm", trusted: true
 tap "localstack/tap", trusted: true
 tap "morantron/tmux-fingers"
 tap "nikitabobko/tap", trusted: true
 tap "vorssaint/tap"
+tap "secureauthcorp/tap", "https://github.com/SecureAuthCorp/homebrew-tap.git"
 tap "yoheimuta/protolint", trusted: true
+# Static analysis and lint tool, for (ba)sh scripts
+brew "shellcheck"
 # Static checker for GitHub Actions workflow files
 brew "actionlint"
 # Extendable version manager with support for Ruby, Node.js, Erlang & more
@@ -26,6 +31,8 @@ brew "openssl@3"
 brew "xz"
 # Official Amazon AWS command-line interface
 brew "awscli"
+# Cryptographic recipes and primitives for Python
+brew "cryptography"
 # Curl like simplicity to access AWS resources
 brew "awscurl"
 # Simple command-line tool to read AWS CloudWatch logs
@@ -46,6 +53,10 @@ brew "btop"
 brew "buf"
 # Format bazel BUILD files with a standard convention
 brew "buildifier"
+# Software library to render fonts
+brew "freetype"
+# Core application library for C
+brew "glib"
 # Multi-shell multi-command argument completer
 brew "carapace"
 # Manage your dotfiles across multiple diverse machines, securely
@@ -54,6 +65,8 @@ brew "chezmoi"
 brew "clang-format"
 # Cross-platform make
 brew "cmake"
+# Linux virtual machines
+brew "lima"
 # Container runtimes on MacOS (and Linux) with minimal setup
 brew "colima"
 # Color-highlighted diff(1) output
@@ -66,8 +79,12 @@ brew "cpplint"
 brew "curl"
 # JSON, YAML, TOML, XML, and CSV query and modification tool
 brew "dasel"
+# TIFF library and utilities
+brew "libtiff"
 # Secure runtime for JavaScript and TypeScript
 brew "deno"
+# OpenType text shaping engine
+brew "harfbuzz"
 # Static code analysis for Kotlin
 brew "detekt"
 # Pack, ship and run any application as a lightweight container
@@ -148,6 +165,8 @@ brew "jpeg-xl"
 brew "imagemagick-full"
 # Json incremental digger
 brew "jid"
+# New file format for still image compression
+brew "jpeg-xl"
 # Lightweight and flexible command-line JSON processor
 brew "jq"
 # Domain specific configuration language for defining JSON data
@@ -164,6 +183,8 @@ brew "kubeseal"
 brew "lazygit"
 # Graphical front-end for GCC's coverage testing tool (gcov)
 brew "lcov"
+# Image processing and image analysis library
+brew "leptonica"
 # Implementation of the file(1) command
 brew "libmagic"
 # SIXEL encoder/decoder implementation
@@ -180,6 +201,8 @@ brew "lua-language-server"
 brew "luarocks"
 # Text-based web browser
 brew "lynx"
+# Open-source, cross-platform JavaScript runtime environment
+brew "node"
 # CLI for Node.js style checker and lint tool for Markdown files
 brew "markdownlint-cli"
 # Language Server Protocol for Markdown
@@ -220,6 +243,8 @@ brew "nu"
 brew "nushell"
 # Create, run, and share large language models (LLMs)
 brew "ollama", restart_service: :changed
+# User-friendly CLI for OAuth2
+brew "oauth2c"
 # Simplified-traditional Chinese conversion tool
 brew "opencc"
 # 7-Zip (high compression file archiver) implementation
@@ -230,6 +255,8 @@ brew "pandoc"
 brew "peco"
 # Simple command-line snippet manager
 brew "pet"
+# Pins GitHub Actions to full hashes and versions
+brew "pinact"
 # Pinentry for GPG on Mac
 brew "pinentry-mac"
 # Python dependency management tool
@@ -282,10 +309,14 @@ brew "sqruff"
 brew "starship"
 # Manipulate and query tags on macOS files
 brew "tag"
+# General purpose fuzzy finder TUI
+brew "television"
 # Send macOS User Notifications from the command-line
 brew "terminal-notifier"
 # Terraform Language Server
 brew "terraform-ls"
+# OCR (Optical Character Recognition) engine
+brew "tesseract"
 # Terminal multiplexer
 brew "tmux"
 # Powerful time tracking tool for the command-line
@@ -308,22 +339,36 @@ brew "wordnet"
 brew "yamllint"
 # Blazing fast terminal file manager written in Rust, based on async I/O
 brew "yazi"
+# Feature-rich command-line audio/video downloader
+brew "yt-dlp"
 # Pluggable terminal workspace, with terminal multiplexer as the base feature
 brew "zellij"
 # Shell extension to navigate your filesystem faster
 brew "zoxide"
 # Software to interact with Atlassian Cloud from the terminal
 brew "atlassian/acli/acli"
+# Build, manage and test your Auth0 integrations from the command line
+brew "auth0/auth0-cli/auth0"
+# The best way of working with Protocol Buffers.
+brew "bufbuild/buf/buf"
 # Distributed SQL database
 brew "cockroachdb/tap/cockroach"
 # Terraform
 brew "hashicorp/tap/terraform"
 # Command-line interface for 1Password
 cask "1password-cli"
+# Terraform Language Server
+brew "hashicorp/tap/terraform-ls"
+# A fast and simple dashboard for Kubernetes written in Rust
+brew "kdash-rs/kdash/kdash"
+# Simple cli to manage Flutter SDK versions per project
+brew "leoafarias/fvm/fvm"
 # AeroSpace is an i3-like tiling window manager for macOS
 cask "nikitabobko/tap/aerospace"
 # Enable Windows-like alt-tab
 cask "alt-tab"
+# Utility that prevents the system from going to sleep
+cask "caffeine"
 # Desktop app for GPT-4 / GPT-3.5 (OpenAI API)
 cask "chatbox"
 # Web browser
@@ -337,11 +382,15 @@ cask "jetbrains-toolbox"
 cask "libreoffice"
 # Shows the next meeting in the menu bar
 cask "meetingbar"
+cask "powershell"
 # Plugin for AWS CLI to start and end sessions that connect to managed instances
 cask "session-manager-plugin"
 # Open-source code editor
 cask "visual-studio-code"
 # Menu bar toolkit with keep-awake, system monitor and volume mixer
 cask "vorssaint/tap/vorssaint", trusted: true
+cask "session-manager-plugin", args: { appdir: "/Applications" }
+# Command-line client for connecting to Snowflake
+cask "snowflake-snowsql"
 # GPU-accelerated cross-platform terminal emulator and multiplexer
 cask "wezterm@nightly"
