@@ -22,7 +22,10 @@
   "statusLine": {
     "type": "command",
     "command": {{ joinPath .chezmoi.homeDir ".config/claude/statusline_command.sh" | quote }},
-    "padding": 2
+    "padding": 2,
+    {{- /* the built-in "-- INSERT --" sits apart from the status line and has
+           no NORMAL counterpart; the script draws every vim mode instead */}}
+    "hideVimModeIndicator": true
   },
   "enabledPlugins": {
     "pyright-lsp@claude-plugins-official": true,
