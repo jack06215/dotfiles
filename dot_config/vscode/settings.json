@@ -1,93 +1,167 @@
 {
-  "ruby.lint": {
-    "reek": true,
-    "rubocop": false,
-    "ruby": true,
-    "fasterer": true,
-    "debride": true,
-    "ruby-lint": true
+  // ---------------------------------------------------------------- vim ----
+  // vscode-neovim runs the real nvim with ~/.config/nvim; LazyVim switches to
+  // its vscode extra there and config/keymaps/vscode.lua maps the leader keys
+  // onto VS Code commands. Keys outside the editor (explorer, lists, pickers,
+  // terminal) live in keybindings.json.
+  //
+  // Remote-WSL (the Windows host only opens VS Code from WSL): run the
+  // extension on the WSL side, so nvim is the Linux one with the WSL config
+  // and buffers are named by plain Linux paths instead of vscode-remote://
+  // URIs. "ui" stays as the fallback for remotes it is not installed on.
+  // useWSL only matters if it ever runs on the Windows UI side after all; the
+  // extension ignores it on macOS and when running in a remote.
+  "remote.extensionKind": {
+    "asvetliakov.vscode-neovim": ["workspace", "ui"]
   },
-  "ruby.intellisense": "rubyLocate",
-  "ruby.codeCompletion": "rcodetools",
-  "ruby.format": "rubocop",
-  "ruby.useLanguageServer": true,
-  "ruby.locate": {
-    "exclude": "{**/@(test|spec|tmp|.*),**/@(test|spec|tmp|.*)/**,**/*_spec.rb}",
-    "include": "**/*.rb"
+  "vscode-neovim.useWSL": true,
+  "vscode-neovim.neovimExecutablePaths.linux": "/home/linuxbrew/.linuxbrew/bin/nvim",
+  "extensions.experimental.affinity": {
+    "asvetliakov.vscode-neovim": 1
   },
-  "terminal.integrated.fontSize": 16,
-  "terminal.integrated.fontFamily": "PlemolJP Console NF",
-  "editor.fontSize": 20,
-  "editor.lineHeight": 31,
-  "editor.fontFamily": "PlemolJP Console NF",
-  "editor.fontLigatures": true,
-  "C_Cpp.updateChannel": "Insiders",
-  "explorer.confirmDelete": false,
-  "remote.SSH.remotePlatform": {
-    "192.168.0.102": "linux",
-    "52.243.60.27": "linux",
-    "amaranth-spider-w7i4igxw": "linux",
-    "PoliceProject": "linux",
-    "192.168.0.100": "linux",
-    "JetsonNano": "linux",
-    "192.168.212.105": "linux"
+
+  // ----------------------------------------------------- editor (nvim parity) ----
+  // lua/config/options.lua, LazyVim's defaults and after/ftplugin: hybrid
+  // relative numbers, scrolloff 4, wrap on, 4-space indent with 2 for the
+  // web/markup files and lua, inlay hints off (plugins/ui), smooth scrolling
+  // (snacks.scroll), smartcase search.
+  "editor.lineNumbers": "relative",
+  "editor.cursorSurroundingLines": 4,
+  "editor.wordWrap": "on",
+  "editor.tabSize": 4,
+  "editor.renderLineHighlight": "all",
+  "editor.inlayHints.enabled": "off",
+  "editor.smoothScrolling": true,
+  "search.smartCase": true,
+  "[css]": { "editor.tabSize": 2 },
+  "[html]": { "editor.tabSize": 2 },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
   },
-  "editor.largeFileOptimizations": false,
-  "workbench.editorAssociations": {
-    "*.ipynb": "jupyter-notebook"
-  },
-  "git.autofetch": true,
-  "[ruby]": {
-    "editor.defaultFormatter": "misogi.ruby-rubocop"
-  },
-  "ruby.rubocop.onSave": false,
-  "ruby.rubocop.configFilePath": "C:\\External\\jack0\\Github workstation\\ruby_exercise\\rubocop.yml",
+  "[jsonc]": { "editor.tabSize": 2 },
   "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.tabSize": 2
   },
-  "python.defaultInterpreterPath": "D:\\jack0\\Anaconda3\\python.exe",
-  "python.terminal.executeInFileDir": true,
-  "[dart]": {
-    "editor.formatOnSave": true,
-    "editor.formatOnType": true,
-    "editor.rulers": [
-      80
-    ],
-    "editor.selectionHighlight": false,
-    "editor.suggest.snippetsPreventQuickSuggestions": false,
-    "editor.suggestSelection": "first",
-    "editor.tabCompletion": "onlySnippets",
-    "editor.wordBasedSuggestions": "off"
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.tabSize": 2
   },
   "[typescript]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features"
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.tabSize": 2
   },
   "[typescriptreact]": {
-    "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+    "editor.defaultFormatter": "vscode.typescript-language-features",
+    "editor.tabSize": 2
   },
-  "[yaml]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  // conform has no markdown formatter, so nvim leaves prose alone on save
+  "[markdown]": {
+    "editor.formatOnSave": false,
+    "editor.tabSize": 2
   },
+  // `zg` in nvim adds to this word list; share it with Code Spell Checker
+  "cSpell.customDictionaries": {
+    "nvim-spellfile": {
+      "name": "nvim-spellfile",
+      "path": "~/.config/nvim/spell/en.utf-8.add",
+      "addWords": false,
+      "scope": "user"
+    }
+  },
+
+  // ------------------------------------------- formatters and linters (conform, nvim-lint) ----
+  // python: ruff_fix + ruff_organize_imports + ruff_format, linted by ruff
+  // and mypy (no flake8).
   "[python]": {
-    "editor.formatOnType": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
     "editor.codeActionsOnSave": {
-      "source.organizeImports": "explicit"
-    },
-    "editor.defaultFormatter": "ms-python.black-formatter"
+      "source.fixAll.ruff": "explicit",
+      "source.organizeImports.ruff": "explicit"
+    }
   },
-  "[json]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "flake8.enabled": false,
+  "[cpp]": { "editor.defaultFormatter": "xaver.clang-format" },
+  "[starlark]": { "editor.defaultFormatter": "BazelBuild.vscode-bazel" },
+  "[lua]": {
+    "editor.defaultFormatter": "JohnnyMorganz.stylua",
+    "editor.tabSize": 2
   },
-  "[scss]": {
-    "editor.defaultFormatter": "sibiraj-s.vscode-scss-formatter"
+  // conform's shfmt: -i 2 -ci -sr -bn
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format",
+    "editor.tabSize": 2
   },
-  "jupyter.askForKernelRestart": false,
-  "notebook.cellToolbarLocation": {
-    "default": "right",
-    "jupyter-notebook": "left"
+  "shellformat.flag": "-i 2 -ci -sr -bn",
+  // The extension's own defaults (csh/fish/zsh...), plus the chezmoi source
+  // names files.associations maps to shell below, and templates, whose
+  // {{ }} is not shell at all.
+  "shellcheck.ignorePatterns": {
+    "**/*.csh": true,
+    "**/*.cshrc": true,
+    "**/*.fish": true,
+    "**/*.login": true,
+    "**/*.logout": true,
+    "**/*.tcsh": true,
+    "**/*.tcshrc": true,
+    "**/*.xonshrc": true,
+    "**/*.xsh": true,
+    "**/*.zsh": true,
+    "**/*.zshrc": true,
+    "**/zshrc": true,
+    "**/*.zprofile": true,
+    "**/zprofile": true,
+    "**/*.zlogin": true,
+    "**/zlogin": true,
+    "**/*.zlogout": true,
+    "**/zlogout": true,
+    "**/*.zshenv": true,
+    "**/zshenv": true,
+    "**/*.zsh-theme": true,
+    "**/dot_zsh*": true,
+    "**/dot_zprofile*": true,
+    "**/dot_zlogin*": true,
+    "**/*.tmpl": true
   },
-  "notebook.lineNumbers": "on",
-  "workbench.colorTheme": "One Dark Pro",
+
+  // ------------------------------------------------ filetypes (config/general.lua) ----
+  "files.associations": {
+    "*.xml": "xml",
+    // chezmoi source files named after their target dotfile
+    "dot_zshrc": "shellscript",
+    "dot_zshenv": "shellscript",
+    "dot_zprofile": "shellscript",
+    "dot_zlogin": "shellscript",
+    "dot_bashrc": "shellscript",
+    "dot_bash_profile": "shellscript",
+    // chezmoi templates, by the name inside the .tmpl
+    "*.sh.tmpl": "shellscript",
+    "*.zsh.tmpl": "shellscript",
+    "dot_zshenv.tmpl": "shellscript",
+    "*.ps1.tmpl": "powershell",
+    "*.toml.tmpl": "toml",
+    "*.json.tmpl": "json",
+    "*.yaml.tmpl": "yaml",
+    "*.yml.tmpl": "yaml",
+    "*.lua.tmpl": "lua",
+    "*.js.tmpl": "javascript",
+    // navi cheatsheets: shell commands under `%` / `#` headers
+    "*.cheat": "shellscript",
+    "*.cheat.tmpl": "shellscript",
+    "*.jinja": "jinja",
+    "*.jinja2": "jinja",
+    "*.j2": "jinja",
+    "*.sql.jinja": "jinja-sql",
+    "*.mdx": "markdown",
+    "README": "markdown"
+  },
+
+  // ----------------------------------------------------------------- UI ----
+  // gruvbox.nvim (plugins/gruvbox); <leader>ub flips between these two
+  "workbench.colorTheme": "Gruvbox Dark Medium",
+  "workbench.preferredDarkColorTheme": "Gruvbox Dark Medium",
+  "workbench.preferredLightColorTheme": "Gruvbox Light Medium",
   "workbench.iconTheme": "material-icon-theme",
   "workbench.activityBar.location": "top",
   "workbench.editor.empty.hint": "hidden",
@@ -97,135 +171,20 @@
   "window.title": " ",
   "window.density.editorTabHeight": "compact",
   "window.systemColorTheme": "dark",
+  "terminal.integrated.fontSize": 16,
+  "terminal.integrated.fontFamily": "PlemolJP Console NF",
+  "editor.fontSize": 20,
+  "editor.lineHeight": 31,
+  "editor.fontFamily": "PlemolJP Console NF",
+  "editor.fontLigatures": true,
   "editor.scrollbar.verticalScrollbarSize": 12,
   "editor.cursorBlinking": "solid",
   "editor.minimap.enabled": false,
   "editor.linkedEditing": true,
-  "editor.tabSize": 2,
   "editor.accessibilitySupport": "off",
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "files.autoSave": "onWindowChange",
-  "files.associations": {
-    "*.xml": "xml"
-  },
-  "terminal.integrated.defaultProfile.windows": "PowerShell 7",
-  "terminal.integrated.defaultProfile.osx": "zsh",
-  "terminal.integrated.profiles.windows": {
-    "PowerShell 7": {
-      "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
-      "icon": "terminal-powershell"
-    },
-    "Windows PowerShell": {
-      "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
-      "icon": "terminal-powershell"
-    },
-    "Command Prompt": {
-      "path": "C:\\Windows\\System32\\cmd.exe",
-      "icon": "terminal-cmd"
-    }
-  },
-  "terminal.integrated.env.windows": {
-    "PATH": "${env:PATH};${workspaceFolder}\\node_modules\\.bin;${env:PNPM_HOME}"
-  },
-  "terminal.integrated.commandsToSkipShell": [
-    "workbench.action.closePanel"
-  ],
-  "terminal.integrated.scrollback": 5000,
-  "terminal.integrated.enableMultiLinePasteWarning": "never",
-  "telemetry.telemetryLevel": "off",
-  "telemetry.feedback.enabled": false,
-  "security.workspace.trust.enabled": false,
-  "security.workspace.trust.banner": "never",
-  "security.workspace.trust.startupPrompt": "never",
-  "security.workspace.trust.untrustedFiles": "open",
-  "git.enableSmartCommit": true,
-  "git.confirmSync": false,
-  "git.autoStash": true,
-  "git.openRepositoryInParentFolders": "always",
-  "gitlens.showWhatsNewAfterUpgrades": false,
-  "gitlens.defaultGravatarsStyle": "retro",
-  "gitlens.plusFeatures.enabled": false,
-  "gitlens.codeLens.enabled": false,
-  "gitlens.ai.model": "vscode",
-  "gitlens.ai.vscode.model": "copilot:claude-opus-4.6",
-  "extensions.autoCheckUpdates": false,
-  "extensions.ignoreRecommendations": true,
-  "extensions.experimental.affinity": {
-    "vscodevim.vim": 1,
-    "asvetliakov.vscode-neovim": 1
-  },
-  "settingsSync.keybindingsPerPlatform": false,
-  "update.enableWindowsBackgroundUpdates": false,
-  "update.mode": "manual",
-  "c-cpp-compile-run.cpp-compiler": "C:\\tools\\mingw64\\bin\\g++.exe",
-  "c-cpp-compile-run.cpp-flags": "-Wall -Wextra -O2",
-  "c-cpp-compile-run.c-compiler": "C:\\tools\\mingw64\\bin\\gcc.exe",
-  "cmake.configureOnOpen": false,
-  "kotlin.java.home": "/usr/lib/jvm/java-17-openjdk-amd64/bin/java",
-  "kotlin.languageServer.enabled": false,
-  "kotlin.debugAdapter.enabled": false,
-  "go.toolsManagement.autoUpdate": true,
-  "[go.mod]": {
-    "editor.defaultFormatter": "golang.go"
-  },
-  "[go]": {
-    "editor.defaultFormatter": "golang.go"
-  },
-  "gopls": {
-    "ui.semanticTokens": true
-  },
-  "supermaven.enable": {
-    "go": false,
-    "*": true
-  },
-  "supermaven.enableJumpSuggestions": false,
-  "tailwindCSS.experimental.classRegex": [
-    [
-      "cva\\(([^)]*)\\)",
-      "[\"'`]([^\"'`]*).*?[\"'`]"
-    ],
-    [
-      "cx\\(([^)]*)\\)",
-      "(?:'|\"|`)([^']*)(?:'|\"|`)"
-    ]
-  ],
-  "github.copilot.enable": {
-    "*": true,
-    "terraform-vars": false,
-    "properties": false
-  },
-  "chat.agent.enabled": false,
-  "vim.normalModeKeyBindingsNonRecursive": [
-    {
-      "before": [
-        "<Esc>"
-      ],
-      "when": [
-        "editorFocus"
-      ],
-      "commands": [
-        ":nohl"
-      ],
-      "silent": true
-    }
-  ],
-  "vim.handleKeys": {
-    "<C-a>": false,
-    "<C-f>": false
-  },
-  "vim.incsearch": true,
-  "vim.searchHighlightColor": "#f6ff0080",
-  "vim.searchHighlightTextColor": "#fff",
-  "vim.useSystemClipboard": true,
-  "vim.useCtrlKeys": true,
-  "vim.hlsearch": true,
-  "vim.highlightedyank.enable": true,
-  "vim.smartRelativeLine": true,
-  "vim.surround": true,
-  "vim.easymotion": true,
-  "oneDarkPro.bold": true,
-  "oneDarkPro.vivid": true,
+  "editor.largeFileOptimizations": false,
   "breadcrumbs.symbolPath": "off",
   "breadcrumbs.icons": false,
   "zenMode.hideStatusBar": false,
@@ -286,5 +245,117 @@
         }
       }
     ]
-  }
+  },
+
+  // -------------------------------------------------------------- files ----
+  "explorer.confirmDelete": false,
+  "files.autoSave": "onWindowChange",
+  "workbench.editorAssociations": {
+    "*.ipynb": "jupyter-notebook"
+  },
+
+  // ----------------------------------------------------------- terminal ----
+  "terminal.integrated.defaultProfile.windows": "PowerShell 7",
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.profiles.windows": {
+    "PowerShell 7": {
+      "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
+      "icon": "terminal-powershell"
+    },
+    "Windows PowerShell": {
+      "path": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "icon": "terminal-powershell"
+    },
+    "Command Prompt": {
+      "path": "C:\\Windows\\System32\\cmd.exe",
+      "icon": "terminal-cmd"
+    }
+  },
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:PATH};${workspaceFolder}\\node_modules\\.bin;${env:PNPM_HOME}"
+  },
+  // Ctrl-/ toggles the terminal from inside it too (LazyVim's <c-/>)
+  "terminal.integrated.commandsToSkipShell": [
+    "workbench.action.closePanel",
+    "workbench.action.terminal.toggleTerminal"
+  ],
+  "terminal.integrated.scrollback": 5000,
+  "terminal.integrated.enableMultiLinePasteWarning": "never",
+
+  // ---------------------------------------------------------------- git ----
+  "git.autofetch": true,
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autoStash": true,
+  "git.openRepositoryInParentFolders": "always",
+  "gitlens.showWhatsNewAfterUpgrades": false,
+  "gitlens.defaultGravatarsStyle": "retro",
+  "gitlens.plusFeatures.enabled": false,
+  "gitlens.codeLens.enabled": false,
+  "gitlens.ai.model": "vscode",
+  "gitlens.ai.vscode.model": "copilot:claude-opus-4.6",
+
+  // ---------------------------------------------------------- languages ----
+  "C_Cpp.updateChannel": "Insiders",
+  "cmake.configureOnOpen": false,
+  "python.terminal.executeInFileDir": true,
+  "jupyter.askForKernelRestart": false,
+  "notebook.cellToolbarLocation": {
+    "default": "right",
+    "jupyter-notebook": "left"
+  },
+  "notebook.lineNumbers": "on",
+  "[dart]": {
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.rulers": [80],
+    "editor.selectionHighlight": false,
+    "editor.suggest.snippetsPreventQuickSuggestions": false,
+    "editor.suggestSelection": "first",
+    "editor.tabCompletion": "onlySnippets",
+    "editor.wordBasedSuggestions": "off"
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[scss]": {
+    "editor.defaultFormatter": "sibiraj-s.vscode-scss-formatter"
+  },
+  "kotlin.languageServer.enabled": false,
+  "kotlin.debugAdapter.enabled": false,
+  "go.toolsManagement.autoUpdate": true,
+  "[go.mod]": {
+    "editor.defaultFormatter": "golang.go"
+  },
+  "[go]": {
+    "editor.defaultFormatter": "golang.go"
+  },
+  "gopls": {
+    "ui.semanticTokens": true
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["cva\\(([^)]*)\\)", "[\"'`]([^\"'`]*).*?[\"'`]"],
+    ["cx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+
+  // ----------------------------------------------------------------- AI ----
+  "github.copilot.enable": {
+    "*": true,
+    "terraform-vars": false,
+    "properties": false
+  },
+  "chat.agent.enabled": false,
+
+  // ------------------------------------------------------ app behaviour ----
+  "telemetry.telemetryLevel": "off",
+  "telemetry.feedback.enabled": false,
+  "security.workspace.trust.enabled": false,
+  "security.workspace.trust.banner": "never",
+  "security.workspace.trust.startupPrompt": "never",
+  "security.workspace.trust.untrustedFiles": "open",
+  "extensions.autoCheckUpdates": false,
+  "extensions.ignoreRecommendations": true,
+  "settingsSync.keybindingsPerPlatform": false,
+  "update.enableWindowsBackgroundUpdates": false,
+  "update.mode": "manual"
 }

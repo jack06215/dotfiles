@@ -1,79 +1,285 @@
-// Place your key bindings in this file to override the defaults
+// Keys for everywhere nvim cannot hear: the explorer, lists, pickers, the
+// terminal, and the few editor keys vscode-neovim leaves to VS Code.
+//
+// In the editor, vscode-neovim hands keys to nvim, and the leader maps live in
+// ~/.config/nvim/lua/config/keymaps/vscode.lua. So nothing here may start a
+// chord with `space` while the editor has focus: VS Code would swallow the
+// space waiting for the rest of the chord, and nvim would never see <leader>.
+//
+// neovim.mode (normal / insert / visual / cmdline / replace) and neovim.init
+// are vscode-neovim's context keys.
 [
-  // Navigation
+  // ---------------------------------------------------------------- panes ----
+  // LazyVim's <C-h/j/k/l>. In the editor nvim already handles them (LazyVim
+  // remaps them onto vscode-neovim's <C-w>h...); these cover the sidebar,
+  // panels, the terminal and non-text editors. The terminal matches LazyVim's
+  // snacks terminal split, whose term_nav moves windows too, so the shell
+  // never sees ^H ^J ^K ^L; the navigate commands are on VS Code's default
+  // terminal.integrated.commandsToSkipShell, so no entry is needed there.
+  // Not in a picker, where Ctrl-j/k move the selection. Outside macOS, Ctrl-k
+  // stays VS Code's chord prefix (Ctrl-k Ctrl-s and friends).
   {
-    "key": "ctrl-h",
-    "command": "workbench.action.navigateLeft"
+    "key": "ctrl+h",
+    "command": "workbench.action.navigateLeft",
+    "when": "!editorTextFocus && !inQuickOpen"
   },
   {
-    "key": "ctrl-l",
-    "command": "workbench.action.navigateRight"
+    "key": "ctrl+j",
+    "command": "workbench.action.navigateDown",
+    "when": "!editorTextFocus && !inQuickOpen"
   },
   {
-    "key": "ctrl-k",
-    "command": "workbench.action.navigateUp"
+    "key": "ctrl+k",
+    "command": "workbench.action.navigateUp",
+    "when": "isMac && !editorTextFocus && !inQuickOpen"
   },
   {
-    "key": "ctrl-j",
-    "command": "workbench.action.navigateDown"
+    "key": "ctrl+l",
+    "command": "workbench.action.navigateRight",
+    "when": "!editorTextFocus && !inQuickOpen"
   },
-  {
-    "key": "tab",
-    "command": "workbench.action.nextEditorInGroup",
-    "when": "(vim.mode == 'Normal' || vim.mode == 'Visual') && (editorTextFocus || !inputFocus)"
-  },
-  {
-    "key": "shift-tab",
-    "command": "workbench.action.previousEditorInGroup",
-    "when": "(vim.mode == 'Normal' || vim.mode == 'Visual') && (editorTextFocus || !inputFocus)"
-  },
-  {
-    "key": "space t", // Close o[T]her editors
-    "command": "workbench.action.closeOtherEditors",
-    "when": "(vim.mode == 'Normal' || vim.mode == 'Visual') && (editorTextFocus || !inputFocus)"
-  },
-  // File Tree START
-  {
-    "key": "space e",
-    "command": "runCommands",
-    "args": {
-      "commands": [
-        "workbench.action.toggleSidebarVisibility",
-        "workbench.files.action.focusFilesExplorer"
-      ]
-    },
-    "when": "vim.mode == 'Normal' && (editorTextFocus || !inputFocus) && !sideBarFocus"
-  },
+
+  // -------------------------------------------------------- leader outside the editor ----
+  // The same leader keys as nvim, for when a list (explorer, source control,
+  // search results, problems...) has focus. listFocus rather than "not the
+  // editor": a webview's text box (chat panels, PR comments) never reports
+  // inputFocus, and a space chord there would eat what you type.
   {
     "key": "space e",
     "command": "runCommands",
     "args": {
-      "commands": [
-        "workbench.action.toggleSidebarVisibility",
-        "workbench.action.focusActiveEditorGroup"
-      ]
+      "commands": ["workbench.action.closeSidebar", "workbench.action.focusActiveEditorGroup"]
     },
-    "when": "sideBarFocus && !inputFocus"
+    "when": "filesExplorerFocus && !inputFocus"
   },
   {
     "key": "space e",
-    "when": "vim.mode == 'Normal' && editorTextFocus && foldersViewVisible",
-    "command": "workbench.action.toggleSidebarVisibility"
+    "command": "workbench.view.explorer",
+    "when": "listFocus && !filesExplorerFocus && !inputFocus && !inQuickOpen"
   },
+  {
+    "key": "space f f",
+    "command": "workbench.action.quickOpen",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space f g",
+    "command": "workbench.action.quickTextSearch",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space f b",
+    "command": "workbench.action.showAllEditorsByMostRecentlyUsed",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space ,",
+    "command": "workbench.action.showAllEditorsByMostRecentlyUsed",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space /",
+    "command": "workbench.action.findInFiles",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space s g",
+    "command": "workbench.action.findInFiles",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space g g",
+    "command": "workbench.view.scm",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space x x",
+    "command": "workbench.actions.view.toggleProblems",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space h",
+    "command": "vscode-harpoon.editEditors",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space shift+h",
+    "command": "vscode-harpoon.editorQuickPick",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space 1",
+    "command": "vscode-harpoon.gotoEditor1",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space 2",
+    "command": "vscode-harpoon.gotoEditor2",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space 3",
+    "command": "vscode-harpoon.gotoEditor3",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space 4",
+    "command": "vscode-harpoon.gotoEditor4",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "space 5",
+    "command": "vscode-harpoon.gotoEditor5",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+
+  // ---------------------------------------------------------------- lists ----
+  // Moving around trees and lists the way nvim buffers do (neo-tree, trouble,
+  // neogit, the quickfix window).
+  {
+    "key": "j",
+    "command": "list.focusDown",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "k",
+    "command": "list.focusUp",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "h",
+    "command": "list.collapse",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "l",
+    "command": "list.expand",
+    "when": "listFocus && !inputFocus && !inQuickOpen && !filesExplorerFocus"
+  },
+  {
+    "key": "g g",
+    "command": "list.focusFirst",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "shift+g",
+    "command": "list.focusLast",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "ctrl+d",
+    "command": "list.focusPageDown",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "ctrl+u",
+    "command": "list.focusPageUp",
+    "when": "listFocus && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "/",
+    "command": "list.find",
+    "when": "listFocus && listSupportsFind && !inputFocus && !inQuickOpen"
+  },
+  {
+    "key": "q",
+    "command": "runCommands",
+    "args": {
+      "commands": ["workbench.action.closeSidebar", "workbench.action.focusActiveEditorGroup"]
+    },
+    "when": "listFocus && sideBarFocus && !inputFocus"
+  },
+  {
+    "key": "q",
+    "command": "workbench.action.closePanel",
+    "when": "listFocus && panelFocus && !inputFocus"
+  },
+
+  // ------------------------------------------------------------- explorer ----
+  // neo-tree's keys (window.mappings in plugins/nvim-neo-tree, plus the
+  // LazyVim neo-tree extra's l/h/Y/O/P).
+  {
+    "key": "enter",
+    "command": "explorer.openAndPassFocus",
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsFolder && !inputFocus"
+  },
+  {
+    "key": "enter",
+    "command": "list.toggleExpand",
+    "when": "filesExplorerFocus && foldersViewVisible && explorerResourceIsFolder && !inputFocus"
+  },
+  {
+    "key": "l",
+    "command": "explorer.openAndPassFocus",
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsFolder && !inputFocus"
+  },
+  {
+    "key": "l",
+    "command": "list.expand",
+    "when": "filesExplorerFocus && foldersViewVisible && explorerResourceIsFolder && !inputFocus"
+  },
+  {
+    "key": "backspace",
+    "command": "list.focusParent",
+    "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+  },
+  {
+    "key": "shift+c",
+    "command": "list.collapse",
+    "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+  },
+  {
+    "key": "z",
+    "command": "workbench.files.action.collapseExplorerFolders",
+    "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+  },
+  {
+    "key": "shift+r",
+    "command": "workbench.files.action.refreshFilesExplorer",
+    "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
+  },
+  {
+    "key": "a",
+    "command": "explorer.newFile",
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceReadonly && !inputFocus"
+  },
+  {
+    "key": "shift+a",
+    "command": "explorer.newFolder",
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceReadonly && !inputFocus"
+  },
+  // To the trash, not moveFileToTrash's permanent sibling deleteFile: with
+  // explorer.confirmDelete off there is no prompt to catch a stray `d`.
+  {
+    "key": "d",
+    "command": "moveFileToTrash",
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+  },
+  // m (move) and b (rename basename) too: VS Code's rename box takes a path
   {
     "key": "r",
     "command": "renameFile",
     "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
   },
   {
-    "key": "c",
-    "command": "filesExplorer.copy",
+    "key": "m",
+    "command": "renameFile",
     "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
   },
   {
-    "key": "p",
-    "command": "filesExplorer.paste",
+    "key": "b",
+    "command": "renameFile",
     "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+  },
+  {
+    "key": "c",
+    "command": "filesExplorer.copy",
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !inputFocus"
+  },
+  {
+    "key": "y",
+    "command": "filesExplorer.copy",
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !inputFocus"
   },
   {
     "key": "x",
@@ -81,50 +287,118 @@
     "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
   },
   {
-    "key": "d",
-    "command": "deleteFile",
-    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    "key": "p",
+    "command": "filesExplorer.paste",
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceReadonly && !inputFocus"
   },
+  // plugins/nvim-neo-tree's copy_path_to_clipboard: the absolute path
   {
-    "key": "a",
-    "command": "explorer.newFile",
-    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
-  },
-  {
-    "key": "shift-a",
-    "command": "explorer.newFolder",
-    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    "key": "shift+y",
+    "command": "copyFilePath",
+    "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
   },
   {
     "key": "s",
     "command": "explorer.openToSide",
-    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus"
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsFolder && !inputFocus"
   },
   {
-    "key": "shift-s",
+    "key": "shift+s",
     "command": "runCommands",
-    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceReadonly && !inputFocus",
     "args": {
       "commands": [
         "workbench.action.splitEditorDown",
         "explorer.openAndPassFocus",
         "workbench.action.closeOtherEditors"
       ]
-    }
+    },
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsFolder && !inputFocus"
   },
   {
-    "key": "enter",
-    "command": "explorer.openAndPassFocus",
-    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && !explorerResourceIsFolder && !inputFocus"
+    "key": "shift+p",
+    "command": "filesExplorer.openFilePreserveFocus",
+    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsFolder && !inputFocus"
   },
   {
-    "key": "enter",
-    "command": "list.toggleExpand",
-    "when": "filesExplorerFocus && foldersViewVisible && !explorerResourceIsRoot && explorerResourceIsFolder && !inputFocus"
+    "key": "shift+o",
+    "command": "revealFileInOS",
+    "when": "filesExplorerFocus && foldersViewVisible && !inputFocus"
   },
-  // File Tree END
 
-  // Terminal START
+  // -------------------------------------------------------------- pickers ----
+  // snacks' picker moves with Ctrl-j/k as well; vscode-neovim already gives
+  // quick open Ctrl-n/p.
+  {
+    "key": "ctrl+j",
+    "command": "workbench.action.quickOpenSelectNext",
+    "when": "inQuickOpen && neovim.mode != cmdline"
+  },
+  {
+    "key": "ctrl+k",
+    "command": "workbench.action.quickOpenSelectPrevious",
+    "when": "inQuickOpen && neovim.mode != cmdline"
+  },
+
+  // ----------------------------------------------------------- completion ----
+  // blink.cmp with LazyVim's "enter" preset: Enter or Ctrl-y accepts, Ctrl-n/p
+  // (vscode-neovim) or the arrows move, Ctrl-e closes, and Tab is left to
+  // snippet jumps and Copilot instead of accepting the menu.
+  {
+    "key": "tab",
+    "command": "-acceptSelectedSuggestion",
+    "when": "suggestWidgetHasFocusedSuggestion && suggestWidgetVisible && textInputFocus"
+  },
+  {
+    "key": "ctrl+y",
+    "command": "acceptSelectedSuggestion",
+    "when": "suggestWidgetVisible && textInputFocus"
+  },
+  {
+    "key": "ctrl+e",
+    "command": "hideSuggestWidget",
+    "when": "suggestWidgetVisible && textInputFocus"
+  },
+  // LazyVim's insert-mode <c-k>. macOS only: elsewhere Ctrl-k is the chord prefix.
+  {
+    "key": "ctrl+k",
+    "command": "editor.action.triggerParameterHints",
+    "when": "isMac && editorTextFocus && neovim.mode == 'insert'"
+  },
+
+  // ----------------------------------------------- editor keys nvim never gets ----
+  // vscode-neovim leaves Alt and Ctrl-s to VS Code, so LazyVim's <A-j>/<A-k>
+  // (move lines, any mode) and <C-s> (save; leaves insert mode) live here.
+  {
+    "key": "alt+j",
+    "command": "editor.action.moveLinesDownAction",
+    "when": "editorTextFocus && !editorReadonly"
+  },
+  {
+    "key": "alt+k",
+    "command": "editor.action.moveLinesUpAction",
+    "when": "editorTextFocus && !editorReadonly"
+  },
+  {
+    "key": "ctrl+s",
+    "command": "runCommands",
+    "args": {
+      "commands": ["workbench.action.files.save", "vscode-neovim.escape"]
+    },
+    "when": "editorTextFocus && neovim.mode == 'insert'"
+  },
+  {
+    "key": "ctrl+s",
+    "command": "workbench.action.files.save",
+    "when": "editorTextFocus && neovim.mode != 'insert'"
+  },
+
+  // ------------------------------------------------------------- terminal ----
+  // <c-/> toggles it from inside as well as from the editor (nvim maps that).
+  {
+    "key": "ctrl+/",
+    "command": "workbench.action.terminal.toggleTerminal",
+    "when": "terminalFocus"
+  },
   {
     "key": "ctrl+shift+j",
     "command": "workbench.action.togglePanel"
@@ -148,230 +422,5 @@
     "key": "ctrl+shift+q",
     "command": "workbench.action.terminal.kill",
     "when": "terminalFocus"
-  },
-  // Terminal END
-
-  // Closes markers (error, warning, info)
-  {
-    "key": "escape",
-    "command": "closeMarkersNavigation",
-    "when": "editorFocus && markersNavigationVisible"
-  },
-
-  // Suggestions Navigation without arrow keys START (cmp)
-  {
-    "key": "tab",
-    "command": "selectNextSuggestion",
-    "when": "suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion"
-  },
-  {
-    "key": "down",
-    "command": "-selectNextSuggestion",
-    "when": "suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion"
-  },
-  {
-    "key": "tab",
-    "command": "-acceptSelectedSuggestion",
-    "when": "suggestWidgetHasFocusedSuggestion && suggestWidgetVisible && textInputFocus"
-  },
-  {
-    "key": "shift+tab",
-    "command": "selectPrevSuggestion",
-    "when": "suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion"
-  },
-  {
-    "key": "up",
-    "command": "-selectPrevSuggestion",
-    "when": "suggestWidgetMultipleSuggestions && suggestWidgetVisible && textInputFocus || suggestWidgetVisible && textInputFocus && !suggestWidgetHasFocusedSuggestion"
-  },
-  // Suggestions Navigation without arrow keys END (cmp)
-
-  // Quick picker navigation START
-  {
-    "key": "tab",
-    "command": "quickInput.next",
-    "when": "inQuickInput && quickInputType == 'quickPick'"
-  },
-  {
-    /** 
-        Doesn't work at the moment.
-        Accessibility keybinds with "shift" when quickInput is open causes interference with keybinds.
-        Will try to create PR to vscode if not resolved soon. https://github.com/microsoft/vscode/issues/180862
-      */
-    "key": "shift+tab",
-    "command": "quickInput.previous",
-    "when": "inQuickInput && quickInputType == 'quickPick'"
-  },
-  // Quick picker navigation END
-
-  // Coding START
-  {
-    "key": "space w", // [W]rite current file,
-    "command": "workbench.action.files.save",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "space g g", // [G] [G]it
-    "command": "runCommands",
-    "args": {
-      "commands": ["workbench.view.scm", "workbench.scm.focus"]
-    },
-    "when": "vim.mode == 'Normal' && (editorTextFocus || !inputFocus)"
-  },
-  {
-    "key": "space q", // [Q]uit & save
-    "command": "runCommands",
-    "args": {
-      "commands": [
-        "workbench.action.files.save",
-        "workbench.action.closeActiveEditor"
-      ]
-    },
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "shift-j",
-    "command": "editor.action.moveLinesDownAction",
-    "when": "vim.mode == 'VisualLine' && editorTextFocus"
-  },
-  {
-    "key": "shift-k",
-    "command": "editor.action.moveLinesUpAction",
-    "when": "vim.mode == 'VisualLine' && editorTextFocus"
-  },
-  {
-    "key": "space c a", // [C]ode [A]ction
-    "command": "editor.action.codeAction",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "space r n", // [R]e[n]ame
-    "command": "editor.action.rename",
-    "when": "vim.mode == 'Normal' && editorHasRenameProvider && editorTextFocus && !editorReadonly"
-  },
-  {
-    "key": "space g s", // [G]o to [S]ymbol
-    "command": "workbench.action.gotoSymbol",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "space f f",
-    "command": "workbench.action.quickOpen",
-    "when": "vim.mode == 'Normal' && (editorTextFocus || !inputFocus)"
-  },
-  {
-    "key": "space g d", // [G]o to [D]efinition
-    "command": "editor.action.revealDefinition",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "space g r", // [G]o to [R]eferences
-    "command": "editor.action.goToReferences",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "space g i", // [G]o to [I]mplementation
-    "command": "editor.action.goToImplementation",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "[ d",
-    "command": "editor.action.marker.prev",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "] d",
-    "command": "editor.action.marker.next",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "space s", // [S]plit [S]ide
-    "command": "workbench.action.splitEditorRight",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "space v", // Split [V]ertically
-    "command": "workbench.action.splitEditorDown",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "shift-k",
-    "command": "editor.action.showHover",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "escape",
-    "command": "extension.vim_escape",
-    "when": "editorTextFocus && !inDebugRepl && suggestWidgetVisible"
-  },
-  // Coding END
-
-  // HARPOON (vscode-harpoon) START
-  {
-    "key": "space a", // [A]dd harpoon
-    "command": "vscode-harpoon.addEditor",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    // Add easymotion keybinds
-    "key": "space space f",
-    "command": "easymotion-jump-to-anywhere",
-    "when": "vim.mode == 'Normal' && editorTextFocus"
-  },
-  {
-    "key": "space h", // Open [H]arpoon file
-    "command": "vscode-harpoon.editEditors",
-    "when": "vim.mode == 'Normal' && (editorTextFocus || !inputFocus)"
-  },
-  {
-    "key": "space p",
-    "command": "vscode-harpoon.editorQuickPick",
-    "when": "vim.mode == 'Normal' && (editorTextFocus || !inputFocus)"
-  },
-  {
-    "key": "space 1",
-    "command": "vscode-harpoon.gotoEditor1",
-    "when": "vim.mode == 'Normal' && (editorTextFocus || !inputFocus)"
-  },
-  {
-    "key": "space 2",
-    "command": "vscode-harpoon.gotoEditor2",
-    "when": "vim.mode == 'Normal' && (editorTextFocus || !inputFocus)"
-  },
-  {
-    "key": "space 3",
-    "command": "vscode-harpoon.gotoEditor3",
-    "when": "vim.mode == 'Normal' && (editorTextFocus || !inputFocus)"
-  },
-  {
-    "key": "space 4",
-    "command": "vscode-harpoon.gotoEditor4",
-    "when": "vim.mode == 'Normal' && (editorTextFocus || !inputFocus)"
-  },
-  {
-    "key": "space 5",
-    "command": "vscode-harpoon.gotoEditor5",
-    "when": "vim.mode == 'Normal' && (editorTextFocus || !inputFocus)"
-  },
-  // HARPOON END
-  {
-    "key": "tab",
-    "command": "selectNextCodeAction",
-    "when": "codeActionMenuVisible"
-  },
-  {
-    "key": "down",
-    "command": "-selectNextCodeAction",
-    "when": "codeActionMenuVisible"
-  },
-  {
-    "key": "shift+tab",
-    "command": "selectPrevCodeAction",
-    "when": "codeActionMenuVisible"
-  },
-  {
-    "key": "up",
-    "command": "-selectPrevCodeAction",
-    "when": "codeActionMenuVisible"
   }
 ]
