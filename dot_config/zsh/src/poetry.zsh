@@ -7,12 +7,16 @@
 # Poetry's virtualenvs dir, worked out the way Poetry does instead of asked of
 # `poetry config`, which costs as much as `poetry env info` itself.
 # virtualenvs.path in Poetry's config.toml is not read: no machine sets it.
+#
+# On macOS the cache dir depends on the platformdirs Poetry was installed with:
+# recent ones put $XDG_CACHE_HOME (set in .zshenv) ahead of ~/Library/Caches,
+# older ones ignore it. A pypoetry dir under $XDG_CACHE_HOME tells which.
 function _poetry_venvs_dir() {
   if [[ -n ${POETRY_VIRTUALENVS_PATH:-} ]]; then
     print -r -- "$POETRY_VIRTUALENVS_PATH"
   elif [[ -n ${POETRY_CACHE_DIR:-} ]]; then
     print -r -- "$POETRY_CACHE_DIR/virtualenvs"
-  elif [[ $OSTYPE == darwin* ]]; then
+  elif [[ $OSTYPE == darwin* && ! (-n ${XDG_CACHE_HOME:-} && -d $XDG_CACHE_HOME/pypoetry) ]]; then
     print -r -- "$HOME/Library/Caches/pypoetry/virtualenvs"
   else
     print -r -- "${XDG_CACHE_HOME:-$HOME/.cache}/pypoetry/virtualenvs"
