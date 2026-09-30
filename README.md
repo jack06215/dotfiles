@@ -90,12 +90,12 @@ dot_glzr/
   glazewm/, zebar/          → Windows tiling WM + status bar
 ```
 
-Repo-maintenance entry points live at the root:
+Repo-maintenance entry points live at the root and under `tools/`:
 
 | Path | Purpose |
 | --- | --- |
-| `brewfiles/` | per-OS Homebrew manifests (`darwin`, `wsl2`) carrying taps + formulae + casks + tap trust; `Brewfile.tmpl` renders the matching one to `~/Brewfile` for `brew bundle install`, and `generate-brewfile.sh` regenerates the one for the machine you are on |
-| `BUILD.bazel`, `MODULE.bazel` | `bazel run //:export_brewfile_macos` / `export_brewfile_linux` regenerate the brewfiles, and `//:export_powertoys_settings` pulls the PowerToys settings back out of `%LOCALAPPDATA%` on Windows. Not a build system for the dotfiles themselves; every target is run-only, since they write into the source tree. `.bazelrc` sets `--symlink_prefix=/` so no `bazel-*` symlinks appear in a chezmoi source tree |
+| `brewfiles/` | per-OS Homebrew manifests (`darwin`, `wsl2`) carrying taps + formulae + casks + tap trust; `Brewfile.tmpl` renders the matching one to `~/Brewfile` for `brew bundle install`, and `tools/setup/generate-brewfile.sh` regenerates the one for the machine you are on |
+| `MODULE.bazel`, `tools/setup/` | `bazel run //tools/setup:export_brewfile_macos` / `export_brewfile_linux` regenerate the brewfiles, and `//tools/setup:export_powertoys_settings` pulls the PowerToys settings back out of `%LOCALAPPDATA%` on Windows. Not a build system for the dotfiles themselves; every target is run-only, since they write into the source tree. `tools/` is repo-only (`.chezmoiignore` keeps it out of `$HOME`), and `.bazelrc` sets `--symlink_prefix=/` so no `bazel-*` symlinks appear in a chezmoi source tree |
 | `skills/` | Claude Code skills (see [Claude Code](#claude-code)) |
 | `prompt_repository/`, `template/` | reusable prompt/PR templates |
 | `python/` | the Poetry workspace (see [Python workspace](#python-workspace)) |

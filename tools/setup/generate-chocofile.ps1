@@ -2,12 +2,14 @@
 # Windows counterpart of generate-brewfile.sh: rewrites the Chocolatey manifest
 # from what this machine currently has installed.
 #
-#     pwsh ./generate-chocofile.ps1
+#     pwsh tools/setup/generate-chocofile.ps1
 #
 # There is no Bazel target for this one: no rule in the workspace can wrap a
-# .ps1 - not sh_binary, and not the py_binary that //:export_powertoys_settings
-# runs on - and rewriting this in Python just to get one has not been worth it.
-# `pwsh ./generate-chocofile.ps1` is the entry point.
+# .ps1 - not sh_binary, and not the py_binary that
+# //tools/setup:export_powertoys_settings runs on - and rewriting this in Python
+# just to get one has not been worth it.
+# `pwsh tools/setup/generate-chocofile.ps1`, from the repo root, is the entry
+# point.
 #
 # Chocolatey has no `brew leaves`, so this derives one: every installed package
 # that appears as a <dependency> of another installed package is a dependency,
@@ -27,8 +29,8 @@
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-# Resolved at runtime so this file needs no chezmoi rendering and works both as
-# the ~/generate-chocofile.ps1 target and from a checkout.
+# Resolved at runtime rather than from this file's own path, the same way as
+# generate-brewfile.sh, so it works whatever the current directory is.
 $sourceDir = if ($env:BUILD_WORKSPACE_DIRECTORY) {
     $env:BUILD_WORKSPACE_DIRECTORY
 }

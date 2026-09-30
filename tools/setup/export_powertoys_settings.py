@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Refreshes the tracked PowerToys settings from this machine's live tree.
 
-    bazel run //:export_powertoys_settings       # from the repo
-    python ~/export-powertoys-settings.py        # standalone, same thing
+    bazel run //tools/setup:export_powertoys_settings  # from the repo
+    python tools/setup/export_powertoys_settings.py    # without bazel, same thing
 
 PowerToys reads its settings only from %LOCALAPPDATA%\\Microsoft\\PowerToys, so
 dot_config/powertoys is a tracked copy and
@@ -113,7 +113,7 @@ def resolve_source_dir() -> Path:
 
     `bazel run` exports BUILD_WORKSPACE_DIRECTORY; outside bazel, ask chezmoi
     where its source directory is. Same shape as generate-brewfile.sh, so this
-    file needs no chezmoi rendering and works from either entry point.
+    works from either entry point.
     """
     from_bazel = os.environ.get("BUILD_WORKSPACE_DIRECTORY")
     if from_bazel:

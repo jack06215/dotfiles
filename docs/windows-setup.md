@@ -293,7 +293,7 @@ truth — but it is a downgrade for node.
 Regenerate from what the machine has installed:
 
 ```powershell
-pwsh -File $HOME\generate-chocofile.ps1
+pwsh -File (Join-Path (chezmoi source-path) tools/setup/generate-chocofile.ps1)
 ```
 
 This is the counterpart of `generate-brewfile.sh`. Chocolatey has no

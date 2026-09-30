@@ -18,7 +18,7 @@ function Invoke-BazelCommand {
         The bazel command: build, run or test.
 
         .PARAMETER Target
-        One or more target labels, such as //:export_powertoys_settings.
+        One or more target labels, such as //tools/setup:export_powertoys_settings.
 
         .PARAMETER Arguments
         Anything else for bazel, placed after the targets.
@@ -27,7 +27,7 @@ function Invoke-BazelCommand {
         Return the command line instead of running it.
 
         .EXAMPLE
-        Invoke-BazelCommand -Command run -Target '//:export_powertoys_settings'
+        Invoke-BazelCommand -Command run -Target '//tools/setup:export_powertoys_settings'
 
         .EXAMPLE
         Invoke-BazelCommand -Command build -Target '//...' -Print | Set-Clipboard

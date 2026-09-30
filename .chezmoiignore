@@ -32,14 +32,16 @@ history.txt
 **/*flywheel*
 **/*flywheel*/**
 
-# Bazel workspace files. `bazel run //:export_brewfile_<os>` is repo tooling;
-# none of it belongs in $HOME. .bazelrc and .bazelversion need no entry here --
-# chezmoi already skips source entries whose names start with a dot. Build
-# symlinks are handled by --symlink_prefix=/ in .bazelrc, so there are no
-# bazel-* roots to ignore either.
+# Bazel workspace files and the repo tooling under tools/. `bazel run
+# //tools/setup:export_brewfile_<os>` and the scripts behind it write into the
+# checkout; none of it belongs in $HOME. .bazelrc and .bazelversion need no
+# entry here -- chezmoi already skips source entries whose names start with a
+# dot. Build symlinks are handled by --symlink_prefix=/ in .bazelrc, so there
+# are no bazel-* roots to ignore either.
 MODULE.bazel
 MODULE.bazel.lock
-BUILD.bazel
+tools
+tools/**
 
 # Per-OS Brewfile manifests. Brewfile.tmpl `include`s the right one into
 # ~/Brewfile, so the sources themselves must not also land in the target tree.
@@ -88,12 +90,10 @@ skills/**
 
 {{ if eq .chezmoi.os "windows" }}
 # The Homebrew half of provisioning. setup.sh renders to its "Unsupported
-# system" branch on Windows and generate-brewfile.sh needs brew, so both were
-# only ever dead weight in the Windows home; setup.ps1 and
-# generate-chocofile.ps1 are what stand in for them.
+# system" branch on Windows, so it was only ever dead weight in the Windows
+# home; setup.ps1 is what stands in for it.
 Brewfile
 setup.sh
-generate-brewfile.sh
 # `ya pkg install` rewrites every `hash` in package.toml from the deployed
 # files, and those come out different on Windows than on macOS/WSL2 at identical
 # `rev`s - so a managed copy makes every later apply stop on "has changed since
@@ -102,11 +102,8 @@ generate-brewfile.sh
 # owns the hashes from there.
 .config/yazi/package.toml
 {{ else }}
-# The Windows half, conversely: Chocolatey, winget and mise exist nowhere else,
-# and the PowerToys exporter reads %LOCALAPPDATA%.
+# The Windows half, conversely: Chocolatey, winget and mise exist nowhere else.
 setup.ps1
-generate-chocofile.ps1
-export-powertoys-settings.py
 {{ end }}
 
 {{ if and (eq .chezmoi.os "darwin") (eq .chezmoi.hostname "A0229") }}

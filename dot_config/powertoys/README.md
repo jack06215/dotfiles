@@ -18,12 +18,13 @@ Settings changed in the PowerToys UI land in `%LOCALAPPDATA%`, not here. To
 bring them back:
 
 ```console
-$ bazel run //:export_powertoys_settings                # on Windows
-$ bazel run //:export_powertoys_settings -- --dry-run   # look first
+$ bazel run //tools/setup:export_powertoys_settings                # on Windows
+$ bazel run //tools/setup:export_powertoys_settings -- --dry-run   # look first
 ```
 
-`python ~/export-powertoys-settings.py` runs the same script without bazel. It
-is the inverse of the link script, and three things it deliberately does not do:
+`python tools/setup/export_powertoys_settings.py`, from the repo root, runs the
+same script without bazel. It is the inverse of the link script, and three
+things it deliberately does not do:
 
 - **It does not decide what is tracked.** Only paths already in this directory
   are refreshed. Live files that are neither tracked nor on the ignore list

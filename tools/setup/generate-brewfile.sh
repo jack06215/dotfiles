@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail -o posix
 
-# Resolved at runtime rather than templated in, so this file needs no chezmoi
-# rendering and can be both the ~/generate-brewfile.sh target and the src of
-# //:export_brewfile_macos and //:export_brewfile_linux. `bazel run` exports
-# BUILD_WORKSPACE_DIRECTORY as the workspace root; outside bazel, ask chezmoi
-# where its source directory is.
+# Resolved at runtime rather than from this file's own path, so the same file
+# is the src of //tools/setup:export_brewfile_macos and
+# //tools/setup:export_brewfile_linux and also runs straight from the checkout.
+# `bazel run` exports BUILD_WORKSPACE_DIRECTORY as the workspace root; outside
+# bazel, ask chezmoi where its source directory is.
 # Either way the manifest is written into the checkout, never into a build
 # sandbox or the target tree.
 source_dir="${BUILD_WORKSPACE_DIRECTORY:-$(chezmoi source-path)}"
