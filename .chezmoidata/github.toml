@@ -1,0 +1,11 @@
+# GitHub repos and searches behind gh-dash's work sections
+# (dot_config/gh-dash/config.yml.tmpl), which render only where
+# .myComputer.isCompanyMachine is true. Plain data, read on every apply: no
+# `chezmoi init` needed after an edit here.
+[github.work]
+  # <owner>/<repo>; cloned to ~/workspace/<owner>/<repo>
+  monorepo = "flywheel-jp/monorepo"
+  # the GitHub App that opens the image-tag update PRs, and the text gh-dash
+  # searches those PRs for
+  imageTagBot = "app/flywheel-jp"
+  imageTagSearch = "pipeline/dagster_workspace at adastria-datacore"

@@ -1,0 +1,90 @@
+# chezmoi:template:left-delimiter="[[" right-delimiter="]]"
+# ^ A chezmoi template with double-square-bracket delimiters, so gh-dash's own
+#   {{ }} templates (keybinding commands, `nowModify` in filters) pass through.
+#   Repos come from .chezmoidata/github.toml, colours from catppuccin.toml;
+#   the work sections and repoPaths render only on the company machine.
+[[- $work := .github.work ]]
+[[- $c := .catppuccin.mocha ]]
+prSections:
+- title: My PRs
+  filters: is:open author:@me
+- title: Needs My Review
+  filters: is:open review-requested:@me
+- title: Involved
+  filters: is:open involves:@me -author:@me
+[[- if .myComputer.isCompanyMachine ]]
+# - title: MTS (Open)
+#   filters: repo:[[ $work.monorepo ]] is:pr is:open in:title MTS
+# - title: MTS (Closed)
+#   filters: repo:[[ $work.monorepo ]] is:pr is:closed in:title MTS
+- title: AD-image-tag-update (Open)
+  filters: is:pr state:open author:[[ $work.imageTagBot ]] [[ $work.imageTagSearch ]]
+- title: AD-image-tag-update (Closed)
+  filters: is:pr state:closed author:[[ $work.imageTagBot ]] [[ $work.imageTagSearch ]]
+[[- end ]]
+issuesSections:
+- title: My Issues
+  filters: is:open author:@me
+- title: Assigned
+  filters: is:open assignee:@me
+- title: Involved
+  filters: is:open involves:@me -author:@me
+defaults:
+  preview:
+    open: true
+    width: 150
+  prsLimit: 20
+  issuesLimit: 20
+  view: prs
+  layout:
+    prs:
+      updatedAt:
+        width: 7
+      repo:
+        width: 15
+      author:
+        width: 15
+      assignees:
+        width: 20
+        hidden: true
+      base:
+        width: 15
+        hidden: true
+      lines:
+        width: 16
+    issues:
+      updatedAt:
+        width: 7
+      repo:
+        width: 15
+      creator:
+        width: 10
+      assignees:
+        width: 20
+        hidden: true
+  refetchIntervalMinutes: 30
+[[- if .myComputer.isCompanyMachine ]]
+repoPaths:
+  [[ $work.monorepo ]]: ~/workspace/[[ $work.monorepo ]]
+[[- end ]]
+keybindings:
+  prs: []
+  issues: []
+theme:
+  colors:
+    text:
+      primary: "[[ $c.text ]]"
+      secondary: "[[ $c.mauve ]]"
+      inverted: "[[ $c.crust ]]"
+      faint: "[[ $c.subtext1 ]]"
+      warning: "[[ $c.yellow ]]"
+      success: "[[ $c.green ]]"
+      error: "[[ $c.red ]]"
+    background:
+      selected: "[[ $c.surface0 ]]"
+    border:
+      primary: "[[ $c.mauve ]]"
+      secondary: "[[ $c.surface1 ]]"
+      faint: "[[ $c.surface0 ]]"
+pager:
+  diff: "delta"
