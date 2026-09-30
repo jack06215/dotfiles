@@ -5,8 +5,6 @@ tap "cockroachdb/tap", trusted: true
 tap "dbcli/tap"
 tap "derailed/k9s", trusted: true
 tap "hashicorp/tap", trusted: true
-tap "homebrew/bundle"
-tap "homebrew/services"
 tap "kdash-rs/kdash", trusted: true
 tap "leoafarias/fvm", trusted: true
 tap "localstack/tap", trusted: true
@@ -165,8 +163,6 @@ brew "jpeg-xl"
 brew "imagemagick-full"
 # Json incremental digger
 brew "jid"
-# New file format for still image compression
-brew "jpeg-xl"
 # Lightweight and flexible command-line JSON processor
 brew "jq"
 # Domain specific configuration language for defining JSON data
@@ -183,8 +179,6 @@ brew "kubeseal"
 brew "lazygit"
 # Graphical front-end for GCC's coverage testing tool (gcov)
 brew "lcov"
-# Image processing and image analysis library
-brew "leptonica"
 # Implementation of the file(1) command
 brew "libmagic"
 # SIXEL encoder/decoder implementation
@@ -315,8 +309,6 @@ brew "television"
 brew "terminal-notifier"
 # Terraform Language Server
 brew "terraform-ls"
-# OCR (Optical Character Recognition) engine
-brew "tesseract"
 # Terminal multiplexer
 brew "tmux"
 # Powerful time tracking tool for the command-line
@@ -339,30 +331,18 @@ brew "wordnet"
 brew "yamllint"
 # Blazing fast terminal file manager written in Rust, based on async I/O
 brew "yazi"
-# Feature-rich command-line audio/video downloader
-brew "yt-dlp"
 # Pluggable terminal workspace, with terminal multiplexer as the base feature
 brew "zellij"
 # Shell extension to navigate your filesystem faster
 brew "zoxide"
 # Software to interact with Atlassian Cloud from the terminal
 brew "atlassian/acli/acli"
-# Build, manage and test your Auth0 integrations from the command line
-brew "auth0/auth0-cli/auth0"
-# The best way of working with Protocol Buffers.
-brew "bufbuild/buf/buf"
 # Distributed SQL database
 brew "cockroachdb/tap/cockroach"
 # Terraform
 brew "hashicorp/tap/terraform"
 # Command-line interface for 1Password
 cask "1password-cli"
-# Terraform Language Server
-brew "hashicorp/tap/terraform-ls"
-# A fast and simple dashboard for Kubernetes written in Rust
-brew "kdash-rs/kdash/kdash"
-# Simple cli to manage Flutter SDK versions per project
-brew "leoafarias/fvm/fvm"
 # AeroSpace is an i3-like tiling window manager for macOS
 cask "nikitabobko/tap/aerospace"
 # Enable Windows-like alt-tab
@@ -382,14 +362,12 @@ cask "jetbrains-toolbox"
 cask "libreoffice"
 # Shows the next meeting in the menu bar
 cask "meetingbar"
-cask "powershell"
 # Plugin for AWS CLI to start and end sessions that connect to managed instances
 cask "session-manager-plugin"
 # Open-source code editor
 cask "visual-studio-code"
 # Menu bar toolkit with keep-awake, system monitor and volume mixer
 cask "vorssaint/tap/vorssaint", trusted: true
-cask "session-manager-plugin", args: { appdir: "/Applications" }
 # Command-line client for connecting to Snowflake
 cask "snowflake-snowsql"
 # GPU-accelerated cross-platform terminal emulator and multiplexer

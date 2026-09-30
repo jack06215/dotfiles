@@ -156,10 +156,17 @@ function upgrade_homebrew_packages() {
   # installs taps ahead of what lives in them — which is why there is no longer
   # a separate tap/trust pass. Regenerate a manifest with generate-brewfile.sh;
   # see docs/homebrew-export-packages.md.
-  brew bundle install --file="${HOME}/Brewfile"
+  #
+  # Reported rather than fatal. Bundle hands every formula and cask to a single
+  # `brew install`, so one entry brew refuses (a name installed from another
+  # tap, a cask that no longer exists) fails all the others batched with it.
+  # Stopping there would also skip everything below that does not depend on
+  # the Brewfile; `brew upgrade` still brings what is installed up to date.
+  brew bundle install --file="${HOME}/Brewfile" \
+    || note_failure "brew bundle install (fix the entries it names in brewfiles/, then 'chezmoi apply')"
 
-  brew upgrade
-  brew cleanup
+  brew upgrade || note_failure 'brew upgrade'
+  brew cleanup || note_failure 'brew cleanup'
 }
 
 # asdf comes from the Brewfile (asdf >= 0.16, one binary, nothing to source).
