@@ -1,0 +1,26 @@
+# vim: set ft=zsh
+#
+# zsh runs this after .zprofile in every login shell, interactive or not.
+# .zprofile sources the flywheel monorepo's config.zsh, which sources the bash
+# asdf clone's ~/.asdf/asdf.sh and so puts ~/.asdf/bin ahead of Homebrew's
+# bin. The shims run `exec asdf exec ...`, so whichever asdf comes first on
+# PATH serves every shimmed call - the bash one at ~140ms a call, enough for
+# starship's python module to blow command_timeout.
+#
+# Interactive shells are already fixed by src/asdf.zsh from .zshrc, which runs
+# before this and drops ~/.asdf/bin entirely, so this is then a no-op. It is
+# for login-only environments - `zsh -lc`, and the GUI apps and agents that
+# take their env from one - which never read .zshrc. .zprofile itself isn't
+# managed here because installers keep appending to it.
+_asdf_bin="${ASDF_DIR:-$HOME/.asdf}/bin"
+if ((${path[(Ie)$_asdf_bin]})); then
+  path=(${path:#$_asdf_bin})
+  _brew_idx=${path[(Ie)${HOMEBREW_PREFIX:-/opt/homebrew}/bin]}
+  if ((_brew_idx)); then
+    path[_brew_idx+1,_brew_idx]=("$_asdf_bin")
+  else
+    path+=("$_asdf_bin")
+  fi
+  unset _brew_idx
+fi
+unset _asdf_bin
