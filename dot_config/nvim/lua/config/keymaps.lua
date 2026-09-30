@@ -71,4 +71,18 @@ local function apply_keymaps()
   require("config.keymaps.nvim-hlslens").create_keymaps()
 end
 
-after_which_key(apply_keymaps)
+-- vscode-neovim: the LazyVim vscode extra loads neither which-key (so there is
+-- no spec to wait for) nor the plugins the keymaps above call. The vscode
+-- module rebinds those same keys to VS Code commands instead; only the modules
+-- that are plain nvim come along.
+local function apply_vscode_keymaps()
+  require("config.keymaps.general").create_keymaps()
+  require("config.keymaps.lazyvim").create_keymaps()
+  require("config.keymaps.vscode").create_keymaps()
+end
+
+if vim.g.vscode then
+  apply_vscode_keymaps()
+else
+  after_which_key(apply_keymaps)
+end

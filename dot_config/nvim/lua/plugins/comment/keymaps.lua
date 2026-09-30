@@ -31,16 +31,7 @@ function M.get_keymaps()
 
     -- Add a comment at the end of the current line.
     silent({ "gcA", function()
-      local commentstring = vim.bo.commentstring:gsub("%%s", ""):gsub("%s+$", "")
-      local line = vim.api.nvim_get_current_line()
-      local has_comment = line:find(commentstring, 1, true)
-      if not has_comment then
-        local new_line = line .. " " .. commentstring .. " "
-        vim.api.nvim_set_current_line(new_line)
-        vim.cmd("normal! $a")
-      else
-        vim.cmd("normal! $a")
-      end
+      require("plugins.comment.utils").append_eol_comment()
     end, mode = "n", desc = "Comment at end of line" }),
   }
 end
