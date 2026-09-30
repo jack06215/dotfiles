@@ -21,6 +21,9 @@ function _poetry_venvs_dir() {
 
 # The picker's rows for activate_poetry_env: $reply gets "<display>\t<path>"
 # per env, the project's own one first and marked *, and $REPLY the fzf header.
+# The envs are those in Poetry's virtualenvs dir, then every in-project .venv
+# beside a pyproject.toml the scan below finds - where Poetry creates new envs
+# now that dot_config/pypoetry sets in-project = true.
 #
 # Poetry is not run. Its rules are followed instead (EnvManager.get in
 # poetry/utils/env/env_manager.py): the project is the nearest pyproject.toml
@@ -34,15 +37,16 @@ function _poetry_venvs_dir() {
 # this re-activate the previous project's env. The active venv's bin is left
 # out of PATH for the lookup instead.
 #
-# An env's name holds only a hash of its project's path, so rows are labelled
-# by hashing every project root under POETRY_ENV_SCAN_DIRS (default
-# ~/workspace) and matching. All of the hashing, the TOML reading and the
+# A cached env's name holds only a hash of its project's path, so those rows
+# are labelled by hashing every project root under POETRY_ENV_SCAN_DIRS
+# (default ~/workspace) and matching; the same roots are where the .venvs are
+# looked for. All of the hashing, the TOML and pyvenv.cfg reading and the
 # version check happen in one python call.
 function _poetry_env_rows() {
-  local venvs_dir root py d raw base minor star mark label line
-  local -a lookup_path scan_dirs out envs
-  local -A owner
-  local -i width=0
+  local venvs_dir root py d raw base minor star mark name label line
+  local -a lookup_path scan_dirs out fields envs in_project names labels
+  local -A owner venv_minor
+  local -i width=0 i
 
   # tomllib is 3.11+; an older python just leaves the project unrecognised.
   local script='
@@ -59,13 +63,25 @@ def load(p):
     except (OSError, ValueError):
         return {}
 
+# X.Y from pyvenv.cfg: virtualenv (what Poetry and uv use) writes version_info,
+# the stdlib venv module writes version.
+def venv_minor(venv):
+    try:
+        with open(os.path.join(venv, "pyvenv.cfg")) as f:
+            cfg = {k.strip(): v.strip() for k, _, v in (l.partition("=") for l in f)}
+    except OSError:
+        return ""
+    return ".".join((cfg.get("version_info") or cfg.get("version") or "").split(".")[:2])
+
 try:
     import tomllib
 except ImportError:
     tomllib = None
 
+# Real paths throughout: fd reports roots as the scan dir spells them, while
+# root arrives resolved, and one project reached both ways must stay one row.
 venvs, root = sys.argv[1:]
-scan = {os.path.dirname(p) for p in sys.stdin.read().splitlines() if p}
+scan = {os.path.realpath(os.path.dirname(p)) for p in sys.stdin.read().splitlines() if p}
 if root:
     scan.add(root)
 base, minor = "", "%d.%d" % sys.version_info[:2]
@@ -79,8 +95,11 @@ if root and tomllib:
     minor = load(os.path.join(venvs, "envs.toml")).get(base, {}).get("minor", minor)
 print(base)
 print(minor)
-for d in scan:
-    print(env_hash(d) + "\t" + d)
+for d in sorted(scan):
+    print("L\t" + env_hash(d) + "\t" + d)
+    venv = os.path.join(d, ".venv")
+    if os.path.isdir(venv):
+        print("V\t" + venv + "\t" + venv_minor(venv))
 '
 
   venvs_dir=$(_poetry_venvs_dir)
@@ -115,9 +134,18 @@ for d in scan:
   ); then
     out=("${(@f)raw}")
   fi
+  # The rest is "L\t<hash>\t<root>" per project root, each followed by
+  # "V\t<root>/.venv\t<X.Y>" when it has an in-project env.
   base=${out[1]:-} minor=${out[2]:-}
   for line in ${out[3,-1]}; do
-    owner[${line%%$'\t'*}]=${line#*$'\t'}
+    fields=("${(@ps:\t:)line}")
+    case $fields[1] in
+      L) owner[$fields[2]]=$fields[3] ;;
+      V)
+        in_project+=($fields[2])
+        venv_minor[$fields[2]]=$fields[3]
+        ;;
+    esac
   done
 
   if [[ -n $root && ${(L)POETRY_VIRTUALENVS_IN_PROJECT:-} != (false|0) && -d $root/.venv ]]; then
@@ -126,25 +154,31 @@ for d in scan:
     star=$venvs_dir/$base-py$minor
   fi
 
-  envs=($venvs_dir/*(N/))
+  envs=($venvs_dir/*(N/) $in_project)
   [[ -n $star ]] && envs=($star ${envs:#$star})
 
+  # Every .venv has the same name, so it shows its version the way a cached
+  # env's name does, and its project comes straight from its parent dir.
   for d in $envs; do
-    ((${#${d:t}} > width)) && width=${#${d:t}}
-  done
-
-  reply=()
-  for d in $envs; do
-    mark=' '
-    [[ $d == "$star" ]] && mark='*'
-    if [[ $d == "$root/.venv" ]]; then
-      label=$root
+    if [[ ${d:t} == .venv ]]; then
+      name=".venv${venv_minor[$d]:+ (py${venv_minor[$d]})}"
+      label=${d:h}
     else
       # <name>-<hash>-py<X.Y>; the shortest -py* suffix is the version.
       line=${${d:t}%-py*}
+      name=${d:t}
       label=${owner[${line[-8,-1]}]:-}
     fi
-    printf -v line '%s %-*s  %s\t%s' "$mark" $width "${d:t}" "${label:+${(D)label}}" "$d"
+    names+=("$name")
+    labels+=("$label")
+    ((${#name} > width)) && width=${#name}
+  done
+
+  reply=()
+  for ((i = 1; i <= $#envs; i++)); do
+    mark=' '
+    [[ ${envs[i]} == "$star" ]] && mark='*'
+    printf -v line '%s %-*s  %s\t%s' "$mark" $width "${names[i]}" "${labels[i]:+${(D)labels[i]}}" "${envs[i]}"
     reply+=("$line")
   done
 
@@ -165,10 +199,11 @@ for d in scan:
 
 # activate_poetry_env [query]
 #
-# Pick any Poetry env and activate it, wherever you are. The env the project
-# here uses is marked * and comes first, so Enter alone activates it, in ~50ms
-# rather than the ~1s `poetry env info` took. A query pre-fills the search and
-# activates a lone match without asking. Ctrl-/ shows the env's pyvenv.cfg.
+# Pick any Poetry env - cached, or any project's in-project .venv - and activate
+# it, wherever you are. The env the project here uses is marked * and comes
+# first, so Enter alone activates it, in ~50ms rather than the ~1s `poetry env
+# info` took. A query pre-fills the search and activates a lone match without
+# asking. Ctrl-/ shows the env's pyvenv.cfg.
 function activate_poetry_env() {
   _check_fzf_cmd || return 1
 
@@ -177,7 +212,7 @@ function activate_poetry_env() {
   _poetry_env_rows
   ((${#reply})) || {
     venvs_dir=$(_poetry_venvs_dir)
-    print -u2 "activate_poetry_env: no Poetry envs in ${(D)venvs_dir}"
+    print -u2 "activate_poetry_env: no Poetry envs in ${(D)venvs_dir}, and no .venv beside a pyproject.toml"
     return 1
   }
 

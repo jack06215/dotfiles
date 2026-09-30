@@ -151,7 +151,7 @@ Set `ZSH_DEBUG_INIT=1` or `ZSH_PROFILE_STARTUP=1` to trace/profile startup.
 | `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |
 | `search.zsh` | fzf-based search helpers |
 | `aws.zsh`, `bazel.zsh`, `k8s.zsh`, `mysql.zsh`, `dart.zsh` | domain-specific shortcuts |
-| `poetry.zsh` | `activate_poetry_env [query]`: fzf over every Poetry env, labelled with its project; the current project's env is marked `*` and listed first. Works it out without running Poetry. `deactivate_poetry_env` |
+| `poetry.zsh` | `activate_poetry_env [query]`: fzf over every Poetry env - the cached ones and each project's in-project `.venv` - labelled with its project; the current project's env is marked `*` and listed first. Works it out without running Poetry. `deactivate_poetry_env` |
 | `zsh_python_init.zsh` | resolves the Poetry-managed venv under `python` per OS and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN` + aliases |
 | `executable_sleep.zsh` / `executable_wakeup.zsh` | sleepwatcher hooks (macOS); skip weekends, gate on `sleepwatcher.should_run`, drive a Teamspirit clock-in/out script |
 | `myscripts/` | standalone executables: `fzf-listprojects`, `whisper-mic`, `transcribe-yt`, `convert-mp3-to-aiff`, `ghpr-index` (rows + preview for the `ghpr` picker), AWS role listing, sleepwatcher enable/disable, etc. |
