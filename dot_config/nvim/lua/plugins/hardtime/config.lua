@@ -3,13 +3,18 @@ return {
     "m4xshen/hardtime.nvim",
     lazy = false,
     enabled = true,
+    -- Normal-mode keys reach nvim under vscode-neovim, so the training works
+    -- there too. nui is only for `:Hardtime report`, which is loaded on demand,
+    -- so the vscode extra leaving nui out does not break the rest.
+    vscode = true,
 
     dependencies = {
       "MunifTanjim/nui.nvim",
     },
 
     opts = {
-      disable_mouse = true,
+      -- VS Code owns the mouse; there is nothing for nvim to disable.
+      disable_mouse = not vim.g.vscode,
 
       -- strict mode
       allow_different_key = false,
@@ -20,8 +25,11 @@ return {
       hint = true,
       notification = true,
 
-      -- don't camp in insert mode: bounce back to normal after 10s idle
-      force_exit_insert_mode = true,
+      -- don't camp in insert mode: bounce back to normal after 10s idle.
+      -- Not under vscode-neovim: VS Code does the typing in insert mode and
+      -- nvim sees none of it, so every insert would look idle and get kicked
+      -- out mid-sentence.
+      force_exit_insert_mode = not vim.g.vscode,
       max_insert_idle_ms = 10000,
 
       -- punish low-value habits
@@ -111,6 +119,11 @@ return {
       -- are handled internally, and `prompt` is covered by disabled_filetypes.
 
       callback = function(text)
+        -- vim.notify is a VS Code toast there, one per hint.
+        if vim.g.vscode then
+          require("utils.vscode").status("$(keyboard) Hardtime: " .. text)
+          return
+        end
         vim.notify("󰌌 Hardtime: " .. text, vim.log.levels.WARN)
       end,
     },
