@@ -37,15 +37,23 @@ function _ghpr_fzf_pick() {
   local debounce
   debounce=$(printf '%.3f' $((ms / 1000.0)))
 
+  # Rows and preview come from the monorepo's `pycli ghpr_index`, run through
+  # pycli_cmdline (pycli.zsh) rather than its wrapper function, since no
+  # function reaches fzf's binds. It runs here, so gh lists this repo's PRs.
+  local index
+  index="$(pycli_cmdline ghpr_index)" || return
+
   # fzf runs reload and preview through `sh -c`, so the passthrough has to
   # survive a second round of word splitting - hence ${(q)}. The trailing `--`
-  # is what ghpr-index splits its own flags from gh's on.
+  # is what ghpr_index splits its own flags from gh's on. `--query={q}` rather
+  # than two words, so a search starting with `-` (`-label:bug`) isn't read as
+  # a flag.
   local passthrough='--'
   (($#)) && passthrough="-- ${(j: :)${(q)@}}"
 
   # `hint` makes no network call - it is one row of static text, so the picker
   # is on screen before gh could have finished authenticating.
-  ghpr-index hint \
+  eval "$index hint" \
     | fzf \
       --ansi \
       --disabled \
@@ -53,9 +61,9 @@ function _ghpr_fzf_pick() {
       --with-nth=2.. \
       --prompt='PR> ' \
       --header="GitHub search / ctrl-r = $limit newest" \
-      --bind="change:reload-sync:sleep $debounce; ghpr-index search --query {q} --limit $limit $passthrough || true" \
-      --bind="ctrl-r:reload-sync:ghpr-index recent --limit $limit $passthrough" \
-      --preview="ghpr-index preview {1} $passthrough" \
+      --bind="change:reload-sync:sleep $debounce; $index search --query={q} --limit $limit $passthrough || true" \
+      --bind="ctrl-r:reload-sync:$index recent --limit $limit $passthrough" \
+      --preview="$index preview {1} $passthrough" \
       --preview-window=right:60%:wrap \
     | awk -F'\t' '{print $1}'
 }

@@ -1,16 +1,17 @@
 {{- /*
     zshPythonModule — a myscripts wrapper that runs a monorepo module under
-    zsh_python the way pycli.zsh.tmpl's pycli() runs packages.cli: from the
-    monorepo, with the venv activated, so the module's imports resolve and the
-    venv's own commands come first on PATH.
+    zsh_python: from the monorepo, with the venv activated, so the module's
+    imports resolve and the venv's own commands come first on PATH. Unlike
+    pycli, which stays where it was called and finds packages.cli through
+    PYTHONPATH.
 
     Arguments (a dict):
       chezmoi   the caller's .chezmoi variable
       pypoetry  the caller's .pypoetry data; zshPythonDir is the venv
       module    the module to run, e.g. packages.sleepwatcher.set_run_on_wake
       dir       optional: where under the monorepo to run it from. Modules
-                that import each other as `packages.*` run from the root, as
-                pycli does; the older ones that import `sleepwatcher.*` or
+                that import each other as `packages.*` run from the root;
+                the older ones that import `sleepwatcher.*` or
                 `common.*` need "packages", which is how Bazel builds them.
       args      optional: shell text after the module, e.g. "$@"
 

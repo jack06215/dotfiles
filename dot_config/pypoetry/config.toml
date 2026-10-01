@@ -1,15 +1,5 @@
-# Poetry's global config. Linux reads it here ($XDG_CONFIG_HOME/pypoetry);
-# macOS reads ~/Library/Application Support/pypoetry, which
-# run_onchange_after_link-pypoetry-config symlinks back to this file.
-
 [virtualenvs]
-# New envs go in <project>/.venv. A project that already has an env in the
-# cache dir keeps using it: Poetry only checks for a .venv first.
 in-project = true
-# Build envs from the first `python` on PATH - asdf's pick for the project -
-# rather than the one Poetry itself runs on. Poetry 2's spelling of the old
-# prefer-active-python = true, and its default; spelled out because
-# activate_poetry_env (zsh/src/poetry.zsh) relies on it.
 use-poetry-python = false
 
 [installer]

@@ -28,6 +28,11 @@
 # completer lists them itself.
 .local/bin/pipf_installed
 
+# The ghpr picker's rows and preview moved to the monorepo, as pycli's
+# ghpr_index; gh.zsh runs it through pycli_cmdline. Its carapace spec goes on
+# its own: the generator deletes the specs it wrote for commands now gone.
+.config/zsh/src/myscripts/ghpr-index
+
 # The Brewfile, Chocolatey and PowerToys exporters moved to tools/setup/, which
 # is repo-only. Run them through `bazel run //tools/setup:...` or from the
 # checkout.

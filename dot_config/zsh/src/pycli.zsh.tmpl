@@ -2,6 +2,13 @@
   `pycli` runs `packages.cli`: bare, it lists every subcommand with its
   description; `pycli <subcommand> ...` runs one.
 
+  It runs in the directory it's called from, not the monorepo, so a tool sees
+  the caller's files and repo (`md2docx notes.md`, boolsearch's `.`, gh and
+  git in ghpr_index and lcg_github_create_pull_request). PYTHONPATH finds
+  packages.cli instead, and -P keeps a `packages/` in the working directory
+  from shadowing it. The venv's bin goes first on PATH and VIRTUAL_ENV is set,
+  as its activate script would, for what a tool runs in turn (llm_cat's llm).
+
   Plus one zsh function per subcommand, generated on `chezmoi apply` from
   `python -m packages.cli --list`, so adding a tool to `_COMMANDS` in the
   monorepo never needs an edit here - just re-apply. `--list` prints only the
@@ -18,7 +25,10 @@
 {{- $repo := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo" -}}
 {{- $venv := .pypoetry.zshPythonDir -}}
 {{- $python := joinPath $venv "bin/python" -}}
-function pycli() {
+# Prints `pycli <args>` as one line of shell, for what can't call a zsh
+# function: fzf runs its binds in a fresh shell, which has none of these.
+# pycli itself runs this line, so the two can't differ.
+function pycli_cmdline() {
   local repo="{{ $repo }}"
   local venv="{{ $venv }}"
 
@@ -26,17 +36,20 @@ function pycli() {
     print -u2 "pycli: repo not found: $repo"
     return 1
   fi
-  if [[ ! -f "$venv/bin/activate" ]]; then
-    print -u2 "pycli: venv activate script not found: $venv/bin/activate"
+  if [[ -z "$venv" || ! -x "$venv/bin/python" ]]; then
+    print -u2 "pycli: venv python not found: ${venv:-(no venv)}/bin/python"
     print -u2 "pycli: run 'poetry install' or check .pypoetry.zshPythonDir in chezmoi"
     return 1
   fi
 
-  (
-    cd "$repo" \
-      && source "$venv/bin/activate" \
-      && python -m packages.cli "$@"
-  )
+  print -r -- "PATH=${(q)venv}/bin:\"\$PATH\" VIRTUAL_ENV=${(q)venv}" \
+    "PYTHONPATH=${(q)repo} ${(q)venv}/bin/python -P -m packages.cli ${(j: :)${(q)@}}"
+}
+
+function pycli() {
+  local cmdline
+  cmdline="$(pycli_cmdline "$@")" || return
+  eval "$cmdline"
 }
 {{- if and $venv (stat (joinPath $repo "packages/cli.py")) (stat $python) }}
 {{- /* Paths go in as positional args so sh never re-parses them. */}}
