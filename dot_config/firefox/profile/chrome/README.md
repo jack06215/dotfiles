@@ -56,9 +56,12 @@ Firefox sets them on `:root` too, hence `!important`.
     wrapped.
   - Items to the right of the URL bar slide along with the reveal's edge.
   - Shrinking on blur is a normal transition.
-- **Results open upwards:** Firefox pins the open URL bar's top to the
-  toolbar, so at the bottom of the window its results would drop off screen.
-  It's anchored to the bottom instead, with `flex-direction: column-reverse`.
+- **Results open upwards:** since Firefox 157 the results are a popover
+  anchored under the input (`position-area: block-end center`), which at the
+  bottom of the window leaves them a sliver of space. They're anchored above it
+  instead (`block-start`), and the two halves of the shared background (the
+  input's `.urlbar-background` and the results' `.urlbarView-background`) are
+  flipped to meet on the input's top edge.
 - **Search mode switcher:** Firefox parks the unused switcher at
   `top: -999px`. The URL bar (`contain: layout`) is its containing block, so in
   a tall window that lands on screen. It's moved to `-200vh`.

@@ -266,7 +266,6 @@ body::after {
 #nav-bar:has(#urlbar-container:focus-within) {
   margin-right: 0 !important;
 }
-#urlbar-container[breakout][breakout-extend],
 #urlbar-container:focus-within {
   max-width: 100vw !important;
   margin-left: 0 !important;
@@ -307,14 +306,33 @@ body::after {
   z-index: 11 !important; /* between the window-border glow and ring */
 }
 
-/* Firefox pins the open URL bar's top to the toolbar, so its results would
-   drop off the bottom of the window. Anchor it to the bottom instead and
-   stack the results above the input */
-#urlbar[breakout][breakout-extend] {
-  top: auto !important;
-  bottom: var(--rgb-bar-lift) !important; /* level with the lifted bar */
-  display: flex !important;
-  flex-direction: column-reverse !important;
+/* The results are a popover anchored under the input (Firefox 157+), which at
+   the bottom of the window leaves them no room. Open them above it instead */
+#urlbar > .urlbarView:popover-open {
+  position-area: block-start center !important;
+}
+/* The input and results share one background, painted in two halves that
+   each run past the seam and are clipped back to it. Flip both halves so
+   they meet on the input's top edge, rounding the corners on the outside */
+#urlbar[popover-open] > .urlbar-background {
+  inset-block-start: calc(-1 * var(--urlbar-joint-background-overlap)) !important;
+  inset-block-end: calc(-1 * (var(--urlbar-background-overhang-open) + var(--urlbar-input-growth-open-block))) !important;
+  border-radius: 0 0 var(--urlbar-background-border-top-radius-open) var(--urlbar-background-border-top-radius-open) !important;
+  clip-path: inset(
+    calc(var(--urlbar-joint-background-overlap) - var(--urlbar-input-growth-open-block))
+    calc(-1 * var(--urlbar-joint-background-shadow-margin))
+    calc(-1 * var(--urlbar-joint-background-shadow-margin))
+  ) !important;
+}
+#urlbar > .urlbarView > .urlbarView-background {
+  inset-block: calc(-1 * var(--urlbarView-joint-background-outset-block))
+    calc(-1 * var(--urlbarView-margin-block) - var(--urlbar-joint-background-overlap)) !important;
+  border-radius: var(--urlbar-background-border-radius) var(--urlbar-background-border-radius) 0 0 !important;
+  clip-path: inset(
+    calc(-1 * var(--urlbar-joint-background-shadow-margin))
+    calc(-1 * var(--urlbar-joint-background-shadow-margin))
+    var(--urlbar-joint-background-overlap)
+  ) !important;
 }
 
 /* Firefox parks the unused search engine switcher at top: -999px, but the
