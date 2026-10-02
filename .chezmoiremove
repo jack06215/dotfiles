@@ -33,6 +33,12 @@
 # its own: the generator deletes the specs it wrote for commands now gone.
 .config/zsh/src/myscripts/ghpr-index
 
+# Termux reads termux.properties from ~/.termux before ~/.config/termux, and
+# Termux:Boot only runs ~/.termux/boot, so these copies were never used; they
+# are dot_termux/ now.
+.config/termux/termux.properties
+.config/termux/start-backend-server
+
 # The Brewfile, Chocolatey and PowerToys exporters moved to tools/setup/, which
 # is repo-only. Run them through `bazel run //tools/setup:...` or from the
 # checkout.

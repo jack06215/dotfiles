@@ -40,9 +40,6 @@ fi
 [[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] WSL2 detected; sourcing wsl_pre_init.zsh and wsl.zsh"
 [ -f "$ZDOTDIR/src/wsl_pre_init.zsh" ] && source "$ZDOTDIR/src/wsl_pre_init.zsh"
 [ -f "$ZDOTDIR/src/wsl.zsh" ] && source "$ZDOTDIR/src/wsl.zsh"
-{{-   else if env "TERMUX_VERSION" }}
-[ -f "$ZDOTDIR/src/termux_pre_init.zsh" ] && source "$ZDOTDIR/src/termux_pre_init.zsh"
-[ -f "$ZDOTDIR/src/termux.zsh" ] && source "$ZDOTDIR/src/termux.zsh"
 {{-   else }}
 # Plain Linux (not WSL, not Termux): intentionally no dedicated pre-init
 # file exists yet. This is a deliberate no-op, not an oversight - add a
@@ -50,6 +47,10 @@ fi
 # Linux-specific setup is needed. Set ZSH_DEBUG_INIT=1 to trace this.
 [[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] plain Linux detected; no OS-specific pre-init defined, skipping"
 {{-   end }}
+{{- else if eq .chezmoi.os "android" }}
+{{- /* Termux: chezmoi's Android build reports "android", not "linux". */}}
+[ -f "$ZDOTDIR/src/termux_pre_init.zsh" ] && source "$ZDOTDIR/src/termux_pre_init.zsh"
+[ -f "$ZDOTDIR/src/termux.zsh" ] && source "$ZDOTDIR/src/termux.zsh"
 {{- else }}
 # Other OS (e.g. windows): no OS-specific pre-init defined. Intentional no-op.
 [[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] non-darwin/linux OS detected; no OS-specific pre-init defined, skipping"
@@ -152,13 +153,13 @@ fi
 {{-   if .myComputer.isWSL2 }}
 [[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] WSL2 detected; sourcing wsl_post_init.zsh"
 [ -f "$ZDOTDIR/src/wsl_post_init.zsh" ] && source "$ZDOTDIR/src/wsl_post_init.zsh"
-{{-   else if env "TERMUX_VERSION" }}
-[ -f "$ZDOTDIR/src/termux_post_init.zsh" ] && source "$ZDOTDIR/src/termux_post_init.zsh"
 {{-   else }}
 # Plain Linux: no dedicated post-init file yet either; see the pre-init
 # branch above for rationale. Intentional no-op.
 [[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] plain Linux detected; no OS-specific post-init defined, skipping"
 {{-   end }}
+{{- else if eq .chezmoi.os "android" }}
+[ -f "$ZDOTDIR/src/termux_post_init.zsh" ] && source "$ZDOTDIR/src/termux_post_init.zsh"
 {{- else }}
 # Other OS (e.g. windows): no OS-specific post-init defined. Intentional no-op.
 [[ -n "$ZSH_DEBUG_INIT" ]] && print -u2 -- "[init.zsh] non-darwin/linux OS detected; no OS-specific post-init defined, skipping"

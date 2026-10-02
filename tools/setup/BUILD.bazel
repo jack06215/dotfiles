@@ -4,7 +4,7 @@ load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 # Repo tooling only: .chezmoiignore keeps tools/ out of $HOME, so the scripts
 # here carry no chezmoi executable_ prefix. generate-chocofile.ps1 lives here
 # too but has no target - no rule in the workspace can wrap a .ps1; see its
-# header.
+# header. Neither do the Termux scripts, which only run on the phone.
 
 # Regenerates the Brewfile manifest of the machine you run it on, from what it
 # currently has installed:
