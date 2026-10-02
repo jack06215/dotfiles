@@ -122,7 +122,12 @@
 }
 
 /* === Private Browsing Indicator === */
-#private-browsing-indicator-with-label { display: none; }
+/* Nova (on by default since 157) swaps the labelled indicator for an icon
+   button at the end of the tab strip */
+.private-browsing-indicator-with-label,
+.private-browsing-indicator-button {
+  display: none !important;
+}
 #main-window[privatebrowsingmode] .tabbrowser-tab[selected] .tab-content::before {
   content: var(--private-icon-char);
   color: var(--color-accent);
@@ -131,14 +136,20 @@
 
 /* === Status Panel (bottom-left) === */
 #statuspanel {
-  position: fixed;
-  bottom: 1vh;
-  left: 1vw;
-  border: none;
-  color: var(--color-fg-light);
   font-size: 10px;
-  max-width: 50%;
-  background: transparent;
+}
+/* Firefox positions it from the content area's bottom-left only while shown,
+   so this floats just above the bar. fixed would put it over the bar */
+#statuspanel:not([hidden]) {
+  bottom: 1vh !important;
+  left: 1vw !important;
+  max-width: 50% !important;
+}
+/* The label, not the panel, paints the box */
+#statuspanel-label {
+  background: transparent !important;
+  border: none !important;
+  color: var(--color-fg-light) !important;
 }
 
 /* === Animated RGB Window Border === */
@@ -260,6 +271,10 @@ body::after {
 #urlbar-container {
   transition: all 0.25s ease-in-out !important;
   max-width: 20vw !important;
+  /* Firefox's flex: 400 0 auto won't let it shrink, which pushes the buttons
+     beside it over the tabs */
+  flex-shrink: 1 !important;
+  min-width: 0 !important;
 }
 /* Widen the nav bar to the full window and let the URL bar flex into it.
    A 100vw URL bar would overflow by however far from the left it starts */
@@ -273,10 +288,12 @@ body::after {
   transition: none !important;
 }
 #urlbar {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
   transition: all 0.25s ease-in-out !important;
+}
+/* The field is painted by .urlbar-background, not #urlbar */
+#urlbar:not([focused], [popover-open]) > .urlbar-background {
+  background-color: transparent !important;
+  border-color: transparent !important;
 }
 /* The results decide whether to wrap (URL bar under 650px) once, as they
    open, so growing with a width transition could leave them wrapped. Jump to
@@ -351,9 +368,6 @@ body::after {
 }
 :root[fullscreenNavToolboxHidden] #navigator-toolbox {
   visibility: collapse !important;
-}
-#urlbar {
-  --toolbar-shift-translate: none !important;
 }
 #fullscr-toggler {
   top: auto !important;

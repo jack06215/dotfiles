@@ -4,8 +4,8 @@ A "one line" Firefox: the tabs and the URL bar share a single row at the
 **bottom** of the window, on a dark theme, with an animated RGB ring around the
 window edge.
 
-Everything below was checked against Firefox 156 on macOS unless marked
-otherwise.
+Everything below was checked against Firefox 157 on macOS, which has the Nova
+UI (`browser.nova.enabled`) on by default, unless marked otherwise.
 
 ## Installing and applying changes
 
@@ -37,9 +37,9 @@ otherwise.
 | Row height | 20px rows with 2px above and below, which Firefox turns into a 24px tab strip. The toolbox is 28px including the ring's lift (see below). |
 | Buttons left | Back, URL bar, downloads, extensions. |
 | Buttons hidden | Forward, reload/stop, home, library, account, flexible spaces, page actions, the tracking-protection shield, the ☰ app menu. |
-| Status panel | The link-preview text floats bottom-left (1vw/1vh in), 10px, with no background. |
-| Private windows | Firefox's "Private browsing" label is hidden. The selected tab's title gets an accent-coloured `P` prefix instead (`--private-icon-char`). *Not verified.* |
-| Extensions panel | 12px icons, with the header, separators, per-item messages and "Manage extensions" hidden. *Not verified: the panel only exists once opened.* |
+| Status panel | The link-preview text floats 1vw/1vh in from the page's bottom-left, just above the bar, at 10px in `--color-fg-light` with no box. Firefox positions the panel and paints the box on `#statuspanel-label`, so these rules need `!important`. With no box, the text is hard to read over light pages. |
+| Private windows | Firefox's private-browsing indicator is hidden: both the labelled one and the icon button Nova shows at the end of the tab strip. The selected tab's title gets an accent-coloured `P` prefix instead (`--private-icon-char`). |
+| Extensions panel | 12px icons, with the header, separators, per-item messages and "Manage extensions" hidden. *The per-item messages aren't verified: they need an installed extension.* |
 
 Firefox's own sizing variables (`--tab-min-height`, `--tab-margin-block`,
 `--urlbar-height`, `--toolbarbutton-padding-*`) are overridden on `:root`.
@@ -48,6 +48,12 @@ Firefox sets them on `:root` too, hence `!important`.
 ## URL bar
 
 - **At rest:** at most 20vw wide, transparent and borderless.
+  - Firefox gives `#urlbar-container` `flex: 400 0 auto`, which won't let it
+    shrink, so the buttons beside it would spill over the tabs. It's allowed
+    to shrink (`flex-shrink: 1`, `min-width: 0`), so everything fits in the
+    nav bar.
+  - The field is painted by `.urlbar-background`, not `#urlbar`. Its fill and
+    border are cleared while the URL bar is neither focused nor open.
 - **On focus:** the nav bar widens to the whole window and the URL bar grows
   into it.
   - It jumps to full width and plays a 0.25s `clip-path` reveal, instead of
@@ -72,8 +78,8 @@ Firefox sets them on `:root` too, hence `!important`.
   which would leave a bottom toolbar over the page. Instead it's collapsed
   (`visibility: collapse`).
 - The reveal hotspot (`#fullscr-toggler`) is moved to the bottom edge.
-- macOS's shift to clear the menu bar is cancelled (`translate: none`,
-  `--toolbar-shift-translate: none`).
+- macOS's shift to clear the menu bar is cancelled (`translate: none` on the
+  toolbox). Since 157 the URL bar results follow the input on their own.
 - The RGB ring is hidden around fullscreen video (`inDOMFullscreen`), and has
   square corners in fullscreen windows.
 
@@ -225,8 +231,19 @@ measurement on real hardware.
   5. To measure CPU, use `ChromeUtils.requestProcInfo()` for per-thread CPU
      time. `WRWorker` threads are the CPU mask redraws. Count paints with
      `MozAfterPaint` on the chrome window.
+- **Match the real toolbar:** a fresh profile gets Firefox's default layout,
+  including a sidebar button. Copy `browser.uiCustomization.state` from the
+  real profile's `prefs.js` into `user.js`, then
+  `CustomizableUI.removeWidgetFromArea("sidebar-button")`. Extension buttons
+  won't exist, so add built-in widgets (such as `print-button`) as 24px
+  stand-ins. Add `user_pref("layout.css.devPixelsPerPx", "2")` for Retina-sized
+  screenshots.
 - **Headless quirks:**
   - `--window-size` is ignored; use `window.resizeTo`.
+  - Under Marionette the URL bar has red stripes. That's Firefox's
+    remote-control marker, not this CSS.
+  - The status panel only appears for a hovered link. Show it with
+    `XULBrowserWindow.setOverLink(url)`.
   - Native mouse events never arrive; use
     `InspectorUtils.addPseudoClassLock(el, ":hover")`.
   - Focus moves from the URL bar back to the page about a second after
