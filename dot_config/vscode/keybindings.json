@@ -17,7 +17,9 @@
   // never sees ^H ^J ^K ^L; the navigate commands are on VS Code's default
   // terminal.integrated.commandsToSkipShell, so no entry is needed there.
   // Not in a picker, where Ctrl-j/k move the selection. Outside macOS, Ctrl-k
-  // stays VS Code's chord prefix (Ctrl-k Ctrl-s and friends).
+  // stays VS Code's chord prefix (Ctrl-k Ctrl-s and friends) except in the
+  // terminal, which would otherwise have no way back up to the editor. nvc's
+  // TUI pickers keep their own Ctrl-k there.
   {
     "key": "ctrl+h",
     "command": "workbench.action.navigateLeft",
@@ -32,6 +34,11 @@
     "key": "ctrl+k",
     "command": "workbench.action.navigateUp",
     "when": "isMac && !editorTextFocus && !inQuickOpen"
+  },
+  {
+    "key": "ctrl+k",
+    "command": "workbench.action.navigateUp",
+    "when": "!isMac && terminalFocus && !nvc.activeTerminalIsTui"
   },
   {
     "key": "ctrl+l",
