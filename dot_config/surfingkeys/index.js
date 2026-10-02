@@ -15,7 +15,7 @@ settings.tabsMRUOrder = false;
 settings.historyMUOrder = false;
 settings.cursorAtEndOfInput = false;
 // Show LLM/AI chat via built-in `A` if you configure settings.llm
-// settings.defaultLLMProvider = 'ollama';
+settings.defaultLLMProvider = 'ollama';
 
 api.Hints.setCharacters('asdfwerxcvuionm');
 
@@ -855,6 +855,19 @@ input { font-family: var(--font); font-weight: var(--font-weight); }
 #sk_tabs .sk_tab_title { color: var(--fg); }
 #sk_tabs .sk_tab_url   { color: var(--main-fg); }
 #sk_tabs .sk_tab_hint  { background: var(--bg); border: 1px solid var(--border); color: var(--accent-fg); }
+
+/* Tab picker (T): anchor bottom-right, theme-sized text */
+#sk_tabs {
+  top: auto !important;
+  left: auto !important;
+  bottom: 0 !important;
+  right: 0 !important;
+}
+#sk_tabs .sk_tab_title,
+#sk_tabs .sk_tab_hint      { font-size: var(--font-size) !important; }
+#sk_tabs .sk_tab_icon > img { width: var(--font-size) !important; }
+/* Vertical mode fixes each hint at left: 80pt of the viewport; keep it inside its row */
+#sk_tabs.vertical .sk_tab_hint { position: static !important; }
 
 .sk_theme #sk_frame   { background: var(--bg); opacity: 0.2; color: var(--accent-fg); }
 
