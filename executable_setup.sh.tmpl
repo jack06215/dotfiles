@@ -2,8 +2,17 @@
 set -euo pipefail -o posix
 cd "$(dirname "$0")"
 
+{{/* chezmoi renders only the code for the OS it runs on: each platform's
+     steps sit in an `if` on one of these, so ~/setup.sh on the phone carries
+     no Homebrew or asdf, and on macOS or Linux none of Termux. */ -}}
+{{ $isMacos := eq .chezmoi.os "darwin" -}}
+{{ $isLinux := eq .chezmoi.os "linux" -}}
+{{ $isTermux := eq .chezmoi.os "android" -}}
+{{ $usesHomebrew := or $isMacos $isLinux -}}
 YARN_VERSION="4.12.0"
+{{ if $usesHomebrew -}}
 COREPACK_VERSION="0.33.0"
+{{ end -}}
 
 # Installed for every nodejs version in .tool-versions. Unpinned on purpose, so
 # a rerun upgrades them the way `brew upgrade` does the Brewfile; pin one as
@@ -21,6 +30,7 @@ GH_EXTENSIONS=(
   'dlvhdr/gh-dash'
 )
 
+{{ if $isLinux -}}
 # apt packages for Debian/Ubuntu (WSL2 included): what Homebrew cannot or
 # should not provide.
 APT_PACKAGES=(
@@ -44,6 +54,8 @@ APT_PACKAGES=(
   gnupg pinentry-curses
 )
 
+{{ end -}}
+{{ if $isTermux -}}
 # Termux (Android) has neither Homebrew nor asdf: Homebrew does not support
 # Android, and asdf's tools are prebuilt for glibc, which Android's bionic
 # cannot run. pkgfiles/termux, the manifest generate-termux-packages.sh
@@ -71,6 +83,7 @@ GITHUB_KEYS_USER='jack06215'
 # where it has not.
 TERMUX_APT_OPTS=(-y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold)
 
+{{ end -}}
 # Steps that failed but did not stop the run; reported at the end.
 FAILURES=()
 
@@ -79,6 +92,55 @@ function note_failure() {
   echo "warning: $1 failed; continuing" >&2
 }
 
+{{ if $isMacos -}}
+function install_xcode_clt() {
+  if xcode-select -p &> /dev/null; then
+    return 0
+  fi
+
+  echo 'Xcode Command Line Tools not found. Triggering installation (accept the GUI prompt to continue)...'
+  xcode-select --install
+
+  # On a genuinely fresh machine this runs before Homebrew, so gum will not
+  # exist yet and the plain loop is what actually executes. The spinner is for
+  # reruns, where the wait is otherwise indistinguishable from a hang.
+  if command -v gum &> /dev/null; then
+    gum spin --spinner=moon \
+      --title='Waiting for Xcode Command Line Tools (accept the GUI prompt)...' -- \
+      bash -c 'until xcode-select -p &> /dev/null; do sleep 5; done'
+  else
+    until xcode-select -p &> /dev/null; do
+      sleep 5
+    done
+  fi
+}
+
+{{ end -}}
+{{ if $isLinux -}}
+function install_apt_packages() {
+  local -a packages=("${APT_PACKAGES[@]}")
+
+  # asdf's mysql plugin runs MySQL's generic Linux build, which links against
+  # libaio.so.1. Debian 13 / Ubuntu 24.04 renamed the package for the 64-bit
+  # time_t transition, and nothing provides the old soname any more.
+  if apt-cache show libaio1t64 &> /dev/null; then
+    packages+=(libaio1t64)
+  else
+    packages+=(libaio1)
+  fi
+
+  sudo apt-get update
+  sudo apt-get install -y "${packages[@]}"
+
+  local libdir
+  libdir="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+  if [[ -e "${libdir}/libaio.so.1t64" && ! -e "${libdir}/libaio.so.1" ]]; then
+    sudo ln -s libaio.so.1t64 "${libdir}/libaio.so.1"
+  fi
+}
+
+{{ end -}}
+{{ if $usesHomebrew -}}
 function read_tool_versions() {
   sed -E 's/ *#.*$//' .tool-versions \
     | # Remove comments
@@ -106,50 +168,6 @@ function foreach_tool_version() {
       bash -euo pipefail -c "${command}"
     )
   done
-}
-
-function install_xcode_clt() {
-  if xcode-select -p &> /dev/null; then
-    return 0
-  fi
-
-  echo 'Xcode Command Line Tools not found. Triggering installation (accept the GUI prompt to continue)...'
-  xcode-select --install
-
-  # On a genuinely fresh machine this runs before Homebrew, so gum will not
-  # exist yet and the plain loop is what actually executes. The spinner is for
-  # reruns, where the wait is otherwise indistinguishable from a hang.
-  if command -v gum &> /dev/null; then
-    gum spin --spinner=moon \
-      --title='Waiting for Xcode Command Line Tools (accept the GUI prompt)...' -- \
-      bash -c 'until xcode-select -p &> /dev/null; do sleep 5; done'
-  else
-    until xcode-select -p &> /dev/null; do
-      sleep 5
-    done
-  fi
-}
-
-function install_apt_packages() {
-  local -a packages=("${APT_PACKAGES[@]}")
-
-  # asdf's mysql plugin runs MySQL's generic Linux build, which links against
-  # libaio.so.1. Debian 13 / Ubuntu 24.04 renamed the package for the 64-bit
-  # time_t transition, and nothing provides the old soname any more.
-  if apt-cache show libaio1t64 &> /dev/null; then
-    packages+=(libaio1t64)
-  else
-    packages+=(libaio1)
-  fi
-
-  sudo apt-get update
-  sudo apt-get install -y "${packages[@]}"
-
-  local libdir
-  libdir="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
-  if [[ -e "${libdir}/libaio.so.1t64" && ! -e "${libdir}/libaio.so.1" ]]; then
-    sudo ln -s libaio.so.1t64 "${libdir}/libaio.so.1"
-  fi
 }
 
 # Put an installed-but-not-on-PATH Homebrew on PATH (e.g. setup.sh run from
@@ -254,6 +272,7 @@ function install_npm_global_packages() {
   foreach_tool_version 'nodejs' "${cmd}"
 }
 
+{{ end -}}
 function install_gh_extensions() {
   local installed ext
   installed="$(gh extension list 2> /dev/null || true)"
@@ -285,6 +304,7 @@ function reapply_dotfiles() {
   chezmoi apply || note_failure 'chezmoi apply'
 }
 
+{{ if $isTermux -}}
 function read_manifest() {
   sed -E 's/[[:space:]]*#.*$//' "$1" | grep -E '[^[:space:]]'
 }
@@ -495,6 +515,7 @@ function reload_termux_settings() {
   termux-reload-settings || note_failure 'termux-reload-settings'
 }
 
+{{ end -}}
 # gum when it is available, the hand-rolled ANSI path when it is not. The
 # fallback is not optional here: this script is what installs gum, so the
 # earliest sections necessarily run before it exists.
@@ -549,7 +570,8 @@ function run_step() {
   "$@"
 }
 
-# The steps after Homebrew, shared by every OS.
+{{ if $usesHomebrew -}}
+# The steps after Homebrew, shared by macOS and Linux.
 function setup_common() {
   section 'Upgrading Homebrew packages'
   upgrade_homebrew_packages
@@ -573,6 +595,8 @@ function setup_common() {
   reapply_dotfiles
 }
 
+{{ end -}}
+{{ if $isMacos -}}
 function setup_macos() {
   section 'Installing Xcode Command Line Tools'
   install_xcode_clt
@@ -583,6 +607,8 @@ function setup_macos() {
   setup_common
 }
 
+{{ end -}}
+{{ if $isLinux -}}
 function setup_linux() {
   section 'Installing apt packages'
   install_apt_packages
@@ -593,6 +619,8 @@ function setup_linux() {
   setup_common
 }
 
+{{ end -}}
+{{ if $isTermux -}}
 # Not setup_common: its Homebrew and asdf steps have no Termux counterpart, so
 # the steps that carry over are called one by one.
 function setup_termux() {
@@ -634,16 +662,17 @@ function setup_termux() {
   reload_termux_settings
 }
 
+{{ end -}}
 {{/* osRelease is empty on macOS, and missingkey=error rejects reading it. */ -}}
 {{ $isSupportedLinux := false -}}
-{{ if eq .chezmoi.os "linux" -}}
+{{ if $isLinux -}}
 {{- /* `get`: a rolling release has no VERSION_ID, and missingkey=error would
        fail the whole apply on it. */ -}}
 {{   $id := get .chezmoi.osRelease "id" -}}
 {{   $version := get .chezmoi.osRelease "versionID" -}}
 {{   $isSupportedLinux = or (and (eq $id "debian") (has $version (list "12" "13"))) (and (eq $id "ubuntu") (has $version (list "22.04" "24.04" "26.04"))) -}}
 {{ end -}}
-{{ if .myComputer.isDarwin -}}
+{{ if $isMacos -}}
 {{   if .myComputer.isArm -}}
 setup_macos
 {{   else -}}
@@ -652,7 +681,7 @@ exit 1
 {{   end -}}
 {{ else if $isSupportedLinux -}}
 setup_linux
-{{ else if eq .chezmoi.os "android" -}}
+{{ else if $isTermux -}}
 setup_termux
 {{ else -}}
 echo 'Unsupported system. Supported: macOS (arm64), Debian 12/13, Ubuntu 22.04/24.04/26.04 (WSL2 included), Termux.'
