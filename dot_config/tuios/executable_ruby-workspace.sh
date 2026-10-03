@@ -13,6 +13,7 @@
 #
 # Usage:
 #   ruby-workspace.sh [session-name]
+#   ruby-workspace.sh --attached [session-name]
 #
 #   The session defaults to "ruby" and opens in the current directory. If the
 #   session already exists, this attaches to it instead of building another,
@@ -21,6 +22,11 @@
 #   restores it when it starts, so the split survives a reboot too (with new
 #   shells). `tuios kill-session ruby` discards the session, and the next run
 #   builds a fresh one.
+#
+#   --attached attaches nothing; it exits 0 if a client already has the
+#   session attached, 1 if not. wezterm.lua asks before opening the workspace,
+#   so a second WezTerm window does not attach as well and retile the session
+#   to its own size under the first.
 #
 # THE SPLIT STARTS AT 50/50, NOT THE 70/30 THE WEZTERM TAB HAD. Nothing in
 # tuios 0.8.0 can set a split ratio from a script. The one way to do it from
@@ -34,6 +40,22 @@
 # Leader (prefix) is Ctrl-S, as in tmux; see config.toml next to this file.
 
 set -eu
+
+query=0
+if [ "${1:-}" = --attached ]; then
+  query=1
+  shift
+fi
+session=${1:-ruby}
+
+# Ahead of the checks below, which drop to a shell, and of start-server: a
+# question should not start a daemon. With none running, `tuios ls` lists the
+# saved sessions as not attached, which is the right answer.
+if [ "$query" -eq 1 ]; then
+  tuios ls --json 2> /dev/null |
+    jq -e --arg s "$session" 'any(.[]; .name == $s and .attached)' > /dev/null && exit 0
+  exit 1
+fi
 
 if ! command -v tuios > /dev/null 2>&1; then
   echo "ruby-workspace.sh: tuios is not installed or not on PATH" >&2
@@ -52,8 +74,6 @@ if ! tuios split-window --help > /dev/null 2>&1; then
   echo "Upgrade with: brew update && brew upgrade tuios && tuios kill-server" >&2
   exec "${SHELL:-/bin/sh}"
 fi
-
-session=${1:-ruby}
 
 # Start the daemon before asking about the session. Only a running daemon
 # restores the sessions saved on disk, so without this a ruby session saved

@@ -69,6 +69,10 @@
 
 # The "<random>.<name>" profile directory inside the folder above. Not a path,
 # so it is looked up directly rather than through lookupPath.
+#
+# The `windows` rows feed only the native-Windows link script. On WSL2,
+# push-windows-configs reads the profile from profiles.ini instead
+# (.chezmoitemplates/firefoxProfileDir), so a new machine needs no row there.
 [lookups.firefoxProfileId]
   default = "vfop1w54.default"
 [lookups.firefoxProfileId.table]

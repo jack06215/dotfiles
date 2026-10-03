@@ -98,13 +98,20 @@ push_into {{ $.vscode.userDir | quote }} {{ . | quote }} << 'CHEZMOI_WINDOWS_PUS
 CHEZMOI_WINDOWS_PUSH
 {{- end }}
 
-# ---- Firefox (profile {{ .firefox.profile }}) ----
-push_into {{ .firefox.profileDir | quote }} "user.js" << 'CHEZMOI_WINDOWS_PUSH'
+# ---- Firefox (the default profile in %APPDATA%\Mozilla\Firefox\profiles.ini) ----
+# Resolved while rendering, so a profile Firefox creates after the first apply
+# changes this script and the next apply reruns it.
+{{- $firefoxProfile := includeTemplate "firefoxProfileDir" (joinPath $win "AppData/Roaming/Mozilla/Firefox") }}
+{{- if $firefoxProfile }}
+push_into {{ $firefoxProfile | quote }} "user.js" << 'CHEZMOI_WINDOWS_PUSH'
 {{ includeTemplate "dot_config/firefox/profile/user.js.tmpl" . | trimSuffix "\n" }}
 CHEZMOI_WINDOWS_PUSH
-push_into {{ .firefox.profileDir | quote }} "chrome/userChrome.css" << 'CHEZMOI_WINDOWS_PUSH'
+push_into {{ $firefoxProfile | quote }} "chrome/userChrome.css" << 'CHEZMOI_WINDOWS_PUSH'
 {{ include "dot_config/firefox/profile/chrome/userChrome.css" | trimSuffix "\n" }}
 CHEZMOI_WINDOWS_PUSH
+{{- else }}
+echo "windows-push: no default Firefox profile in profiles.ini (Firefox not run yet?), skipping user.js and chrome/userChrome.css" >&2
+{{- end }}
 
 # ---- Windows Terminal (Store install's LocalState) ----
 push_into {{ joinPath $win "AppData/Local/Packages/Microsoft.WindowsTerminal_8wekyb3d8bbwe/LocalState" | quote }} "settings.json" << 'CHEZMOI_WINDOWS_PUSH'

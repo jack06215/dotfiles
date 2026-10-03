@@ -10,7 +10,7 @@ branches baked into the zsh startup sequence and into templated config files.
 - [Terminal & editor](#terminal--editor)
 - [Python workspace](#python-workspace)
 - [Tooling](#tooling) — git, tock, Claude Code, snippets, toolchains
-- [Platform notes](#platform-notes) — WSL2, Windows
+- [Platform notes](#platform-notes) — WSL2, Windows, Termux
 
 ## Quick start
 
@@ -88,6 +88,7 @@ dot_config/
                               Chocolatey/winget manifests
 dot_glzr/
   glazewm/, zebar/          → Windows tiling WM + status bar
+dot_termux/                 → Termux app settings + Termux:Boot scripts (Android only)
 ```
 
 Repo-maintenance entry points live at the root and under `tools/`:
@@ -95,6 +96,7 @@ Repo-maintenance entry points live at the root and under `tools/`:
 | Path | Purpose |
 | --- | --- |
 | `brewfiles/` | per-OS Homebrew manifests (`darwin`, `wsl2`) carrying taps + formulae + casks + tap trust; `Brewfile.tmpl` renders the matching one to `~/Brewfile` for `brew bundle install`, and `tools/setup/generate-brewfile.sh` regenerates the one for the machine you are on |
+| `pkgfiles/termux` | Termux's package manifest, which `setup.sh` installs with apt-get on the phone; `tools/setup/generate-termux-packages.sh` regenerates it there (see [Termux](#termux)) |
 | `MODULE.bazel`, `tools/setup/` | `bazel run //tools/setup:export_brewfile_macos` / `export_brewfile_linux` regenerate the brewfiles, and `//tools/setup:export_powertoys_settings` pulls the PowerToys settings back out of `%LOCALAPPDATA%` on Windows. Not a build system for the dotfiles themselves; every target is run-only, since they write into the source tree. `tools/` is repo-only (`.chezmoiignore` keeps it out of `$HOME`), and `.bazelrc` sets `--symlink_prefix=/` so no `bazel-*` symlinks appear in a chezmoi source tree |
 | `skills/` | Claude Code skills (see [Claude Code](#claude-code)) |
 | `prompt_repository/`, `template/` | reusable prompt/PR templates |
@@ -367,7 +369,7 @@ flowchart LR
   R["dotfiles repo (in WSL2)"] -->|chezmoi apply| L["~/.config — Linux-side tools"]
   R -->|run_onchange_after_push-windows-configs| W["Windows home"]
   W --> W1["WezTerm, GlazeWM, Zebar"]
-  W --> W2["VS Code (%APPDATA%\Code\User)<br/>Firefox profile from lookups.toml"]
+  W --> W2["VS Code (%APPDATA%\Code\User)<br/>Firefox profile from profiles.ini"]
   W --> W3["Windows Terminal, PowerShell profile"]
 ```
 
@@ -408,3 +410,45 @@ configure [GlazeWM](https://github.com/glzr-io/glazewm) (tiling WM) and
 
 See **[docs/windows-setup.md](docs/windows-setup.md)** for the bootstrap on a
 brand-new machine, the manual steps, and the known gaps.
+
+### Termux
+
+The Android phone runs the same shell and editor setup inside
+[Termux](https://termux.dev). chezmoi's Android build reports `.chezmoi.os` as
+`android`, not `linux`, so that is what every Termux branch tests.
+
+On a fresh phone, install Termux, Termux:API (clipboard) and Termux:Boot from
+the same source - F-Droid or GitHub, since the add-ons must be signed like the
+app - then:
+
+```sh
+pkg install git chezmoi
+# the Quick start above, then
+~/setup.sh
+```
+
+`setup.sh` provisions it without Homebrew or asdf, neither of which runs on
+Android:
+
+| Step | From |
+| --- | --- |
+| packages | `pkgfiles/termux` through apt-get, the `*-repo` entries first since they add the sources the rest come from |
+| tools Termux doesn't package | `go install` into `~/.local/bin` (tock) |
+| Yarn v4 | the corepack bundled with nodejs-lts, shims in `~/.local/bin` |
+| npm globals | the same list as elsewhere, minus mermaid-cli (puppeteer has no Chrome for Android) |
+| the app | zsh as the login shell, `termux-setup-storage`, PlemolJP Console NF into `~/.termux/font.ttf` |
+| sshd (port 8022), ssh-agent | termux-services; `~/.ssh/authorized_keys` from the GitHub account's public keys |
+| Claude Code | `tools/setup/termux_install_claude_code.sh`, vendored from claude-code-android |
+
+Each step is skipped when already done, so a rerun is cheap. The session that
+first installs termux-services cannot start services yet; open a new session
+and rerun.
+
+`tools/setup/generate-termux-packages.sh` rewrites `pkgfiles/termux` from the
+phone's manually installed packages, minus Termux's bootstrap set and the
+script's `EXCLUDED` list - what is on this phone but should not reach a fresh
+one. Add to `EXCLUDED` rather than deleting a line from the manifest, which
+the next run would put back.
+
+Termux reads its settings and Termux:Boot's scripts from `~/.termux` ahead of
+`~/.config/termux`, so they live in `dot_termux/`.

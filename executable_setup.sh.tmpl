@@ -2,8 +2,17 @@
 set -euo pipefail -o posix
 cd "$(dirname "$0")"
 
+{{/* chezmoi renders only the code for the OS it runs on: each platform's
+     steps sit in an `if` on one of these, so ~/setup.sh on the phone carries
+     no Homebrew or asdf, and on macOS or Linux none of Termux. */ -}}
+{{ $isMacos := eq .chezmoi.os "darwin" -}}
+{{ $isLinux := eq .chezmoi.os "linux" -}}
+{{ $isTermux := eq .chezmoi.os "android" -}}
+{{ $usesHomebrew := or $isMacos $isLinux -}}
 YARN_VERSION="4.12.0"
+{{ if $usesHomebrew -}}
 COREPACK_VERSION="0.33.0"
+{{ end -}}
 
 # Installed for every nodejs version in .tool-versions. Unpinned on purpose, so
 # a rerun upgrades them the way `brew upgrade` does the Brewfile; pin one as
@@ -21,6 +30,7 @@ GH_EXTENSIONS=(
   'dlvhdr/gh-dash'
 )
 
+{{ if $isLinux -}}
 # apt packages for Debian/Ubuntu (WSL2 included): what Homebrew cannot or
 # should not provide.
 APT_PACKAGES=(
@@ -44,6 +54,36 @@ APT_PACKAGES=(
   gnupg pinentry-curses
 )
 
+{{ end -}}
+{{ if $isTermux -}}
+# Termux (Android) has neither Homebrew nor asdf: Homebrew does not support
+# Android, and asdf's tools are prebuilt for glibc, which Android's bionic
+# cannot run. pkgfiles/termux, the manifest generate-termux-packages.sh
+# writes, stands in for both. Read from the checkout at run time, so an edit
+# to it needs no `chezmoi apply` first.
+TERMUX_MANIFEST={{ joinPath .chezmoi.sourceDir "pkgfiles/termux" | quote }}
+TERMUX_CLAUDE_INSTALLER={{ joinPath .chezmoi.sourceDir "tools/setup/termux_install_claude_code.sh" | quote }}
+
+# Go tools Termux has no package for, built into ~/.local/bin when missing.
+# Delete the binary to rebuild: a build takes minutes on a phone.
+TERMUX_GO_TOOLS=(
+  # the time tracker behind tk/tockpick and the tmux status segment
+  'github.com/kriuchkov/tock/cmd/tock@latest'
+)
+
+# The terminal font, fetched into ~/.termux/font.ttf when there is none.
+PLEMOLJP_VERSION='v3.1.0'
+
+# sshd lets in the machines whose public keys GitHub publishes for this
+# account.
+GITHUB_KEYS_USER='jack06215'
+
+# apt-get rather than pkg, for a CLI that is stable in scripts. confold keeps a
+# config under $PREFIX/etc that has been edited; confdef takes the new one
+# where it has not.
+TERMUX_APT_OPTS=(-y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold)
+
+{{ end -}}
 # Steps that failed but did not stop the run; reported at the end.
 FAILURES=()
 
@@ -52,6 +92,55 @@ function note_failure() {
   echo "warning: $1 failed; continuing" >&2
 }
 
+{{ if $isMacos -}}
+function install_xcode_clt() {
+  if xcode-select -p &> /dev/null; then
+    return 0
+  fi
+
+  echo 'Xcode Command Line Tools not found. Triggering installation (accept the GUI prompt to continue)...'
+  xcode-select --install
+
+  # On a genuinely fresh machine this runs before Homebrew, so gum will not
+  # exist yet and the plain loop is what actually executes. The spinner is for
+  # reruns, where the wait is otherwise indistinguishable from a hang.
+  if command -v gum &> /dev/null; then
+    gum spin --spinner=moon \
+      --title='Waiting for Xcode Command Line Tools (accept the GUI prompt)...' -- \
+      bash -c 'until xcode-select -p &> /dev/null; do sleep 5; done'
+  else
+    until xcode-select -p &> /dev/null; do
+      sleep 5
+    done
+  fi
+}
+
+{{ end -}}
+{{ if $isLinux -}}
+function install_apt_packages() {
+  local -a packages=("${APT_PACKAGES[@]}")
+
+  # asdf's mysql plugin runs MySQL's generic Linux build, which links against
+  # libaio.so.1. Debian 13 / Ubuntu 24.04 renamed the package for the 64-bit
+  # time_t transition, and nothing provides the old soname any more.
+  if apt-cache show libaio1t64 &> /dev/null; then
+    packages+=(libaio1t64)
+  else
+    packages+=(libaio1)
+  fi
+
+  sudo apt-get update
+  sudo apt-get install -y "${packages[@]}"
+
+  local libdir
+  libdir="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+  if [[ -e "${libdir}/libaio.so.1t64" && ! -e "${libdir}/libaio.so.1" ]]; then
+    sudo ln -s libaio.so.1t64 "${libdir}/libaio.so.1"
+  fi
+}
+
+{{ end -}}
+{{ if $usesHomebrew -}}
 function read_tool_versions() {
   sed -E 's/ *#.*$//' .tool-versions \
     | # Remove comments
@@ -79,50 +168,6 @@ function foreach_tool_version() {
       bash -euo pipefail -c "${command}"
     )
   done
-}
-
-function install_xcode_clt() {
-  if xcode-select -p &> /dev/null; then
-    return 0
-  fi
-
-  echo 'Xcode Command Line Tools not found. Triggering installation (accept the GUI prompt to continue)...'
-  xcode-select --install
-
-  # On a genuinely fresh machine this runs before Homebrew, so gum will not
-  # exist yet and the plain loop is what actually executes. The spinner is for
-  # reruns, where the wait is otherwise indistinguishable from a hang.
-  if command -v gum &> /dev/null; then
-    gum spin --spinner=moon \
-      --title='Waiting for Xcode Command Line Tools (accept the GUI prompt)...' -- \
-      bash -c 'until xcode-select -p &> /dev/null; do sleep 5; done'
-  else
-    until xcode-select -p &> /dev/null; do
-      sleep 5
-    done
-  fi
-}
-
-function install_apt_packages() {
-  local -a packages=("${APT_PACKAGES[@]}")
-
-  # asdf's mysql plugin runs MySQL's generic Linux build, which links against
-  # libaio.so.1. Debian 13 / Ubuntu 24.04 renamed the package for the 64-bit
-  # time_t transition, and nothing provides the old soname any more.
-  if apt-cache show libaio1t64 &> /dev/null; then
-    packages+=(libaio1t64)
-  else
-    packages+=(libaio1)
-  fi
-
-  sudo apt-get update
-  sudo apt-get install -y "${packages[@]}"
-
-  local libdir
-  libdir="/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
-  if [[ -e "${libdir}/libaio.so.1t64" && ! -e "${libdir}/libaio.so.1" ]]; then
-    sudo ln -s libaio.so.1t64 "${libdir}/libaio.so.1"
-  fi
 }
 
 # Put an installed-but-not-on-PATH Homebrew on PATH (e.g. setup.sh run from
@@ -227,6 +272,7 @@ function install_npm_global_packages() {
   foreach_tool_version 'nodejs' "${cmd}"
 }
 
+{{ end -}}
 function install_gh_extensions() {
   local installed ext
   installed="$(gh extension list 2> /dev/null || true)"
@@ -258,6 +304,218 @@ function reapply_dotfiles() {
   chezmoi apply || note_failure 'chezmoi apply'
 }
 
+{{ if $isTermux -}}
+function read_manifest() {
+  sed -E 's/[[:space:]]*#.*$//' "$1" | grep -E '[^[:space:]]'
+}
+
+function upgrade_termux_packages() {
+  apt-get update
+  apt-get full-upgrade "${TERMUX_APT_OPTS[@]}"
+}
+
+# Those of the given packages that are not installed.
+function missing_packages() {
+  local installed pkg
+  installed=" $(dpkg-query -W -f='${db:Status-Abbrev} ${Package}\n' "$@" 2> /dev/null \
+    | awk '$1 == "ii" { print $2 }' | tr '\n' ' ' || true) "
+  for pkg in "$@"; do
+    [[ "${installed}" == *" ${pkg} "* ]] || echo "${pkg}"
+  done
+}
+
+# One transaction. apt refuses the whole batch over a single name it cannot
+# find, so a failed batch is retried a package at a time, to name the culprit
+# and still install the rest.
+function apt_install() {
+  (($#)) || return 0
+  apt-get install "${TERMUX_APT_OPTS[@]}" "$@" && return 0
+
+  local pkg
+  for pkg in "$@"; do
+    apt-get install "${TERMUX_APT_OPTS[@]}" "${pkg}" || note_failure "apt-get install ${pkg}"
+  done
+}
+
+function install_termux_packages() {
+  if [[ ! -f "${TERMUX_MANIFEST}" ]]; then
+    note_failure "Termux packages (${TERMUX_MANIFEST} not found)"
+    return 0
+  fi
+
+  local -a repos=() packages=() missing=()
+  read -r -a repos <<< "$(read_manifest "${TERMUX_MANIFEST}" | grep -- '-repo$' | tr '\n' ' ')"
+  read -r -a packages <<< "$(read_manifest "${TERMUX_MANIFEST}" | grep -v -- '-repo$' | tr '\n' ' ')"
+
+  # The *-repo entries first: each adds an apt source (x11, tur, glibc, root),
+  # and apt cannot find the packages that live there until it is installed
+  # and the index refreshed.
+  read -r -a missing <<< "$(missing_packages "${repos[@]}" | tr '\n' ' ')"
+  if ((${#missing[@]})); then
+    apt_install "${missing[@]}"
+    apt-get update || note_failure 'apt-get update'
+  fi
+
+  read -r -a missing <<< "$(missing_packages "${packages[@]}" | tr '\n' ' ')"
+  if ((${#missing[@]})); then
+    apt_install "${missing[@]}"
+  else
+    echo "All ${#packages[@]} packages are installed."
+  fi
+}
+
+function install_go_tools() {
+  if ! command -v go &> /dev/null; then
+    note_failure 'Go tools (go not found; golang comes from pkgfiles/termux)'
+    return 0
+  fi
+
+  local spec name
+  for spec in "${TERMUX_GO_TOOLS[@]}"; do
+    name="$(basename "${spec%@*}")"
+    if [[ -x "${HOME}/.local/bin/${name}" ]]; then
+      echo "${name} is already installed; skipping."
+    else
+      GOBIN="${HOME}/.local/bin" go install "${spec}" || note_failure "go install ${spec}"
+    fi
+  done
+}
+
+# Through the corepack that nodejs-lts bundles, not one from npm at
+# COREPACK_VERSION as install_yarn_v4 does: npm's global bin comes after
+# $PREFIX/bin on PATH, so an npm corepack would never be the one that runs -
+# and from a shell that has not read ~/.zshenv, npm's prefix is $PREFIX itself
+# and it would overwrite the package's files. The shims go to ~/.local/bin,
+# not corepack's own directory, leaving $PREFIX to apt.
+function install_termux_yarn_v4() {
+  local bin="${HOME}/.local/bin"
+  if "${bin}/yarn" --version 2> /dev/null | grep -qF "${YARN_VERSION}"; then
+    echo "Yarn ${YARN_VERSION} is already active; skipping."
+    return 0
+  fi
+
+  if ! command -v corepack &> /dev/null; then
+    note_failure 'Yarn (corepack not found; it comes with nodejs-lts)'
+    return 0
+  fi
+
+  mkdir -p "${bin}"
+  if ! corepack enable --install-directory "${bin}" \
+    || ! corepack prepare "yarn@${YARN_VERSION}" --activate; then
+    note_failure "Yarn ${YARN_VERSION}"
+  fi
+}
+
+# The same globals as on the other machines, into Termux's nodejs rather than
+# asdf's. Not mermaid-cli: puppeteer downloads a Chrome build for it, and
+# there is none for Android.
+function install_termux_npm_packages() {
+  local -a packages=()
+  local pkg
+  for pkg in "${NPM_GLOBAL_PACKAGES[@]}"; do
+    [[ "${pkg}" == '@mermaid-js/mermaid-cli' ]] || packages+=("${pkg}")
+  done
+  npm install -g "${packages[@]}" || note_failure 'npm install -g'
+}
+
+# Termux's chsh only repoints ~/.termux/shell, which the next session reads.
+function set_termux_shell() {
+  if [[ "$(readlink "${HOME}/.termux/shell" 2> /dev/null)" == "${PREFIX}/bin/zsh" ]]; then
+    echo 'zsh is already the login shell; skipping.'
+    return 0
+  fi
+  chsh -s zsh || note_failure 'chsh -s zsh'
+}
+
+# Opens Android's storage permission prompt; ~/storage appears once it is
+# granted.
+function setup_termux_storage() {
+  if [[ -d "${HOME}/storage" ]]; then
+    echo "${HOME}/storage exists; skipping."
+    return 0
+  fi
+  termux-setup-storage || note_failure 'termux-setup-storage'
+}
+
+# PlemolJP Console NF from its GitHub release, fetched rather than tracked
+# since it is 5 MB of binary. A font already in place, whichever it is, is
+# left alone.
+function install_termux_font() {
+  local font="${HOME}/.termux/font.ttf"
+  if [[ -f "${font}" ]]; then
+    echo "${font} exists; skipping."
+    return 0
+  fi
+
+  local url zip
+  url="https://github.com/yuru7/PlemolJP/releases/download/${PLEMOLJP_VERSION}/PlemolJP_NF_${PLEMOLJP_VERSION}.zip"
+  zip="$(mktemp "${TMPDIR:-${PREFIX}/tmp}/plemoljp.XXXXXX")"
+  mkdir -p "${HOME}/.termux"
+  # The zip is 146 MB, the four NF families at every weight; only one file
+  # comes out of it.
+  if curl -fL --retry 2 -o "${zip}" "${url}" \
+    && unzip -p "${zip}" '*/PlemolJPConsole_NF/PlemolJPConsoleNF-Regular.ttf' > "${font}.tmp" \
+    && [[ -s "${font}.tmp" ]]; then
+    mv "${font}.tmp" "${font}"
+  else
+    rm -f "${font}.tmp"
+    note_failure "PlemolJP ${PLEMOLJP_VERSION} font"
+  fi
+  rm -f "${zip}"
+}
+
+# An authorized_keys already there is left alone.
+function authorize_github_keys() {
+  local keys="${HOME}/.ssh/authorized_keys"
+  if [[ -s "${keys}" ]]; then
+    echo "${keys} exists; skipping."
+    return 0
+  fi
+
+  local fetched
+  if fetched="$(curl -fsSL "https://github.com/${GITHUB_KEYS_USER}.keys")" && [[ -n "${fetched}" ]]; then
+    mkdir -p "${HOME}/.ssh"
+    chmod 700 "${HOME}/.ssh"
+    (umask 077 && printf '%s\n' "${fetched}" > "${keys}")
+  else
+    note_failure "authorized_keys from github.com/${GITHUB_KEYS_USER}.keys"
+  fi
+}
+
+# sshd listens on 8022. sv-enable needs the runsvdir that termux-services'
+# profile.d script starts, along with exporting SVDIR, so the session that
+# first installed termux-services has neither - and sv-enable's own SVDIR
+# check tests -u where it means -z, so it never says so.
+function enable_termux_services() {
+  if [[ -z "${SVDIR:-}" ]]; then
+    note_failure 'sshd/ssh-agent (termux-services not running yet; open a new Termux session and rerun)'
+    return 0
+  fi
+
+  local service
+  for service in sshd ssh-agent; do
+    sv-enable "${service}" || note_failure "sv-enable ${service}"
+  done
+}
+
+# Anthropic's linux-arm64 build, patched to run through glibc-runner, behind a
+# launcher that keeps it updated; the installer is vendored from
+# claude-code-android. Only when missing: it asks two questions and downloads
+# ~233 MB, and updates are the launcher's job.
+function install_termux_claude_code() {
+  if [[ -x "${PREFIX}/bin/claude" ]]; then
+    echo 'Claude Code is already installed; skipping.'
+    return 0
+  fi
+  bash "${TERMUX_CLAUDE_INSTALLER}" || note_failure "Claude Code (${TERMUX_CLAUDE_INSTALLER})"
+}
+
+# Picks up ~/.termux/termux.properties as chezmoi just wrote it, and the font.
+function reload_termux_settings() {
+  termux-reload-settings || note_failure 'termux-reload-settings'
+}
+
+{{ end -}}
 # gum when it is available, the hand-rolled ANSI path when it is not. The
 # fallback is not optional here: this script is what installs gum, so the
 # earliest sections necessarily run before it exists.
@@ -312,7 +570,8 @@ function run_step() {
   "$@"
 }
 
-# The steps after Homebrew, shared by every OS.
+{{ if $usesHomebrew -}}
+# The steps after Homebrew, shared by macOS and Linux.
 function setup_common() {
   section 'Upgrading Homebrew packages'
   upgrade_homebrew_packages
@@ -336,6 +595,8 @@ function setup_common() {
   reapply_dotfiles
 }
 
+{{ end -}}
+{{ if $isMacos -}}
 function setup_macos() {
   section 'Installing Xcode Command Line Tools'
   install_xcode_clt
@@ -346,6 +607,8 @@ function setup_macos() {
   setup_common
 }
 
+{{ end -}}
+{{ if $isLinux -}}
 function setup_linux() {
   section 'Installing apt packages'
   install_apt_packages
@@ -356,16 +619,60 @@ function setup_linux() {
   setup_common
 }
 
+{{ end -}}
+{{ if $isTermux -}}
+# Not setup_common: its Homebrew and asdf steps have no Termux counterpart, so
+# the steps that carry over are called one by one.
+function setup_termux() {
+  section 'Upgrading Termux packages'
+  upgrade_termux_packages
+
+  section 'Installing Termux packages'
+  install_termux_packages
+
+  section 'Installing Go tools'
+  install_go_tools
+
+  section 'Installing Yarn v4'
+  install_termux_yarn_v4
+
+  section 'Installing npm global packages'
+  install_termux_npm_packages
+
+  section 'Installing gh extensions'
+  install_gh_extensions
+
+  section 'Installing tmux plugins'
+  install_tmux_plugins
+
+  section 'Setting up the Termux app'
+  set_termux_shell
+  setup_termux_storage
+  install_termux_font
+
+  section 'Enabling sshd and ssh-agent'
+  authorize_github_keys
+  enable_termux_services
+
+  section 'Installing Claude Code'
+  install_termux_claude_code
+
+  section 'Re-applying dotfiles'
+  reapply_dotfiles
+  reload_termux_settings
+}
+
+{{ end -}}
 {{/* osRelease is empty on macOS, and missingkey=error rejects reading it. */ -}}
 {{ $isSupportedLinux := false -}}
-{{ if eq .chezmoi.os "linux" -}}
+{{ if $isLinux -}}
 {{- /* `get`: a rolling release has no VERSION_ID, and missingkey=error would
        fail the whole apply on it. */ -}}
 {{   $id := get .chezmoi.osRelease "id" -}}
 {{   $version := get .chezmoi.osRelease "versionID" -}}
 {{   $isSupportedLinux = or (and (eq $id "debian") (has $version (list "12" "13"))) (and (eq $id "ubuntu") (has $version (list "22.04" "24.04" "26.04"))) -}}
 {{ end -}}
-{{ if .myComputer.isDarwin -}}
+{{ if $isMacos -}}
 {{   if .myComputer.isArm -}}
 setup_macos
 {{   else -}}
@@ -374,8 +681,10 @@ exit 1
 {{   end -}}
 {{ else if $isSupportedLinux -}}
 setup_linux
+{{ else if $isTermux -}}
+setup_termux
 {{ else -}}
-echo 'Unsupported system. Supported: macOS (arm64), Debian 12/13, Ubuntu 22.04/24.04/26.04 (WSL2 included).'
+echo 'Unsupported system. Supported: macOS (arm64), Debian 12/13, Ubuntu 22.04/24.04/26.04 (WSL2 included), Termux.'
 exit 1
 {{ end -}}
 

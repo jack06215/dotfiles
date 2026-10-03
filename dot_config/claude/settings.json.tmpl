@@ -6,6 +6,14 @@
 {{- if or .myComputer.isCompanyMachine (not (stat $monorepo)) -}}
 {{-   $monorepo = "" -}}
 {{- end -}}
+{{- /* Termux: Claude Code runs without termux-exec (its launcher clears
+       LD_PRELOAD for the glibc binary), so nothing maps the script's
+       #!/bin/bash onto Termux's bash and the exec fails. Naming the
+       interpreter lets the shell find it on PATH instead. */ -}}
+{{- $statusline := joinPath .chezmoi.homeDir ".config/claude/statusline_command.sh" -}}
+{{- if eq .chezmoi.os "android" -}}
+{{-   $statusline = printf "bash %s" $statusline -}}
+{{- end -}}
 {{- /*
     Permissions. Rules are checked deny, then ask, then allow; the first match
     wins, so an allow can never carve an exception out of a deny or an ask.
@@ -21,7 +29,7 @@
   "preferredNotifChannel": "terminal_bell",
   "statusLine": {
     "type": "command",
-    "command": {{ joinPath .chezmoi.homeDir ".config/claude/statusline_command.sh" | quote }},
+    "command": {{ $statusline | quote }},
     "padding": 2,
     {{- /* the built-in "-- INSERT --" sits apart from the status line and has
            no NORMAL counterpart; the script draws every vim mode instead */}}
@@ -266,6 +274,13 @@
     "BASH_DEFAULT_TIMEOUT_MS": "300000",
     "BASH_MAX_TIMEOUT_MS": "1800000",
     "CLAUDE_CODE_SUBAGENT_MODEL": "sonnet",
+{{- /* Termux: the launcher from tools/setup/termux_install_claude_code.sh
+       does the updating, since the binary has to be re-patched for Android.
+       The installer disables the built-in updater in ~/.claude, which
+       CLAUDE_CONFIG_DIR keeps Claude Code from reading. */}}
+{{- if eq .chezmoi.os "android" }}
+    "DISABLE_AUTOUPDATER": "1",
+{{- end }}
     "NO_UPDATE_NOTIFIER": "1"
   },
   "attribution": {

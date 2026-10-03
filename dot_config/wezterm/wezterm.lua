@@ -233,12 +233,41 @@ local function workspace_spawn(script)
   return nil
 end
 
+-- Whether some client already has the opal or the ruby session attached, asked
+-- of the workspace scripts themselves (--attached) through the same login shell
+-- workspace_spawn uses. One round trip for both, since on Windows each is a
+-- wsl.exe launch. It runs in wezterm.home_dir, where the workspace tab starts,
+-- because dev-workspace.sh names its session after that directory - on Windows
+-- the profile folder (/mnt/c/Users/<name>), not the distro's home.
+local function workspaces_attached()
+  local check = "~/.config/tmux/dev-workspace.sh --attached || ~/.config/tuios/ruby-workspace.sh --attached"
+  local argv
+  if wsl_domain then
+    argv = { "wsl.exe", "-d", wsl_distro, "--cd", wezterm.home_dir, "--", wsl_login_shell(), "-lc", check }
+  elseif not is_windows then
+    local shell = default_prog or { os.getenv("SHELL") or "/bin/sh", "--login" }
+    argv = { table.unpack(shell) }
+    table.insert(argv, "-c")
+    table.insert(argv, "cd && { " .. check .. "; }")
+  else
+    return false
+  end
+  local ok, success = pcall(wezterm.run_child_process, argv)
+  return ok and success
+end
+
 wezterm.on("gui-startup", function(cmd)
   -- A plain launch opens the tmux dev workspace in the first tab; `wezterm
   -- start -- prog` (cmd ~= nil) runs what was asked for instead.
+  --
+  -- A second WezTerm that starts its own process comes through here too, and
+  -- attaching it to the same tmux and tuios sessions resizes them to its window
+  -- and wrecks the layout in the first one. So while another client has either
+  -- workspace attached, this opens a plain window and neither workspace tab.
+  local open_workspaces = not workspaces_attached()
   local spawn_args = cmd or {}
   local workspace = false
-  if cmd == nil then
+  if cmd == nil and open_workspaces then
     local opal = workspace_spawn(".config/tmux/dev-workspace.sh")
     if opal then
       spawn_args = opal
@@ -251,6 +280,10 @@ wezterm.on("gui-startup", function(cmd)
     tab1:set_title("opal")
   end
   window1:gui_window():maximize()
+
+  if not open_workspaces then
+    return
+  end
 
   wezterm.time.call_after(0.3, function()
     -- The top/bottom split, as a tuios session (dot_config/tuios). Where no

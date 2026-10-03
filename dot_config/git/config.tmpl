@@ -94,9 +94,10 @@
 {{-   $gpgsign = .myComputer.gitSign }}
 {{- end }}
   gpgsign = {{ $gpgsign }}
-{{- if .myComputer.isLinux }}
+{{- if or .myComputer.isLinux (eq .chezmoi.os "android") }}
 # HTTPS auth through gh's login. macOS gets osxkeychain from Homebrew git's
-# system gitconfig; Linuxbrew's git ships none, and GIT_CONFIG_GLOBAL (see
+# system gitconfig; Linuxbrew's and Termux's git ship none (Termux reports
+# chezmoi.os "android", so isLinux is false there), and GIT_CONFIG_GLOBAL (see
 # ~/.zshenv) hides whatever `gh auth setup-git` wrote into ~/.gitconfig. The
 # empty `helper =` clears any helper inherited from another config first.
 [credential "https://github.com"]

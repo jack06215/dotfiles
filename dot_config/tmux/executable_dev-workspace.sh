@@ -15,9 +15,15 @@
 #
 # Usage:
 #   dev-workspace.sh [-r] [session-name] [directory]
+#   dev-workspace.sh --attached [session-name] [directory]
 #
 #   -r rebuilds: it kills an existing session of that name first, so a change to
 #   the pane *structure* below takes effect. Sizes do not need it — see the hook.
+#
+#   --attached attaches nothing; it exits 0 if some client already has the
+#   session attached, 1 if not. wezterm.lua asks before opening the workspace,
+#   so a second WezTerm window does not attach as well and resize the session
+#   out from under the first.
 #
 #   Both are optional. The session defaults to the current directory's name and
 #   every pane opens in that directory, so running this inside a repo gives you
@@ -61,6 +67,8 @@ case "$self" in
 esac
 
 if ! command -v tmux > /dev/null 2>&1; then
+  # No tmux, so nothing is attached; and no shell for a question to land in.
+  [ "${1:-}" != --attached ] || exit 1
   echo "dev-workspace.sh: tmux is not installed or not on PATH" >&2
   # Drop to a shell rather than let the pane close instantly with no clue why.
   exec "${SHELL:-/bin/sh}"
@@ -111,9 +119,14 @@ if [ "${1:-}" = "--relayout" ]; then
 fi
 
 rebuild=0
+query=0
 case "${1:-}" in
   -r | --rebuild)
     rebuild=1
+    shift
+    ;;
+  --attached)
+    query=1
     shift
     ;;
 esac
@@ -129,6 +142,11 @@ session=${1:-${start_dir##*/}}
 display_name=$session
 session=$(printf '%s' "$session" | tr ' .:' '___')
 [ -n "$session" ] || session=dev
+
+if [ "$query" -eq 1 ]; then
+  [ -n "$(tmux list-clients -t "=$session" 2> /dev/null)" ] && exit 0
+  exit 1
+fi
 
 autostart() {
   [ -n "$2" ] || return 0
