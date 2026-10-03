@@ -1,0 +1,58 @@
+{{- /*
+    firefoxProfileDir — the profile directory Firefox opens by default, read
+    from the profiles.ini in the given directory (Firefox's data directory,
+    which holds both profiles.ini and the profiles).
+
+    Profile folders are named <random>.<name>, so they differ on every machine
+    and for every new profile; profiles.ini is what knows the name. It is read
+    when the caller renders rather than when the caller runs, so the resolved
+    path lands in the rendered script: a run_onchange_ script reruns by itself
+    once Firefox creates its first profile, or when the default changes.
+
+    The default is, in order:
+      1. [Install<hash>] Default= - what an installation opens, since Firefox
+         67. With several installs (Developer Edition, Nightly) the first
+         section by name wins.
+      2. the [ProfileN] with Default=1 - the pre-67 default. Newer Firefox
+         still writes it, often for a profile it no longer opens, so it is
+         only the fallback.
+    Either names a profile by its Path=, which the matching [ProfileN] marks
+    as relative to this directory or absolute.
+
+    Argument: the directory holding profiles.ini.
+
+    Returns "" when profiles.ini is missing (Firefox has never run) or names no
+    default.
+
+    Usage:
+      {{ includeTemplate "firefoxProfileDir" (joinPath .chezmoi.homeDir "AppData/Roaming/Mozilla/Firefox") }}
+*/ -}}
+{{- $base := . -}}
+{{- $ini := joinPath $base "profiles.ini" -}}
+{{- if stat $ini -}}
+{{-   $sections := include $ini | fromIni -}}
+{{-   $path := "" -}}
+{{-   range $name, $section := $sections -}}
+{{-     if and (not $path) (hasPrefix "Install" $name) -}}
+{{-       $path = get $section "Default" -}}
+{{-     end -}}
+{{-   end -}}
+{{-   range $name, $section := $sections -}}
+{{-     if and (not $path) (hasPrefix "Profile" $name) (eq (get $section "Default") "1") -}}
+{{-       $path = get $section "Path" -}}
+{{-     end -}}
+{{-   end -}}
+{{-   if $path -}}
+{{-     $relative := true -}}
+{{-     range $name, $section := $sections -}}
+{{-       if and (hasPrefix "Profile" $name) (eq (get $section "Path") $path) -}}
+{{-         $relative = eq (get $section "IsRelative") "1" -}}
+{{-       end -}}
+{{-     end -}}
+{{-     if $relative -}}
+{{-       joinPath $base $path -}}
+{{-     else -}}
+{{-       $path -}}
+{{-     end -}}
+{{-   end -}}
+{{- end -}}

@@ -369,7 +369,7 @@ flowchart LR
   R["dotfiles repo (in WSL2)"] -->|chezmoi apply| L["~/.config — Linux-side tools"]
   R -->|run_onchange_after_push-windows-configs| W["Windows home"]
   W --> W1["WezTerm, GlazeWM, Zebar"]
-  W --> W2["VS Code (%APPDATA%\Code\User)<br/>Firefox profile from lookups.toml"]
+  W --> W2["VS Code (%APPDATA%\Code\User)<br/>Firefox profile from profiles.ini"]
   W --> W3["Windows Terminal, PowerShell profile"]
 ```
 
