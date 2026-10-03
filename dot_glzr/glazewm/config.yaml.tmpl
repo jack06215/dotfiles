@@ -27,7 +27,11 @@
 #
 # Hence the grammar above. Everything GlazeWM owns carries `control` or `shift`
 # alongside `alt`, or uses an arrow key — none of which tmux binds. The only
-# plain-`alt` bindings left here are the four arrows and `alt+enter`.
+# plain-`alt` bindings left here are the four arrows. (`alt+enter` used to launch
+# a second wezterm-gui; that one ran gui-startup again and attached to the same
+# tmux and tuios sessions as the first window, resizing them to its own size
+# and wrecking the first window's layout. It is gone, so Alt-Enter reaches the
+# terminal.)
 #
 # Do NOT "simplify" a binding back to plain alt+<letter> or alt+<digit> without
 # checking `tmux list-keys -T root` first.
@@ -243,12 +247,6 @@ keybindings:
     bindings: ["alt+shift+w"]
   - commands: ["wm-exit"]
     bindings: ["alt+shift+e"]
-
-  # ---------------------------------------------------------------------------
-  # Launchers
-  # ---------------------------------------------------------------------------
-  - commands: ["shell-exec wezterm-gui"]    # WezTerm (matches this repo's term)
-    bindings: ["alt+enter"]
 
   # ---------------------------------------------------------------------------
   # Focus workspace         alt + control + 1..9   (+ control+a/s/d cycling, non-directional)
