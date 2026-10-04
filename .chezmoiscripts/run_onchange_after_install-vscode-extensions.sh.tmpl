@@ -8,6 +8,8 @@
   these extensions run -- vscode-neovim included, see remote.extensionKind in
   settings.json. Windows VS Code's bin/code, run from inside WSL, installs into
   the WSL-side VS Code Server rather than into Windows, which is what we want.
+  So vscodeExtensionsDarwin, the UI-side extensions a VS Code Server can't
+  take, is installed on macOS only.
 */ -}}
 {{- if and (hasKey . "vscode") (or .myComputer.isDarwin .myComputer.isWSL2) -}}
 {{- $code := "/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code" -}}
@@ -32,6 +34,11 @@ fi
 wanted=(
 {{- range .vscodeExtensions }}
   {{ . | quote }}
+{{- end }}
+{{- if .myComputer.isDarwin }}
+{{-   range .vscodeExtensionsDarwin }}
+  {{ . | quote }}
+{{-   end }}
 {{- end }}
 )
 

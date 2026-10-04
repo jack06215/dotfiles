@@ -54,3 +54,27 @@ py_binary(
     target_compatible_with = ["@platforms//os:windows"],
     visibility = ["//visibility:public"],
 )
+
+# Adds the VS Code extensions this machine has installed, but .chezmoidata/
+# vscode.toml doesn't list, to that list:
+#
+#     bazel run //tools/setup:export_vscode_extensions              # add them
+#     bazel run //tools/setup:export_vscode_extensions -- --dry-run # look first
+#     bazel run //tools/setup:export_vscode_extensions -- --prune   # also drop what's gone
+#
+# The inverse of run_onchange_after_install-vscode-extensions.sh.tmpl. It merges
+# rather than regenerates, so the hand-sorted groups and their comments stay;
+# new entries land under a marker at the end of their array. macOS and Linux
+# (WSL2) only, the two the install script serves; one list for both, so no
+# per-OS targets as for the Brewfiles. Run-only: it writes into the source tree.
+py_binary(
+    name = "export_vscode_extensions",
+    srcs = ["export_vscode_extensions.py"],
+    legacy_create_init = 0,
+    target_compatible_with = select({
+        "@platforms//os:macos": [],
+        "@platforms//os:linux": [],
+        "//conditions:default": ["@platforms//:incompatible"],
+    }),
+    visibility = ["//visibility:public"],
+)

@@ -1,8 +1,17 @@
-# VS Code extensions that dot_config/vscode/{settings,keybindings}.json and
-# nvim's lua/config/keymaps/vscode.lua call into. Installed where missing by
-# run_onchange_after_install-vscode-extensions.sh.tmpl on macOS and WSL2;
-# dropping an entry here does not uninstall anything. Plain data, read on every
-# apply: no `chezmoi init` needed after an edit here.
+# The VS Code extensions this machine set has, installed where missing by
+# run_onchange_after_install-vscode-extensions.sh.tmpl on macOS and WSL2. The
+# first groups are the ones dot_config/vscode/{settings,keybindings}.json and
+# nvim's lua/config/keymaps/vscode.lua call into; the rest is everything else
+# that was installed on the Mac when the list was taken (2026-10-04). Dropping
+# an entry here does not uninstall anything. Plain data, read on every apply:
+# no `chezmoi init` needed after an edit here.
+#
+# `bazel run //tools/setup:export_vscode_extensions` appends what is installed
+# but not listed, under a marker at the end of its array; sort it into a group.
+#
+# Not here: jack06215.nvim-companion (nvc), which the monorepo installs from its
+# own vsix (`bazel run //packages/nvim_vscode_extension:install`), not from the
+# marketplace.
 #
 # Not `[vscode]`: that key is already the config data from .chezmoi.toml.tmpl
 # (.vscode.userDir).
@@ -26,7 +35,6 @@ vscodeExtensions = [
   "ms-python.python",
   "ms-python.vscode-pylance",
   "charliermarsh.ruff",
-  "ms-python.mypy-type-checker",
   "xaver.clang-format",
   "bazelbuild.vscode-bazel",
   "johnnymorganz.stylua",
@@ -42,4 +50,156 @@ vscodeExtensions = [
   # workbench.colorTheme / iconTheme
   "jdinhlife.gruvbox",
   "pkief.material-icon-theme",
+
+  # --- everything else installed -------------------------------------------
+
+  # AI assistants
+  "anthropic.claude-code",
+  "openai.chatgpt",
+  "ms-azuretools.vscode-azure-github-copilot",
+  "ms-azuretools.vscode-azure-mcp-server",
+  "ms-windows-ai-studio.windows-ai-studio",
+
+  # collaboration
+  "ms-vsliveshare.vsliveshare",
+
+  # Python and Jupyter
+  "ms-python.debugpy",
+  "ms-python.vscode-python-envs",
+  "donjayamanne.python-extension-pack",
+  "magicstack.magicpython",
+  "njpwerner.autodocstring",
+  "batisteo.vscode-django",
+  "wholroyd.jinja",
+  "ms-toolsai.jupyter",
+  "ms-toolsai.jupyter-keymap",
+  "ms-toolsai.jupyter-renderers",
+  "ms-toolsai.vscode-jupyter-cell-tags",
+  "ms-toolsai.vscode-jupyter-slideshow",
+  "google.colab",
+
+  # C, C++ and builds
+  "ms-vscode.cpptools",
+  "ms-vscode.cpptools-extension-pack",
+  "ms-vscode.cpptools-themes",
+  "jeff-hykin.better-cpp-syntax",
+  "ms-vscode.makefile-tools",
+  "stackbuild.bazel-stack-vscode",
+
+  # JavaScript, TypeScript and the web
+  "ms-vscode.vscode-typescript-next",
+  "orta.vscode-jest",
+  "christian-kohler.npm-intellisense",
+  "christian-kohler.path-intellisense",
+  "jasonnutter.search-node-modules",
+  "bradlc.vscode-tailwindcss",
+  "stylelint.vscode-stylelint",
+  "sibiraj-s.vscode-scss-formatter",
+  "ecmel.vscode-html-css",
+  "zignd.html-css-class-completion",
+  "octref.vetur",
+  "unifiedjs.vscode-mdx",
+  "prisma.prisma",
+
+  # React and React Native
+  "burkeholland.simple-react-snippets",
+  "igorming.useful-react-snippets",
+  "infeng.vscode-react-typescript",
+  "xabikos.reactsnippets",
+  "msjsdiag.vscode-react-native",
+
+  # GraphQL
+  "apollographql.vscode-apollo",
+  "graphql.vscode-graphql",
+  "graphql.vscode-graphql-syntax",
+  "kumar-harsh.graphql-for-vscode",
+
+  # Flutter and Dart
+  "dart-code.dart-code",
+  "dart-code.flutter",
+  "nash.awesome-flutter-snippets",
+  "blaxou.freezed",
+  "sushanshakya.freezed-model-gen",
+  "gaetschwartz.build-runner",
+  "jeroen-meijer.pubspec-assist",
+  "everettjf.pubspec-dependency-search",
+  "circlecodesolution.ccs-flutter-color",
+  "diemasmichiels.emulate",
+
+  # Java and Kotlin
+  "redhat.java",
+  "vscjava.vscode-java-pack",
+  "vscjava.vscode-java-debug",
+  "vscjava.vscode-java-dependency",
+  "vscjava.vscode-java-test",
+  "vscjava.vscode-maven",
+  "vscjava.vscode-gradle",
+  "fwcd.kotlin",
+  "mathiasfrohlich.kotlin",
+
+  # other languages
+  "golang.go",
+  "rust-lang.rust-analyzer",
+  "sumneko.lua",
+  "ms-dotnettools.csharp",
+  "ms-dotnettools.vscode-dotnet-runtime",
+  "ms-vscode.powershell",
+  "craigmaslowski.erb",
+
+  # data and config formats
+  "redhat.vscode-yaml",
+  "redhat.vscode-xml",
+  "be5invis.toml",
+  "tamasfe.even-better-toml",
+  "mrmlnc.vscode-json5",
+  "drblury.protobuf-vsc",
+  "plex.vscode-protolint",
+  "grafana.vscode-jsonnet",
+  "adpyke.vscode-sql-formatter",
+  "mikestead.dotenv",
+  "irongeek.vscode-env",
+  "ventura.prom",
+
+  # cloud and infrastructure
+  "hashicorp.terraform",
+  "ms-kubernetes-tools.vscode-kubernetes-tools",
+  "exiasr.hadolint",
+  "ms-azuretools.vscode-azureresourcegroups",
+  "ms-azuretools.vscode-bicep",
+  "azurite.azurite",
+  "azureadb2ctools.aadb2c",
+  "bencoleman.armview",
+
+  # Markdown, diagrams and documents
+  "yzhang.markdown-all-in-one",
+  "bierner.markdown-mermaid",
+  "hediet.vscode-drawio",
+  "grapecity.gc-excelviewer",
+
+  # editing and tools
+  "editorconfig.editorconfig",
+  "emeraldwalk.runonsave",
+  "fill-labs.dependi",
+  "fnando.linter",
+  "bokuweb.vscode-ripgrep",
+  "shadowndacorner.vscode-easymotion",
+  "tyriar.sort-lines",
+  "waderyan.gitblame",
+
+  # themes
+  "zhuangtongfa.material-theme",
+]
+
+# macOS only. These run on the UI side ("extensionKind": ["ui"]), so they can't
+# go into WSL's VS Code Server, where the script installs on WSL2; there they
+# belong to Windows' own VS Code, which this doesn't manage. AppleScript is a
+# Mac thing anyway.
+vscodeExtensionsDarwin = [
+  "ms-vscode-remote.remote-containers",
+  "ms-vscode-remote.remote-ssh",
+  "ms-vscode-remote.remote-ssh-edit",
+  "ms-vscode-remote.remote-wsl",
+  "ms-vscode.remote-explorer",
+  "openai.codex-audio",
+  "tkoresearch.applescript-support",
 ]
