@@ -70,6 +70,9 @@
       "scope": "user"
     }
   },
+  // nvim's spell check is built in; cSpell re-checks the document 50 ms after
+  // every change by default
+  "cSpell.spellCheckDelayMs": 500,
 
   // ------------------------------------------- formatters and linters (conform, nvim-lint) ----
   // python: ruff_fix + ruff_organize_imports + ruff_format, linted by ruff
@@ -123,6 +126,27 @@
     "**/dot_zprofile*": true,
     "**/dot_zlogin*": true,
     "**/*.tmpl": true
+  },
+  // nvim-lint lints on BufEnter, BufWritePost and InsertLeave, never per
+  // keystroke. These two default to on-type: a shellcheck process, or an
+  // ESLint pass (type-aware rules type-check again), every pause in typing.
+  "shellcheck.run": "onSave",
+  "eslint.run": "onSave",
+  // fnando.linter's built-in list runs on every change, and nearly all of it
+  // repeats an extension above (shellcheck, eslint, markdownlint, stylelint,
+  // hadolint) or is a linter nvim never runs: pylint (python is ruff + mypy),
+  // clippy and dart analyze (rust-analyzer and Dart-Code already check). It
+  // stays for yamllint and sqlfluff, which nvim-lint runs, on open and save.
+  "linter.runOnTextChange": false,
+  "linter.linters": {
+    "cargo-clippy": { "enabled": false },
+    "dart": { "enabled": false },
+    "eslint": { "enabled": false },
+    "hadolint": { "enabled": false },
+    "markdownlint": { "enabled": false },
+    "pylint": { "enabled": false },
+    "shellcheck": { "enabled": false },
+    "stylelint": { "enabled": false }
   },
 
   // ------------------------------------------------ filetypes (config/general.lua) ----
@@ -184,7 +208,9 @@
   "editor.accessibilitySupport": "off",
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.largeFileOptimizations": false,
+  // snacks.bigfile: past VS Code's 20 MB / 300K-line cutoff, no tokenizing,
+  // folding or language features (the monorepo's compile_commands.json)
+  "editor.largeFileOptimizations": true,
   "breadcrumbs.symbolPath": "off",
   "breadcrumbs.icons": false,
   "zenMode.hideStatusBar": false,
@@ -250,6 +276,9 @@
   // -------------------------------------------------------------- files ----
   "explorer.confirmDelete": false,
   "files.autoSave": "onWindowChange",
+  // Quick open and text search don't follow symlinks, like snacks' rg and fd:
+  // a Bazel workspace's bazel-* links lead into Bazel's whole output tree.
+  "search.followSymlinks": false,
   "workbench.editorAssociations": {
     "*.ipynb": "jupyter-notebook"
   },
@@ -301,13 +330,40 @@
   "gitlens.defaultGravatarsStyle": "retro",
   "gitlens.plusFeatures.enabled": false,
   "gitlens.codeLens.enabled": false,
+  // Blame on demand, as with gitsigns (current_line_blame = false): each of
+  // these blames every file as it opens. <leader>gb/ghb/ghB call GitLens
+  // commands and keep working.
+  "gitlens.currentLine.enabled": false,
+  "gitlens.statusBar.enabled": false,
+  "gitlens.hovers.enabled": false,
   "gitlens.ai.model": "vscode",
   "gitlens.ai.vscode.model": "copilot:claude-opus-4.6",
 
   // ---------------------------------------------------------- languages ----
   "C_Cpp.updateChannel": "Insiders",
+  // the tag parser indexes the workspace on every core by default ("highest")
+  "C_Cpp.workspaceParsingPriority": "low",
   "cmake.configureOnOpen": false,
   "python.terminal.executeInFileDir": true,
+  // Pylance's light mode, which its performance guide calls the most effective
+  // single setting: only open files are analyzed (exclude ["**"]), nothing is
+  // indexed in the background (workspace or site-packages), no pytest extras.
+  // Roughly nvim's pyright (openFilesOnly, no indexer), and Pylance stops
+  // crawling the monorepo's bazel-* links into Bazel's output tree (thousands
+  // of .py files under external/). Imports and go-to-definition still resolve
+  // everything; workspace-wide references and symbol search see open files
+  // only. Library code stays on for types, as pyright has it, or untyped
+  // packages hover as Unknown.
+  "python.analysis.languageServerMode": "light",
+  "python.analysis.useLibraryCodeForTypes": true,
+  // nvim runs no Java server. Hybrid (the default) starts the full jdtls,
+  // importing every Gradle/Maven build, next to a syntax one; this keeps the
+  // syntax one until "Java: Switch to Standard Mode" from the status bar.
+  "java.server.launchMode": "LightWeight",
+  // lemminx's native binary rather than a JVM for every XML/SVG file
+  "xml.server.preferBinary": true,
+  // lsp-config/settings/lua_ls.lua
+  "Lua.workspace.checkThirdParty": false,
   "jupyter.askForKernelRestart": false,
   "notebook.cellToolbarLocation": {
     "default": "right",
