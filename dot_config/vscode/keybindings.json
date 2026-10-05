@@ -16,24 +16,24 @@
   // snacks terminal split, whose term_nav moves windows too, so the shell
   // never sees ^H ^J ^K ^L; the navigate commands are on VS Code's default
   // terminal.integrated.commandsToSkipShell, so no entry is needed there.
-  // Not in a picker, where Ctrl-j/k move the selection. Outside macOS, Ctrl-k
-  // stays VS Code's chord prefix (Ctrl-k Ctrl-s and friends) except in the
-  // terminal, which would otherwise have no way back up to the editor. nvc's
-  // TUI pickers keep their own Ctrl-k there.
+  // Not in a picker (quick open, or nvc's TUI pickers and neogit), where
+  // Ctrl-j/k move the selection. Outside macOS, Ctrl-k stays VS Code's chord
+  // prefix (Ctrl-k Ctrl-s and friends) except in the terminal, which would
+  // otherwise have no way back up to the editor.
   {
     "key": "ctrl+h",
     "command": "workbench.action.navigateLeft",
-    "when": "!editorTextFocus && !inQuickOpen"
+    "when": "!editorTextFocus && !inQuickOpen && !nvc.activeTerminalIsTui"
   },
   {
     "key": "ctrl+j",
     "command": "workbench.action.navigateDown",
-    "when": "!editorTextFocus && !inQuickOpen"
+    "when": "!editorTextFocus && !inQuickOpen && !nvc.activeTerminalIsTui"
   },
   {
     "key": "ctrl+k",
     "command": "workbench.action.navigateUp",
-    "when": "isMac && !editorTextFocus && !inQuickOpen"
+    "when": "isMac && !editorTextFocus && !inQuickOpen && !nvc.activeTerminalIsTui"
   },
   {
     "key": "ctrl+k",
@@ -43,102 +43,14 @@
   {
     "key": "ctrl+l",
     "command": "workbench.action.navigateRight",
-    "when": "!editorTextFocus && !inQuickOpen"
+    "when": "!editorTextFocus && !inQuickOpen && !nvc.activeTerminalIsTui"
   },
 
   // -------------------------------------------------------- leader outside the editor ----
-  // The same leader keys as nvim, for when a list (explorer, source control,
-  // search results, problems...) has focus. listFocus rather than "not the
-  // editor": a webview's text box (chat panels, PR comments) never reports
-  // inputFocus, and a space chord there would eat what you type.
-  {
-    "key": "space e",
-    "command": "runCommands",
-    "args": {
-      "commands": ["workbench.action.closeSidebar", "workbench.action.focusActiveEditorGroup"]
-    },
-    "when": "filesExplorerFocus && !inputFocus"
-  },
-  {
-    "key": "space e",
-    "command": "workbench.view.explorer",
-    "when": "listFocus && !filesExplorerFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space f f",
-    "command": "workbench.action.quickOpen",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space f g",
-    "command": "workbench.action.quickTextSearch",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space f b",
-    "command": "workbench.action.showAllEditorsByMostRecentlyUsed",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space ,",
-    "command": "workbench.action.showAllEditorsByMostRecentlyUsed",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space /",
-    "command": "workbench.action.findInFiles",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space s g",
-    "command": "workbench.action.findInFiles",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space g g",
-    "command": "workbench.view.scm",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space x x",
-    "command": "workbench.actions.view.toggleProblems",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space h",
-    "command": "vscode-harpoon.editEditors",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space shift+h",
-    "command": "vscode-harpoon.editorQuickPick",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space 1",
-    "command": "vscode-harpoon.gotoEditor1",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space 2",
-    "command": "vscode-harpoon.gotoEditor2",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space 3",
-    "command": "vscode-harpoon.gotoEditor3",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space 4",
-    "command": "vscode-harpoon.gotoEditor4",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
-  {
-    "key": "space 5",
-    "command": "vscode-harpoon.gotoEditor5",
-    "when": "listFocus && !inputFocus && !inQuickOpen"
-  },
+  // Space in a list (explorer, source control, search results, problems...)
+  // opens nvc's which-key, with nvim's own leader keys, Harpoon's included.
+  // No `space …` chord may live here: VS Code would take the space waiting
+  // for the rest of it, and nvc's single-key binding would never fire.
 
   // ---------------------------------------------------------------- lists ----
   // Moving around trees and lists the way nvim buffers do (neo-tree, trouble,
@@ -401,10 +313,11 @@
 
   // ------------------------------------------------------------- terminal ----
   // <c-/> toggles it from inside as well as from the editor (nvim maps that).
+  // Not in nvc's TUIs, where ctrl+/ is the pickers' key help.
   {
     "key": "ctrl+/",
     "command": "workbench.action.terminal.toggleTerminal",
-    "when": "terminalFocus"
+    "when": "terminalFocus && !nvc.activeTerminalIsTui"
   },
   {
     "key": "ctrl+shift+j",

@@ -140,12 +140,17 @@ end
 
 ---Snacks.lazygit's float, as a terminal in the editor area. lazygit is the
 ---terminal's process, so the tab closes itself when lazygit quits.
+---Created hidden, then shown: the Python Environments extension types
+---`source …/activate` and Enter into every new visible terminal while a venv
+---is selected, and lazygit would take those as keys (stage, open a file…). It
+---skips terminals created with hideFromUser.
 local function lazygit()
   vscode.eval_async([[
     const term = vscode.window.createTerminal({
       name: "lazygit",
       shellPath: "lazygit",
       location: vscode.TerminalLocation.Editor,
+      hideFromUser: true,
     });
     term.show();
   ]])
