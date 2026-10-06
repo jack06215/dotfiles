@@ -1,0 +1,19 @@
+dasel 3.11.2
+helm 4.2.2
+java oracle-graalvm-21.0.8
+{{- /* macOS gets jq from the Brewfile. asdf's jq plugin (lsanwick/asdf-jq,
+       the registry's) downloads jq-osx-amd64 on every Mac, which an arm64
+       Mac without Rosetta can't run, and its shim shadows the working one.
+       Windows still needs this line: mise is its only source of jq. */}}
+{{- if ne .chezmoi.os "darwin" }}
+jq 1.8.2
+{{- end }}
+kind 0.32.0
+kubectl 1.36.2
+kustomize 5.8.1
+nodejs 23.9.0
+python 3.13.13
+shellcheck 0.11.0
+shfmt 3.13.1
+mysql 8.4.10
+poetry 2.4.1

@@ -27,12 +27,10 @@ readonly SEP="${GRAY}│${RESET}"
 # separator rather than @tsv's tab: tab is IFS whitespace, so read collapses a
 # run of them and an empty field (most optional ones below) would shift every
 # field after it. The cache field is the expiry clock time ("14:32"), "cold",
-# or empty before any caching.
-if command -v jq &> /dev/null; then
-  IFS=$'\x1f' read -r model_name model_id used_pct ctx_size input_tokens current_dir project_dir \
-    cost_usd duration_ms lines_added lines_removed version vim_mode effort_level fast_mode \
-    session_name worktree_name pr_number pr_state pr_kind quota_5h quota_7d cache_state <<< \
-    "$(echo "$input" | jq -r '[
+# or empty before any caching. jq's exit status, not `command -v jq`, picks
+# the branch: a jq that is on PATH but can't run (an asdf shim for an amd64
+# binary on an arm64 Mac) would otherwise leave every field empty.
+if fields=$(echo "$input" | jq -r '[
             .model.display_name // "Claude",
             .model.id // "",
             .context_window.used_percentage // 0,
@@ -59,7 +57,10 @@ if command -v jq &> /dev/null; then
               elif .warm and .expires_at != null then (.expires_at | floor | strflocaltime("%H:%M"))
               elif .caching_observed then "cold"
               else "" end)
-        ] | map(if . == null then "" else tostring end) | join("\u001f")')"
+        ] | map(if . == null then "" else tostring end) | join("\u001f")'); then
+  IFS=$'\x1f' read -r model_name model_id used_pct ctx_size input_tokens current_dir project_dir \
+    cost_usd duration_ms lines_added lines_removed version vim_mode effort_level fast_mode \
+    session_name worktree_name pr_number pr_state pr_kind quota_5h quota_7d cache_state <<< "$fields"
 
   # Extract version from model.id (e.g., "claude-opus-4-6" -> "4.6")
   # Only append if display_name doesn't already contain the version
