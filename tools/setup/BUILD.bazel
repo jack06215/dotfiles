@@ -78,3 +78,19 @@ py_binary(
     }),
     visibility = ["//visibility:public"],
 )
+
+# Puts dot_config/untrap_for_youtube/settings.json on the clipboard,
+# base64-encoded, ready to paste into Untrap for YouTube's import box:
+#
+#     bazel run //tools/setup:copy_untrap_settings
+#
+# The extension's settings live in browser storage, so this is the only way
+# back in. Reads the source tree rather than taking the file as a data dep, like
+# the exporters, so no BUILD file has to sit under dot_config. Any OS: the
+# script picks whichever clipboard command the machine has.
+py_binary(
+    name = "copy_untrap_settings",
+    srcs = ["copy_untrap_settings.py"],
+    legacy_create_init = 0,
+    visibility = ["//visibility:public"],
+)

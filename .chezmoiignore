@@ -134,6 +134,12 @@ README.md
 keyboards
 keyboards/**
 
+# Untrap for YouTube keeps its settings in browser storage, so nothing reads
+# them from $HOME. `bazel run //tools/setup:copy_untrap_settings` puts the
+# tracked copy on the clipboard for the extension's import box instead.
+.config/untrap_for_youtube
+.config/untrap_for_youtube/**
+
 # macOS-only: apps and hooks that exist only there (MeetingBar, AltTab,
 # Vorssiant, sleepwatcher's sleep/wake hooks with their Teamspirit clock-in,
 # Claude Desktop's MCP config), scripts built on macOS commands (ifconfig -lX

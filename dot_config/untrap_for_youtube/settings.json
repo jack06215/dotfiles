@@ -1,0 +1,141 @@
+[
+  {
+    "id": "untrap_options_state",
+    "value": {
+      "untrap_global_enable": true,
+      "untrap_home_hide_ads_first_slot": true,
+      "untrap_redirect_channel_to": "home",
+      "untrap_redirect_home_to": "home",
+      "untrap_search_page_sort_by": "relevance",
+      "untrap_video_card_blur_thumbnail": "3",
+      "untrap_video_page_center_content": true,
+      "untrap_video_page_hide_suggestions_ads": true,
+      "untrap_channel_hide_channel_menu_button_shorts": true,
+      "untrap_channel_hide_home_tab_section_shorts": true,
+      "untrap_global_hide_all_shorts": true,
+      "untrap_header_hide_notifications_bell": true,
+      "untrap_home_disable_infinity_scroll": true,
+      "untrap_home_hide_shorts_row": true,
+      "untrap_redirect_shorts_to_exclude_player": true,
+      "untrap_search_hide_results_for_you": true,
+      "untrap_search_hide_results_mixes": true,
+      "untrap_search_hide_results_shorts": true,
+      "untrap_shorts_page_disable_exclude_scrolling": true,
+      "untrap_sidebar_hide_button_shorts": true,
+      "untrap_sidebar_hide_section_explore": true,
+      "untrap_sidebar_hide_section_more_from_youtube": true,
+      "untrap_subscriptions_hide_shorts": true,
+      "untrap_video_card_disable_play_on_hover": true,
+      "untrap_video_card_hide_thumbnail": true,
+      "untrap_video_page_hide_live_chat": true,
+      "untrap_video_page_hide_merch_shelf": true,
+      "untrap_video_page_hide_related_videos": true,
+      "untrap_video_page_hide_shorts_from_sidebar": true,
+      "untrap_video_page_hide_shorts_in_description": true,
+      "untrap_video_player_hide_end_screen_suggestions": true
+    }
+  },
+  {
+    "id": "untrap_system_config",
+    "value": {
+      "untrap_meta": {
+        "init": {
+          "untrap_extension_init_date": "03.04.2026",
+          "untrap_extension_init_time": "14:42"
+        },
+        "untrap_current_version_on_settings_release": "1.0.25",
+        "untrap_next_date_to_update": "09.04.2026",
+        "updateSchedule": {
+          "untrap_schedule_update_hour": 12,
+          "untrap_schedule_update_week_day": 4
+        }
+      },
+      "untrap_summarize_window_state": {
+        "untrap_picked_tab": "keyInsights",
+        "untrap_isShowSummarizeWindow": false
+      },
+      "untrap_youtube_page_state": {
+        "untrap_session_duration_data": {
+          "sessionDurationType": "setup"
+        },
+        "untrap_blocking_by_untrap": true,
+        "untrap_channel_hide_channel_menu_button_shorts": true,
+        "untrap_channel_hide_channel_menu_button_store": true,
+        "untrap_video_card_grayscale_thumbnail": "7",
+        "untrap_youtubeBlockingScheduleDaysData": [
+          "Mon",
+          "Tue",
+          "Wed",
+          "Thu",
+          "Fri"
+        ],
+        "untrap_youtubeBlockingScheduleTimeIntervalsData": [
+          {
+            "from": "05:00",
+            "to": "16:00"
+          }
+        ],
+        "untrap_youtubeBlockingScheduleGroupsData": [
+          {
+            "days": [
+              "Mon",
+              "Tue",
+              "Wed",
+              "Thu",
+              "Fri"
+            ],
+            "intervals": [
+              {
+                "from": "05:00",
+                "to": "16:00"
+              }
+            ]
+          }
+        ]
+      },
+      "untrap_extension_ui_state": {
+        "untrap_optimize_section_expand": {
+          "shortsPage": true,
+          "homePage": true,
+          "videoPage": true,
+          "videoCard": true,
+          "header": true,
+          "navigationSidebar": true,
+          "searchPage": true,
+          "channelPage": true,
+          "Tweaks": true
+        }
+      },
+      "untrap_shared_state": {
+        "untrap_gradient_current_date": "2026-04-03",
+        "untrap_gradient_index": 11,
+        "untrap_myOtherAppsData": "hide"
+      }
+    }
+  },
+  {
+    "id": "untrap_not_syncing_state",
+    "value": {
+      "untrap_global_enable": true,
+      "untrap_settings_protection_config": {
+        "version": 2,
+        "method": "phrase",
+        "scopes": {
+          "focus": true,
+          "blocks": true,
+          "disable": true,
+          "importReset": true,
+          "sync": true
+        },
+        "unlockDuration": "single"
+      },
+      "untrap_extension_blockTime": 0,
+      "untrap_extension_block_lasted_time": 0,
+      "untrap_extension_block_deadline": 0,
+      "untrap_init_extension_date": "07.10.2026",
+      "untrap_popup_opened": 6,
+      "untrap_popup_home_mode": "recommended",
+      "untrap_popup_menu_section": "focus"
+    }
+  }
+]
