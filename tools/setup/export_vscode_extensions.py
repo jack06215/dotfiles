@@ -19,7 +19,7 @@ the list. Three properties it is built around:
 2. The `code` CLI decides what is installed, as it does for the install
    script. VS Code's own extensions.json only adds what the CLI doesn't say:
    where an extension came from, and its package.json. An extension installed
-   from a .vsix (nvc, `bazel run //packages/nvim_vscode_extension:install` in
+   from a .vsix (nvicode, `bazel run //packages/nvim_in_vscode:install` in
    the monorepo) is reported and left out, since `code --install-extension
    <id>` could never find it. One that runs only on the UI side
    ("extensionKind": ["ui"], the Remote extensions) goes to

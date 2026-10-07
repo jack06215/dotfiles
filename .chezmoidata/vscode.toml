@@ -9,8 +9,8 @@
 # `bazel run //tools/setup:export_vscode_extensions` appends what is installed
 # but not listed, under a marker at the end of its array; sort it into a group.
 #
-# Not here: jack06215.nvim-companion (nvc), which the monorepo installs from its
-# own vsix (`bazel run //packages/nvim_vscode_extension:install`), not from the
+# Not here: jack06215.nvim-in-vscode (nvicode), which the monorepo installs from its
+# own vsix (`bazel run //packages/nvim_in_vscode:install`), not from the
 # marketplace.
 #
 # Not `[vscode]`: that key is already the config data from .chezmoi.toml.tmpl

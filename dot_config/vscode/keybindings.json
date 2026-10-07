@@ -16,41 +16,41 @@
   // snacks terminal split, whose term_nav moves windows too, so the shell
   // never sees ^H ^J ^K ^L; the navigate commands are on VS Code's default
   // terminal.integrated.commandsToSkipShell, so no entry is needed there.
-  // Not in a picker (quick open, or nvc's TUI pickers and neogit), where
+  // Not in a picker (quick open, or nvicode's TUI pickers and neogit), where
   // Ctrl-j/k move the selection. Outside macOS, Ctrl-k stays VS Code's chord
   // prefix (Ctrl-k Ctrl-s and friends) except in the terminal, which would
   // otherwise have no way back up to the editor.
   {
     "key": "ctrl+h",
     "command": "workbench.action.navigateLeft",
-    "when": "!editorTextFocus && !inQuickOpen && !nvc.activeTerminalIsTui"
+    "when": "!editorTextFocus && !inQuickOpen && !nvicode.activeTerminalIsTui"
   },
   {
     "key": "ctrl+j",
     "command": "workbench.action.navigateDown",
-    "when": "!editorTextFocus && !inQuickOpen && !nvc.activeTerminalIsTui"
+    "when": "!editorTextFocus && !inQuickOpen && !nvicode.activeTerminalIsTui"
   },
   {
     "key": "ctrl+k",
     "command": "workbench.action.navigateUp",
-    "when": "isMac && !editorTextFocus && !inQuickOpen && !nvc.activeTerminalIsTui"
+    "when": "isMac && !editorTextFocus && !inQuickOpen && !nvicode.activeTerminalIsTui"
   },
   {
     "key": "ctrl+k",
     "command": "workbench.action.navigateUp",
-    "when": "!isMac && terminalFocus && !nvc.activeTerminalIsTui"
+    "when": "!isMac && terminalFocus && !nvicode.activeTerminalIsTui"
   },
   {
     "key": "ctrl+l",
     "command": "workbench.action.navigateRight",
-    "when": "!editorTextFocus && !inQuickOpen && !nvc.activeTerminalIsTui"
+    "when": "!editorTextFocus && !inQuickOpen && !nvicode.activeTerminalIsTui"
   },
 
   // -------------------------------------------------------- leader outside the editor ----
   // Space in a list (explorer, source control, search results, problems...)
-  // opens nvc's which-key, with nvim's own leader keys, Harpoon's included.
+  // opens nvicode's which-key, with nvim's own leader keys, Harpoon's included.
   // No `space …` chord may live here: VS Code would take the space waiting
-  // for the rest of it, and nvc's single-key binding would never fire.
+  // for the rest of it, and nvicode's single-key binding would never fire.
 
   // ---------------------------------------------------------------- lists ----
   // Moving around trees and lists the way nvim buffers do (neo-tree, trouble,
@@ -313,11 +313,11 @@
 
   // ------------------------------------------------------------- terminal ----
   // <c-/> toggles it from inside as well as from the editor (nvim maps that).
-  // Not in nvc's TUIs, where ctrl+/ is the pickers' key help.
+  // Not in nvicode's TUIs, where ctrl+/ is the pickers' key help.
   {
     "key": "ctrl+/",
     "command": "workbench.action.terminal.toggleTerminal",
-    "when": "terminalFocus && !nvc.activeTerminalIsTui"
+    "when": "terminalFocus && !nvicode.activeTerminalIsTui"
   },
   {
     "key": "ctrl+shift+j",
