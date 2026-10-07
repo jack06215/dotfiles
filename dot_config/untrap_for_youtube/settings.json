@@ -32,7 +32,8 @@
       "untrap_video_page_hide_related_videos": true,
       "untrap_video_page_hide_shorts_from_sidebar": true,
       "untrap_video_page_hide_shorts_in_description": true,
-      "untrap_video_player_hide_end_screen_suggestions": true
+      "untrap_video_player_hide_end_screen_suggestions": true,
+      "untrap_video_page_hide_comments": true
     }
   },
   {
@@ -133,7 +134,7 @@
       "untrap_extension_block_lasted_time": 0,
       "untrap_extension_block_deadline": 0,
       "untrap_init_extension_date": "07.10.2026",
-      "untrap_popup_opened": 6,
+      "untrap_popup_opened": 10,
       "untrap_popup_home_mode": "recommended",
       "untrap_popup_menu_section": "focus"
     }
