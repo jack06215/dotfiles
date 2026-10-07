@@ -1,25 +1,6 @@
 load("@rules_python//python:py_binary.bzl", "py_binary")
 load("@rules_shell//shell:sh_binary.bzl", "sh_binary")
 
-# Repo tooling only: .chezmoiignore keeps tools/ out of $HOME, so the scripts
-# here carry no chezmoi executable_ prefix. generate-chocofile.ps1 lives here
-# too but has no target - no rule in the workspace can wrap a .ps1; see its
-# header. Neither do the Termux scripts, which only run on the phone.
-
-# Regenerates the Brewfile manifest of the machine you run it on, from what it
-# currently has installed:
-#
-#     bazel run //tools/setup:export_brewfile_macos    # brewfiles/darwin, on a Mac
-#     bazel run //tools/setup:export_brewfile_linux    # brewfiles/wsl2, on Linux/WSL2
-#
-# The script writes into the source tree, which a build action is not allowed to
-# do, so these are run-only targets. `bazel run` exports
-# BUILD_WORKSPACE_DIRECTORY, which the script prefers over asking chezmoi for
-# the source path.
-#
-# One target per OS, each only compatible with its own: a manifest can only be
-# dumped from the machine it describes, so a Mac is never offered a button that
-# would rewrite the Linux manifest from its own package list, or vice versa.
 sh_binary(
     name = "export_brewfile_macos",
     srcs = ["generate-brewfile.sh"],
@@ -34,19 +15,6 @@ sh_binary(
     visibility = ["//visibility:public"],
 )
 
-# Pulls the PowerToys settings back out of %LOCALAPPDATA%\Microsoft\PowerToys
-# and into dot_config/powertoys, reformatted the way the tracked copies are:
-#
-#     bazel run //tools/setup:export_powertoys_settings              # on Windows
-#     bazel run //tools/setup:export_powertoys_settings -- --dry-run # look first
-#
-# The inverse of run_onchange_after_link-powertoys-settings.ps1, and Windows-only
-# for the same reason: PowerToys exists nowhere else. Run-only, like the
-# Brewfile exporters - it writes into the source tree, which a build action may
-# not do.
-#
-# py_binary rather than sh_binary because sh_binary is run through bash on
-# Windows, and the bash on PATH there is WSL's; see MODULE.bazel.
 py_binary(
     name = "export_powertoys_settings",
     srcs = ["export_powertoys_settings.py"],
@@ -55,18 +23,6 @@ py_binary(
     visibility = ["//visibility:public"],
 )
 
-# Adds the VS Code extensions this machine has installed, but .chezmoidata/
-# vscode.toml doesn't list, to that list:
-#
-#     bazel run //tools/setup:export_vscode_extensions              # add them
-#     bazel run //tools/setup:export_vscode_extensions -- --dry-run # look first
-#     bazel run //tools/setup:export_vscode_extensions -- --prune   # also drop what's gone
-#
-# The inverse of run_onchange_after_install-vscode-extensions.sh.tmpl. It merges
-# rather than regenerates, so the hand-sorted groups and their comments stay;
-# new entries land under a marker at the end of their array. macOS and Linux
-# (WSL2) only, the two the install script serves; one list for both, so no
-# per-OS targets as for the Brewfiles. Run-only: it writes into the source tree.
 py_binary(
     name = "export_vscode_extensions",
     srcs = ["export_vscode_extensions.py"],
@@ -79,15 +35,6 @@ py_binary(
     visibility = ["//visibility:public"],
 )
 
-# Puts dot_config/untrap_for_youtube/settings.json on the clipboard,
-# base64-encoded, ready to paste into Untrap for YouTube's import box:
-#
-#     bazel run //tools/setup:copy_untrap_settings
-#
-# The extension's settings live in browser storage, so this is the only way
-# back in. Reads the source tree rather than taking the file as a data dep, like
-# the exporters, so no BUILD file has to sit under dot_config. Any OS: the
-# script picks whichever clipboard command the machine has.
 py_binary(
     name = "copy_untrap_settings",
     srcs = ["copy_untrap_settings.py"],
