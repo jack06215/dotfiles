@@ -227,6 +227,13 @@ vim.filetype.add({
   },
 })
 
+-- Mako-templated Python (e.g. alembic's script.py.mako)
+vim.filetype.add({
+  pattern = {
+    [".*%.py%.mako"] = "python",
+  },
+})
+
 -- Treat PDFs as plain text so they open as a normal buffer instead of being
 -- rendered as an image by snacks.nvim (rendering needs ghostscript/`gs`, which
 -- isn't installed). Paired with the `formats` override in
