@@ -92,11 +92,12 @@ CHEZMOI_WINDOWS_PUSH
 {{- end }}
 
 # ---- VS Code (%APPDATA%\Code\User; Remote-WSL uses these too) ----
-{{- range list "settings.json" "keybindings.json" }}
-push_into {{ $.vscode.userDir | quote }} {{ . | quote }} << 'CHEZMOI_WINDOWS_PUSH'
-{{ include (joinPath "dot_config/vscode" .) | trimSuffix "\n" }}
+push_into {{ .vscode.userDir | quote }} "settings.json" << 'CHEZMOI_WINDOWS_PUSH'
+{{ includeTemplate "dot_config/vscode/settings.json.tmpl" . | trimSuffix "\n" }}
 CHEZMOI_WINDOWS_PUSH
-{{- end }}
+push_into {{ .vscode.userDir | quote }} "keybindings.json" << 'CHEZMOI_WINDOWS_PUSH'
+{{ include "dot_config/vscode/keybindings.json" | trimSuffix "\n" }}
+CHEZMOI_WINDOWS_PUSH
 
 # ---- Firefox (the default profile in %APPDATA%\Mozilla\Firefox\profiles.ini) ----
 # Resolved while rendering, so a profile Firefox creates after the first apply

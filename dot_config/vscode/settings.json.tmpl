@@ -20,6 +20,16 @@
     "asvetliakov.vscode-neovim": 1
   },
 
+  // ------------------------------------------------------------ nvicode ----
+  // The Python that runs nvicode's TUIs: the monorepo's venv by path
+  // (.pypoetry.zshPythonDir, as pycli uses). Left empty, nvicode asks poetry,
+  // which answers with the active venv whatever the project - the work
+  // monorepo's, when VS Code is started from a shell that has it activated.
+  // Not set on a machine without the venv.
+{{- if .pypoetry.zshPythonDir }}
+  "nvicode.python.command": [{{ joinPath .pypoetry.zshPythonDir "bin/python" | toJson }}],
+{{- end }}
+
   // ----------------------------------------------------- editor (nvim parity) ----
   // lua/config/options.lua, LazyVim's defaults and after/ftplugin: hybrid
   // relative numbers, scrolloff 4, wrap on, 4-space indent with 2 for the
@@ -99,7 +109,7 @@
   "shellformat.flag": "-i 2 -ci -sr -bn",
   // The extension's own defaults (csh/fish/zsh...), plus the chezmoi source
   // names files.associations maps to shell below, and templates, whose
-  // {{ }} is not shell at all.
+  // {{ "{{ }}" }} is not shell at all.
   "shellcheck.ignorePatterns": {
     "**/*.csh": true,
     "**/*.cshrc": true,

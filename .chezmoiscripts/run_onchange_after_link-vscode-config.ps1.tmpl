@@ -7,7 +7,7 @@
 # snapshot, so unlike the darwin symlinks this script must rerun whenever the
 # sources change - their hashes are embedded below, and chezmoi hashes this
 # rendered script to decide whether to rerun:
-#   settings.json:    {{ include "dot_config/vscode/settings.json" | sha256sum }}
+#   settings.json:    {{ includeTemplate "dot_config/vscode/settings.json.tmpl" . | sha256sum }}
 #   keybindings.json: {{ include "dot_config/vscode/keybindings.json" | sha256sum }}
 
 $ErrorActionPreference = 'Stop'
