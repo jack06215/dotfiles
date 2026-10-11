@@ -108,22 +108,62 @@ cloning `junegunn/fzf` with `fzf#install()`.
 
 ## Keybindings
 
-Leader is <kbd>Space</kbd>.
+Leader is <kbd>Space</kbd>. Where nvim has the same action, the key matches
+nvim, so muscle memory carries over in both directions.
 
 ### Files and search
 
 | Key | Action |
 | --- | --- |
-| <kbd>Space</kbd> <kbd>f</kbd> | `:Files` — all files (via `fd`). |
+| <kbd>Space</kbd> <kbd>f</kbd><kbd>f</kbd> | `:Files` — all files (via `fd`). |
+| <kbd>Space</kbd> <kbd>f</kbd><kbd>g</kbd> | `:Rg` — ripgrep across the project. |
+| <kbd>Space</kbd> <kbd>f</kbd><kbd>b</kbd> | `:Buffers` |
 | <kbd>Space</kbd> <kbd>F</kbd> | `:GFiles` — git-tracked only. |
-| <kbd>Space</kbd> <kbd>b</kbd> | `:Buffers` |
-| <kbd>Space</kbd> <kbd>r</kbd> | `:Rg` — ripgrep across the project. |
-| <kbd>Space</kbd> <kbd>/</kbd> | `:BLines` — search within the current buffer. |
+| <kbd>Space</kbd> <kbd>/</kbd> | `:Rg` — same as <kbd>Space</kbd> <kbd>f</kbd><kbd>g</kbd>. |
+| <kbd>Space</kbd> <kbd>s</kbd><kbd>b</kbd> | `:BLines` — search within the current buffer. |
 | <kbd>Space</kbd> <kbd>:</kbd> | `:History:` — command history. |
+
+`ff`/`fg`/`fb` are the keys telescope has in the nvim config, and `/` and `sb`
+are LazyVim's grep and buffer-lines keys. Nothing is bound
+to a bare <kbd>Space</kbd> <kbd>f</kbd>: vim would wait out `timeoutlen` before
+running it, and an nvim-habit <kbd>Space</kbd> <kbd>f</kbd><kbd>g</kbd> would
+open `:Files` with a `g` already typed into the prompt.
 
 Inside a picker: <kbd>Ctrl</kbd>+<kbd>t</kbd> tab, <kbd>Ctrl</kbd>+<kbd>x</kbd>
 split, <kbd>Ctrl</kbd>+<kbd>v</kbd> vsplit, <kbd>Ctrl</kbd>+<kbd>/</kbd> toggles
 the preview.
+
+### Windows, buffers and quickfix
+
+LazyVim's keys. vim has none of these built in, and they come up here:
+`git edit-unmerged` opens a buffer per conflicted file, `:grep` (ripgrep) fills
+the quickfix list, and `:Gdiffsplit` opens windows.
+
+| Key | Action |
+| --- | --- |
+| <kbd>Ctrl</kbd>+<kbd>h</kbd>/<kbd>j</kbd>/<kbd>k</kbd>/<kbd>l</kbd> | Move to the window left/below/above/right. |
+| <kbd>[</kbd><kbd>b</kbd> / <kbd>]</kbd><kbd>b</kbd> | Previous/next buffer. Takes a count. |
+| <kbd>H</kbd> / <kbd>L</kbd> | Previous/next buffer, as above. Replaces vim's jump to the top/bottom of the screen, as LazyVim does. |
+| <kbd>[</kbd><kbd>q</kbd> / <kbd>]</kbd><kbd>q</kbd> | Previous/next quickfix entry. Takes a count. |
+| <kbd>Space</kbd> <kbd>q</kbd><kbd>q</kbd> | `:qa` — quit all (`confirm` asks about unsaved buffers). |
+
+<kbd>Space</kbd> <kbd>w</kbd> is the window prefix, as in nvim, where which-key
+proxies it to <kbd>Ctrl</kbd>+<kbd>w</kbd>. Any <kbd>Ctrl</kbd>+<kbd>w</kbd>
+command works after it: <kbd>Space</kbd> <kbd>w</kbd><kbd>v</kbd> splits,
+<kbd>Space</kbd> <kbd>w</kbd><kbd>o</kbd> keeps only this window, and so on.
+These are the ones where nvim does something different:
+
+| Key | Action |
+| --- | --- |
+| <kbd>Space</kbd> <kbd>w</kbd><kbd>d</kbd> | Close the window. |
+| <kbd>Space</kbd> <kbd>w</kbd><kbd>m</kbd> | Toggle zoom: the window gets its own tab, and toggling again goes back to the layout. |
+| <kbd>Space</kbd> <kbd>w</kbd><kbd>&gt;</kbd> / <kbd>&lt;</kbd> | Width +20 / −10 columns, nvim's amounts. |
+| <kbd>Space</kbd> <kbd>w</kbd><kbd>+</kbd> | Height +10 lines. |
+| <kbd>Space</kbd> <kbd>w</kbd><kbd>p</kbd> | Previous window. nvim has a window picker here; with two windows it lands in the same place. |
+
+<kbd>Ctrl</kbd>+<kbd>l</kbd> moves windows in netrw too. netrw normally takes it
+for refreshing the listing, which moves to <kbd>Space</kbd> <kbd>u</kbd><kbd>r</kbd>
+in netrw buffers.
 
 ### Git (fugitive)
 
@@ -171,8 +211,9 @@ matches.
 
 | Key | Action |
 | --- | --- |
-| <kbd>Ctrl</kbd>+<kbd>l</kbd> | Redraw *and* clear search highlight. |
-| <kbd>Space</kbd> <kbd>w</kbd> | `:write` |
+| <kbd>Space</kbd> <kbd>u</kbd><kbd>r</kbd> | Clear search highlight, refresh a diff, redraw (LazyVim's key). |
+| <kbd>Space</kbd> <kbd>m</kbd><kbd>p</kbd> | Format the buffer, or the selection in visual mode — see [Formatting](#formatting). |
+| <kbd>Ctrl</kbd>+<kbd>s</kbd> | `:write`, from normal, insert or visual mode (LazyVim's key). Under tmux, whose prefix is <kbd>Ctrl</kbd>+<kbd>s</kbd>, press it twice — same as in nvim. |
 | <kbd>Space</kbd> <kbd>z</kbd> | `:Goyo` — distraction-free writing. |
 | <kbd>Space</kbd> <kbd>y</kbd> | Yank to the system clipboard (also in visual). |
 | <kbd>Space</kbd> <kbd>Y</kbd> | Yank to end of line, to the clipboard. |
@@ -202,12 +243,12 @@ including in commit messages, where no server ever attaches.
 | <kbd>K</kbd> | Hover docs. |
 | <kbd>Space</kbd> <kbd>c</kbd><kbd>r</kbd> | Rename symbol. |
 | <kbd>Space</kbd> <kbd>c</kbd><kbd>a</kbd> | Code action. |
-| <kbd>Space</kbd> <kbd>c</kbd><kbd>f</kbd> | Format document. |
-
-Rename is `<leader>cr`, not the more common `<leader>rn`, because `<leader>r`
-is already `:Rg` — vim waits out `timeoutlen` on any mapping that is a strict
-prefix of another.
 | <kbd>[</kbd><kbd>d</kbd> / <kbd>]</kbd><kbd>d</kbd> | Previous/next diagnostic. |
+
+Rename and code action are `<leader>cr` and `<leader>ca` because that is where
+lspsaga has them in the nvim config. Formatting is <kbd>Space</kbd>
+<kbd>m</kbd><kbd>p</kbd>, which tries a command-line formatter first and falls
+back to the server — see [Formatting](#formatting).
 
 Completion popup: <kbd>Tab</kbd>/<kbd>Shift</kbd>+<kbd>Tab</kbd> to walk it,
 <kbd>Enter</kbd> to accept. Both fall through to their normal meaning when no
@@ -222,6 +263,28 @@ lose two columns for nothing.
 `pyright-langserver` is already on your `PATH` from npm, so python works with
 no setup. For anything else, open a file of that type and run
 `:LspInstallServer`. `:LspStatus` shows what's running.
+
+### Formatting
+
+This copies conform.nvim from the nvim config. <kbd>Space</kbd> <kbd>m</kbd><kbd>p</kbd>
+formats the whole buffer, or the selection in visual mode. It uses the
+filetype's command-line formatter if there is one, and otherwise falls back to
+the language server — the same order conform uses.
+
+| Filetype | Formatter |
+| --- | --- |
+| `json` | `jq .` |
+| `sh`, `bash` | `shfmt -ln bash -i 2 -ci -sr -bn` (conform's flags) |
+
+`gq` uses the same formatter in those filetypes, as it does in nvim under
+LazyVim. Everywhere else, `gq` is vim's own line wrapping, so `gqip` still
+rewraps prose in a commit message.
+
+If the formatter fails, for example on invalid JSON, the buffer is left alone
+and its error is echoed. That's why this isn't done with `'formatprg'`: when a
+`'formatprg'` command fails, `gq` replaces the lines with its error message.
+
+zsh is deliberately absent: shfmt's zsh mode rewrites `"$#"` to `"$"`.
 
 ## What routes here
 

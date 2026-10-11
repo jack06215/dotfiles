@@ -256,10 +256,75 @@ augroup END
 " --- Keymaps ----------------------------------------------------------------
 nnoremap <Space> <Nop>
 
-" <C-l> already redraws; clearing the search highlight on the way is free.
-nnoremap <silent> <C-l> :nohlsearch<CR><C-l>
+" Window, buffer and quickfix motions, on the keys LazyVim gives them in nvim.
+" vim has none of these built in, and they come up here: `git edit-unmerged`
+" opens a buffer per conflicted file, :grep fills the quickfix list, and
+" :Gdiffsplit opens windows. The bracket pairs take a count, like nvim 0.11's.
+nnoremap <C-h> <C-w>h
+nnoremap <C-j> <C-w>j
+nnoremap <C-k> <C-w>k
+nnoremap <C-l> <C-w>l
+nnoremap <silent> [b :<C-u>execute v:count1 . 'bprevious'<CR>
+nnoremap <silent> ]b :<C-u>execute v:count1 . 'bnext'<CR>
+" Same trade as LazyVim: H and L give up jumping to the top/bottom of the
+" screen to switch buffers.
+nnoremap <silent> H :<C-u>execute v:count1 . 'bprevious'<CR>
+nnoremap <silent> L :<C-u>execute v:count1 . 'bnext'<CR>
+nnoremap <silent> [q :<C-u>execute v:count1 . 'cprevious'<CR>
+nnoremap <silent> ]q :<C-u>execute v:count1 . 'cnext'<CR>
+nnoremap <leader>qq :qa<CR>
 
-nnoremap <leader>w :write<CR>
+" <leader>w is the window prefix, as in nvim, where which-key proxies it to
+" <C-w>: <leader>wv splits, <leader>wo keeps only this window, and so on. nvim's
+" <leader>wp is a window picker; here it is <C-w>p, the previous window, which
+" is where the picker lands anyway with two windows open. The mappings below
+" are the ones where nvim does something other than plain <C-w>.
+nnoremap <leader>w <C-w>
+nnoremap <silent> <leader>w> :vertical resize +20<CR>
+nnoremap <silent> <leader>w<lt> :vertical resize -10<CR>
+nnoremap <silent> <leader>w+ :resize +10<CR>
+nnoremap <leader>wd <C-w>c
+nnoremap <silent> <leader>wm :call <SID>ZoomToggle()<CR>
+
+" Zoom, like Snacks.toggle.zoom: the window gets a tab page of its own, and
+" toggling again closes that tab and returns to the layout, cursor and all.
+function! s:ZoomToggle() abort
+  if exists('t:vimrc_zoomed_from')
+    let l:from = t:vimrc_zoomed_from
+    let l:view = winsaveview()
+    tabclose
+    execute 'tabnext' l:from
+    call winrestview(l:view)
+  elseif winnr('$') > 1
+    let l:from = tabpagenr()
+    tab split
+    let t:vimrc_zoomed_from = l:from
+  endif
+endfunction
+
+" Save on LazyVim's key. Under tmux, whose prefix is C-s, that takes C-s C-s
+" (tmux.conf binds it to send-prefix) - the same as in nvim. vim switches off
+" XON/XOFF flow control while it runs, so outside tmux C-s does not freeze the
+" terminal. Insert and visual mode drop back to normal mode, as in LazyVim.
+nnoremap <silent> <C-s> <Cmd>write<CR>
+inoremap <silent> <C-s> <Cmd>write<CR><Esc>
+xnoremap <silent> <C-s> <Cmd>write<CR><Esc>
+
+" With <C-l> moving windows, clearing the search highlight goes to LazyVim's
+" key for it, which also refreshes a diff. nvim clears on <Esc> as well; that
+" one is not copied, because in terminal vim key codes and terminal replies
+" start with <Esc> too, and a normal-mode <Esc> mapping can misfire on them.
+nnoremap <silent> <leader>ur :nohlsearch<Bar>diffupdate<Bar>normal! <C-l><CR>
+
+" netrw binds <C-l> to its own refresh unless something already maps to
+" <Plug>NetrwRefresh. An untypable <Plug> lhs counts, so <C-l> keeps moving
+" windows in the directory browser; there, <leader>ur refreshes the listing.
+nmap <Plug>(vimrc-netrw-refresh) <Plug>NetrwRefresh
+augroup vimrc_netrw
+  autocmd!
+  autocmd FileType netrw nmap <buffer> <leader>ur <Plug>NetrwRefresh
+augroup END
+
 nnoremap Y y$
 nnoremap n nzzzv
 nnoremap N Nzzzv
@@ -310,12 +375,17 @@ nnoremap <silent> [x ?^\(<\{7\}\\|=\{7\}\\|>\{7\}\)?<CR>
 " mapping would be silently skipped. Worst case without the plugin installed
 " is E492 on keypress, which says exactly what is wrong.
 
-" fzf.vim
-nnoremap <leader>f :Files<CR>
+" fzf.vim - <leader>f{f,g,b} are the keys telescope has in the nvim config,
+" and <leader>/ and <leader>sb are LazyVim's grep and buffer lines. Nothing is
+" bound to a bare <leader>f, or vim would wait out 'timeoutlen' before running
+" it, and an nvim-habit `<leader>fg` would open :Files with a `g` already typed
+" into the prompt.
+nnoremap <leader>ff :Files<CR>
+nnoremap <leader>fg :Rg<CR>
+nnoremap <leader>fb :Buffers<CR>
 nnoremap <leader>F :GFiles<CR>
-nnoremap <leader>b :Buffers<CR>
-nnoremap <leader>r :Rg<CR>
-nnoremap <leader>/ :BLines<CR>
+nnoremap <leader>/ :Rg<CR>
+nnoremap <leader>sb :BLines<CR>
 nnoremap <leader>: :History:<CR>
 
 " fugitive
@@ -332,6 +402,8 @@ nnoremap <leader>z :Goyo<CR>
 " `K` stays keywordprg and `gd` stays goto-local-definition everywhere else -
 " including in a commit message, where no server ever attaches.
 function! s:on_lsp_buffer_enabled() abort
+  " Read by s:Format() below, which falls back to the server.
+  let b:vimrc_lsp = 1
   setlocal omnifunc=lsp#complete
   setlocal signcolumn=yes
   nmap <buffer> gd <plug>(lsp-definition)
@@ -339,11 +411,10 @@ function! s:on_lsp_buffer_enabled() abort
   nmap <buffer> gi <plug>(lsp-implementation)
   nmap <buffer> gt <plug>(lsp-type-definition)
   nmap <buffer> K  <plug>(lsp-hover)
-  " Grouped under <leader>c, not <leader>rn: <leader>r is :Rg, and vim waits
-  " out 'timeoutlen' on any mapping that is a strict prefix of another.
+  " Rename and code action are under <leader>c, where lspsaga has them in the
+  " nvim config. Formatting is <leader>mp, in the Formatting section below.
   nmap <buffer> <leader>cr <plug>(lsp-rename)
   nmap <buffer> <leader>ca <plug>(lsp-code-action)
-  nmap <buffer> <leader>cf <plug>(lsp-document-format)
   nmap <buffer> [d <plug>(lsp-previous-diagnostic)
   nmap <buffer> ]d <plug>(lsp-next-diagnostic)
 endfunction
@@ -364,3 +435,79 @@ augroup END
 inoremap <expr> <Tab>   pumvisible() ? "\<C-n>" : "\<Tab>"
 inoremap <expr> <S-Tab> pumvisible() ? "\<C-p>" : "\<S-Tab>"
 inoremap <expr> <CR>    pumvisible() ? "\<C-y>" : "\<CR>"
+
+" --- Formatting -------------------------------------------------------------
+" Mirrors conform.nvim in the nvim config. <leader>mp formats the buffer (or
+" the visual selection) with the filetype's command-line formatter and falls
+" back to the language server, in conform's order. gq goes through the same
+" formatter, as LazyVim's 'formatexpr' makes it do in nvim.
+"
+" The shfmt flags are conform's. zsh is deliberately absent: shfmt's zsh mode
+" rewrites "$#" to "$".
+let s:formatters = {
+      \ 'json': 'jq .',
+      \ 'sh':   'shfmt -ln bash -i 2 -ci -sr -bn',
+      \ 'bash': 'shfmt -ln bash -i 2 -ci -sr -bn',
+      \ }
+
+" Not 'formatprg': when the formatter fails, gq replaces the lines with its
+" error message. This leaves the buffer alone and echoes the error instead.
+function! s:FormatLines(first, last) abort
+  let l:cmd = s:formatters[&filetype]
+  let l:lines = getline(a:first, a:last)
+  let l:out = systemlist(l:cmd, l:lines)
+  if v:shell_error
+    echohl ErrorMsg
+    echomsg matchstr(l:cmd, '^\S\+') . ' failed: ' . get(l:out, 0, 'exit ' . v:shell_error)
+    echohl None
+    return
+  endif
+  if l:out ==# l:lines
+    return
+  endif
+  " Grow or shrink the range to the new line count, then overwrite it, so the
+  " cursor and the lines outside the range stay put.
+  let l:view = winsaveview()
+  let l:delta = len(l:out) - len(l:lines)
+  if l:delta > 0
+    call append(a:last, repeat([''], l:delta))
+  elseif l:delta < 0
+    silent execute 'keepjumps' (a:last + l:delta + 1) . ',' . a:last . 'delete _'
+  endif
+  call setline(a:first, l:out)
+  call winrestview(l:view)
+endfunction
+
+function! s:FormatExpr() abort
+  " Insert-mode auto-wrap at 'textwidth' keeps vim's own formatting.
+  if mode() =~# '^[iR]'
+    return 1
+  endif
+  call s:FormatLines(v:lnum, v:lnum + v:count - 1)
+  return 0
+endfunction
+
+function! s:Format(first, last) abort
+  if has_key(s:formatters, &filetype)
+    call s:FormatLines(a:first, a:last)
+  elseif get(b:, 'vimrc_lsp', 0)
+    if a:first == 1 && a:last == line('$')
+      LspDocumentFormatSync
+    else
+      execute a:first . ',' . a:last . 'LspDocumentRangeFormatSync'
+    endif
+  else
+    echo 'No formatter for "' . &filetype . '"'
+  endif
+endfunction
+
+let s:sid = expand('<SID>')
+augroup vimrc_format
+  autocmd!
+  autocmd FileType * if has_key(s:formatters, expand('<amatch>'))
+        \ | let &l:formatexpr = s:sid . 'FormatExpr()'
+        \ | endif
+augroup END
+
+nnoremap <silent> <leader>mp :<C-u>call <SID>Format(1, line('$'))<CR>
+xnoremap <silent> <leader>mp :<C-u>call <SID>Format(line("'<"), line("'>"))<CR>
