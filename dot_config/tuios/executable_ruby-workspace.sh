@@ -48,12 +48,16 @@ if [ "${1:-}" = --attached ]; then
 fi
 session=${1:-ruby}
 
+attached() {
+  tuios ls --json 2> /dev/null |
+    jq -e --arg s "$session" 'any(.[]; .name == $s and .attached)' > /dev/null
+}
+
 # Ahead of the checks below, which drop to a shell, and of start-server: a
 # question should not start a daemon. With none running, `tuios ls` lists the
 # saved sessions as not attached, which is the right answer.
 if [ "$query" -eq 1 ]; then
-  tuios ls --json 2> /dev/null |
-    jq -e --arg s "$session" 'any(.[]; .name == $s and .attached)' > /dev/null && exit 0
+  attached && exit 0
   exit 1
 fi
 
@@ -82,13 +86,9 @@ fi
 # is already running.
 tuios start-server > /dev/null 2>&1 || true
 
-if tuios session-info -s "$session" > /dev/null 2>&1; then
-  exec tuios attach "$session"
-fi
-
 # `until` with a cap of about 10 seconds. The commands below talk to the
-# attached client, and none exists until `tuios new` at the bottom has created
-# the session and attached, so each one retries instead of sleeping a guessed
+# attached client, and none exists until the `tuios attach` or `tuios new` at
+# the end has attached, so each one retries instead of sleeping a guessed
 # amount. Giving up leaves whatever was built so far.
 retry() {
   tries=0
@@ -98,6 +98,23 @@ retry() {
     sleep 0.1
   done
 }
+
+# tuios 0.8.0 misses a change of terminal size that comes while the client is
+# starting, and this tab always gets one: WezTerm opens it as the second tab,
+# the tab bar appears (hide_tab_bar_if_only_one_tab in wezterm.lua), and the
+# tab loses a row. The client goes on drawing 96 rows into 95, the terminal
+# scrolls up a line, and the dock is lost off the top of the screen with every
+# pane one row too high, until something else resizes the window. A SIGWINCH
+# once the client is running makes it read the size again. The client is
+# exec'd at the end, so it runs as this process, $$.
+redraw() {
+  kill -WINCH $$
+}
+
+if tuios session-info -s "$session" > /dev/null 2>&1; then
+  { retry attached && redraw; } < /dev/null > /dev/null 2>&1 &
+  exec tuios attach "$session"
+fi
 
 build() {
   retry tuios split-window horizontal -s "$session" || return 0
@@ -109,7 +126,11 @@ build() {
 }
 
 # Detached from the terminal: tuios is about to take the screen over, and
-# nothing this prints should draw over it.
-build < /dev/null > /dev/null 2>&1 &
+# nothing this prints should draw over it. redraw comes after the split, which
+# only a running client can make.
+{
+  build
+  redraw
+} < /dev/null > /dev/null 2>&1 &
 
 exec tuios new "$session"
