@@ -1,0 +1,49 @@
+{{- /*
+    agent-hatch's hooks: each one records this session's status on its tmux
+    pane, for the prefix + u picker and the status bar tile. Which event means
+    which state, and why postToolUse only acts while waiting, is in the header
+    of ~/.config/tmux/agent-hatch/hooks/status.sh; Claude Code's half is the
+    hooks block in ~/.config/claude/settings.json.
+
+    Copilot loads every *.json in $COPILOT_HOME/hooks/ as user-level hooks, so
+    this file needs no entry in settings.json. A matcher is a regex anchored at
+    both ends, tested against toolName (preToolUse) or notification_type
+    (notification). Unlike Claude Code here, Copilot rings for nothing unless
+    its `beep` setting is on, so every waiting state rings from the hook.
+
+    preToolUse is fail-closed: a hook exiting non-zero would deny the tool.
+    status.sh always exits 0, and timeoutSec bounds a wedged tmux; a timeout
+    fails open.
+
+    sessionStart doesn't fire as of 1.0.97: Copilot loads user hooks after its
+    session has already started (its --log-level debug log shows the order),
+    and /clear's new session misses it the same way. A Copilot appears in the
+    picker at its first prompt instead. Kept for when that is fixed.
+*/ -}}
+{{- $hatch := printf "bash %s copilot" (joinPath .chezmoi.homeDir ".config/tmux/agent-hatch/hooks/status.sh") -}}
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      { "type": "command", "bash": {{ printf "%s idle --quiet" $hatch | quote }}, "timeoutSec": 5 }
+    ],
+    "userPromptSubmitted": [
+      { "type": "command", "bash": {{ printf "%s busy" $hatch | quote }}, "timeoutSec": 5 }
+    ],
+    "preToolUse": [
+      { "type": "command", "matcher": "ask_user", "bash": {{ printf "%s waiting" $hatch | quote }}, "timeoutSec": 5 }
+    ],
+    "postToolUse": [
+      { "type": "command", "bash": {{ printf "%s busy --if-waiting" $hatch | quote }}, "timeoutSec": 5 }
+    ],
+    "notification": [
+      { "type": "command", "matcher": "permission_prompt|elicitation_dialog", "bash": {{ printf "%s waiting" $hatch | quote }}, "timeoutSec": 5 }
+    ],
+    "agentStop": [
+      { "type": "command", "bash": {{ printf "%s idle" $hatch | quote }}, "timeoutSec": 5 }
+    ],
+    "sessionEnd": [
+      { "type": "command", "bash": {{ printf "%s gone" $hatch | quote }}, "timeoutSec": 5 }
+    ]
+  }
+}

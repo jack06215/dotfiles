@@ -6,7 +6,7 @@
 # config.toml next to this directory wires the two sides in as custom/left and
 # custom/right, so the ruby tab's dock carries the same bar as the opal tab:
 #
-#   ┌ mode ┬ user ┬ host ┬ git ┬ tock ┐   ┌ windows ┐   ┌ claude ┬ pwd ┬ battery ┬ clock ┐
+#   ┌ mode ┬ user ┬ host ┬ git ┬ tock ┐   ┌ windows ┐   ┌ agents ┬ pwd ┬ battery ┬ clock ┐
 #    tuios   └──────── custom/left ───┘      tuios        └──────── custom/right ─────────┘
 #
 # This is not a copy of the segments. It runs tmux-powerline itself, with
@@ -20,8 +20,8 @@
 # - The focused pane's directory. vcs_status and pwd ask tmux for
 #   #{pane_current_path}; a `tmux` function below answers with the directory of
 #   the pane focused in this tuios session. Every other tmux call goes to the
-#   real tmux, which is how claude_agents still counts the parked claude-*
-#   sessions in the opal tab, so both bars show the same numbers.
+#   real tmux, which is how the agents tile still counts the agents running in
+#   the opal tab's panes, so both bars show the same numbers.
 # - The session tile. tmux_session_info prints a #{…} format for tmux to
 #   expand as it draws. Here it prints your user name. That is what the tile
 #   reads in tmux too, but only by way of the opal tab's session being named
@@ -76,13 +76,6 @@ tmux() {
 
 # shellcheck disable=SC2034 # read by the tmux_session_info segment
 TMUX_POWERLINE_SEG_TMUX_SESSION_INFO_FORMAT=${USER:-$(id -un)}
-
-# tuios kills a component after three seconds and hides it until the next run,
-# so a slow `claude agents --json` would take the clock and everything else on
-# the right side with it. Two seconds leaves room for the other segments.
-if [ "${TMUX_POWERLINE_SEG_CLAUDE_AGENTS_TIMEOUT:-5}" -gt 2 ]; then
-	TMUX_POWERLINE_SEG_CLAUDE_AGENTS_TIMEOUT=2
-fi
 
 # The theme puts mode_indicator on the left.
 kept=()

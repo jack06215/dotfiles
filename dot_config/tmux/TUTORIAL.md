@@ -306,9 +306,8 @@ Renaming is worth the habit once you have four windows — the window list becom
 `M-s` opens a searchable list; type to filter, `Enter` to switch, `q` to cancel.
 It hides the session you are already in, plus the two popup sessions below, so
 the list only ever shows somewhere useful to go. (It does *not* hide the
-`claude-…` sessions created by
-[tmux-claude-session-manager](#tmux-claude-session-manager-in-detail) — use
-`prefix + u` for those.)
+`claude-…` and `copilot-…` sessions created by
+[agent-hatch](#agent-hatch-in-detail) — use `prefix + u` for those.)
 
 `M-i` is the session equivalent of `cd -` — flip between two projects with one
 key.
@@ -430,7 +429,7 @@ than that.
 | `PREFIX` (red) | You pressed `C-s` and tmux is waiting for the second key. When you are not sure whether a keypress registered, this is the answer. |
 | `COPY` (yellow) | The pane is in copy mode (`M-m`). |
 | `SUSPEND` (orange) | `M-q` handed the keyboard to a nested tmux; the whole bar greys out too. |
-| `dotfiles` | **Session** name — what `M-s` switches between, and what the `claude-…` popup sessions are named after. |
+| `dotfiles` | **Session** name — what `M-s` switches between. Inside an agent popup it reads `claude-…` or `copilot-…`. |
 | `A0229` | Hostname. Redundant locally, the thing you want over SSH. |
 | ` master ↑2 +1 ~3 ?2` | Git state of the current pane's directory (below). |
 
@@ -461,7 +460,7 @@ notification, nothing pops up. A red `!` is a terminal bell.
 
 | Tile | Meaning |
 |---|---|
-| `󰚩 ●2 ●1 ●3` | Claude Code sessions by state: **yellow** waiting on you, **green** idle and finished, **red** still working. The same three colours the `prefix + u` picker uses — the bar says *how many*, the picker says *which*. Gone when no Claude is running. |
+| `󰚩 ●2 ●1 ●3` | Coding agents — Claude Code and Copilot together — by state: **yellow** waiting on you, **green** idle and finished, **red** still working. The same three colours the `prefix + u` picker uses — the bar says *how many*, the picker says *which*, and which agent. Gone when no agent is running. |
 | `~/…/dotfiles` | Current pane's directory, truncated from the left so the tail stays readable. |
 | `󰚥` / `87%` | Battery: a plug on AC, a percentage (red under 50%) once discharging. |
 | `Sun 2026-08-23 23:40` | Clock. |
@@ -470,10 +469,10 @@ notification, nothing pops up. A red `!` is a terminal bell.
 
 The bar redraws every **5 seconds**. Each redraw is *two* shell processes — one
 for the whole left side, one for the whole right — not one per tile, so adding a
-segment is cheaper than it looks. The two custom tiles are the expensive ones and
-are written for it: the git tile is a single `git status` call (with
-`--no-optional-locks`, so it never fights lazygit for `.git/index.lock`), and the
-Claude tile caches its answer for 10 seconds because asking costs a Node process.
+segment is cheaper than it looks. The custom tiles are written for it: the git
+tile is a single `git status` call (with `--no-optional-locks`, so it never
+fights lazygit for `.git/index.lock`), and the agents tile is a single
+`tmux list-panes`, because each agent writes its own status onto its pane.
 
 `PREFIX` and `COPY` are the exception — those are tmux format conditionals rather
 than script output, so they light up on the keypress instead of waiting for the
@@ -489,7 +488,7 @@ this config:
 | `config.sh` | Refresh interval, side lengths, per-segment options. |
 | `themes/mocha.sh` | The Catppuccin Mocha palette, and which tiles appear on each side in what order. |
 | `segments/vcs_status.sh` | The git tile. |
-| `segments/claude_agents.sh` | The Claude tile. |
+| `segments/agents.sh` | The agents tile. |
 
 To add one of the stock segments — memory, weather, kubernetes context, a second
 clock in UTC — put its name in one of the two arrays at the bottom of
@@ -514,7 +513,8 @@ almost always the answer.
 ## Part 4 — Plugins
 
 Installed via TPM (`prefix + I` to install, `prefix + U` to update, all of them
-listed at the bottom of `tmux.conf`).
+listed at the bottom of `tmux.conf`) — except agent-hatch, which lives in this
+repo and arrives with `chezmoi apply`.
 
 | Plugin | Key | What it does |
 |---|---|---|
@@ -525,64 +525,98 @@ listed at the bottom of `tmux.conf`).
 | | `prefix + W` | Copy a whole line by label. |
 | **tmux-fingers** | `prefix + F` | Same family: overlays letter hints on paths/hashes/IPs; press a hint to copy. |
 | **tmux-suspend** | `M-q` | Freezes the *outer* tmux so every key passes to a nested inner tmux (over SSH). The bar greys out and the left tile reads `SUSPEND`; `M-q` again resumes. |
-| **tmux-claude-session-manager** | `prefix + y` | Opens Claude Code for the current directory in a popup, in its own tmux session. |
-| | `prefix + u` | The picker: every running Claude, with live `working` / `waiting` / `idle` status. |
+| **agent-hatch** | `prefix + y` | A menu to pick an agent — Claude Code or Copilot CLI — and open it for the current directory in a popup, in its own tmux session. |
+| | `prefix + u` | The picker: every running agent, with live `working` / `waiting` / `idle` status. |
 | **tmux-powerline** | — | Draws the whole status bar (Part 3). No keys of its own; it is declared last in `tmux.conf` because it overwrites `status-left`, `status-right` and the window-status formats, and whichever plugin loads last wins. |
 
 There is a lot of overlap between extrakto, copy-toolkit, and fingers. Do not
 try to learn all three. Start with **`prefix + Tab`** (extrakto) — it covers the
 common case — and ignore the others until you hit something it does not do.
 
-### tmux-claude-session-manager, in detail
+### agent-hatch, in detail
 
-The other four plugins are single-key conveniences. This one is a workflow, so
-it gets its own section.
+The other plugins are single-key conveniences. This one is a workflow, so it
+gets its own section.
 
-**The problem it solves.** If you run Claude Code one-per-project, you end up
-with a dozen of them and no way to tell which are finished without opening each
-one. This plugin puts each Claude in its own tmux session and gives you one
-list showing which need you.
+**The problem it solves.** If you run coding agents one-per-project — Claude
+Code in one, Copilot CLI in another — you end up with a dozen of them and no way
+to tell which are finished without opening each one. This puts each agent in its
+own tmux session and gives you one list showing which need you, whichever agent
+it is.
 
 | Key | Action |
 |---|---|
-| `prefix + y` | Launch — or re-attach to — a Claude session for the **current pane's directory**, in a popup |
-| `M-d` (or `prefix + d`) | Close the popup. Claude **keeps running** |
+| `prefix + y` | Pick an agent, then launch — or re-attach to — its session for the **current pane's directory**, in a popup |
+| `M-d` (or `prefix + d`) | Close the popup. The agent **keeps running** |
 | `prefix + u` | Open the picker |
+
+`prefix + y` opens a small menu, drawn the same way as the which-key one and in
+the same spot:
+
+```
+┌──── Launch agent ────┐
+│ Claude           (c) │
+│ Copilot          (o) │
+│──────────────────────│
+│ Picker           (u) │
+└──────────────────────┘
+```
+
+One more key picks the agent; `u` there is the picker, the same as
+`prefix + u`.
 
 Inside the picker:
 
 | Key | Action |
 |---|---|
-| `↑` `↓` | Move; typing anything filters |
+| `↑` `↓` | Move; typing anything filters (by agent name too) |
 | `Enter` | Jump to that agent |
-| `Ctrl-x` | Kill the highlighted agent |
+| `Ctrl-x` | Stop the highlighted agent |
+| `Ctrl-y` | Copy its location (`session:window.pane`) and close |
 | `Esc` | Close the picker |
 
-Agents that need you (`waiting`, `idle`) sort to the top. Each row also carries
-an **age** column — how long since that agent last did anything. A brand-new one
-that has not taken a turn yet shows `-`.
+Agents that need you (`waiting`, `idle`) sort to the top. Each row also says
+which agent it is and carries an **age** column — how long since that agent
+last changed state: took a prompt, asked you something, finished.
 
-The status is read straight from `claude agents --json`, which Claude Code
-publishes about itself. **There is nothing to configure for it to work.**
+**Where the status comes from.** Each agent reports its own. Hooks in its config
+call `~/.config/tmux/agent-hatch/hooks/status.sh` at the moments its status
+changes, and that script writes the status onto the agent's own tmux pane; the
+picker and the status bar tile read it back with one `tmux list-panes`. The
+hooks live with each agent and chezmoi deploys them:
+
+| Agent | Hook config in this repo |
+|---|---|
+| Claude Code | the `hooks` block in `dot_config/claude/settings.json.tmpl` |
+| Copilot CLI | `dot_config/private_copilot/hooks/agent-hatch.json.tmpl` |
+
+An agent reads its hooks when it starts, so one that was already running when
+they were installed shows up once you restart it. Copilot also shows up only
+after its **first prompt**: it loads hooks after its session has started, so
+the "session started" report never arrives.
 
 <details>
 <summary>What "jump" actually does, and why sessions show up twice</summary>
 
-The picker identifies each agent by its **Claude process**, not by its tmux
-session. So two Claudes in one project get two rows, and a Claude you started by
-hand in an ordinary pane gets a row too.
+The picker lists **agents**, not tmux sessions. So two agents in one project get
+two rows, and an agent you started by hand in an ordinary pane gets a row too.
 
 That distinction changes what `Enter` does:
 
-- A **dedicated** agent (one `prefix + y` created, living in a `claude-…`
-  session) — tmux switches you to the window you launched it from, then resumes
-  it in a popup over that window.
-- A **loose** agent (one you started by typing `claude` in a normal pane) — tmux
-  just focuses that pane where it is.
+- A **dedicated** agent (one `prefix + y` created, living in a
+  `claude-…` or `copilot-…` session) — tmux switches you to the window you
+  launched it from, then resumes it in a popup over that window.
+- A **loose** agent (one you started by typing `claude` or `copilot` in a normal
+  pane) — tmux just focuses that pane where it is.
 
 Pressing `prefix + u` *from inside a popup* closes the popup first, then opens
 the picker full-size on the real client — so you never get a popup inside a
 popup.
+
+An agent started *by* another agent in the same pane — `claude -p` from a
+script, Copilot asked for a second opinion through Claude's shell tool — does
+not take over that pane's row. Each pane belongs to the session that claimed it
+first, and only the agent on the pane's own terminal can claim one.
 
 </details>
 
@@ -592,111 +626,98 @@ popup.
 [Popup scratch sessions](#popup-scratch-sessions): a separate tmux session shown
 floating over your layout. Everything you learned there applies — `M-d` dismisses
 it, whatever is inside keeps running, and pressing the launch key again from
-*inside* the popup would stack another one rather than closing it.
+*inside* the popup is refused rather than stacking another one.
 
-The one difference is that the session name is derived from your directory. So
-`prefix + y` in `~/workspace/jack06215/dotfiles` always returns you to *that*
-project's Claude, not a shared scratchpad.
+The one difference is that the session name is derived from the agent and your
+directory. So `prefix + y` `c` in `~/workspace/jack06215/dotfiles` always
+returns you to *that* project's Claude, and `prefix + y` `o` to its Copilot —
+two separate sessions, not a shared scratchpad.
 
-#### Those `claude-…` entries in `M-s`
+#### Those `claude-…` and `copilot-…` entries in `M-s`
 
 The `M-s` session picker filters out `scratch` and `monitor`, but it knows
-nothing about this plugin — so every dedicated Claude session appears in that
-list as a cryptic `claude-<hash>`. That is expected, not a bug. Use `prefix + u`
-to navigate Claude sessions; it shows the project path and status instead of
-a hash.
+nothing about agent-hatch — so every dedicated agent session appears in that
+list as a cryptic `claude-<hash>` or `copilot-<hash>`. That is expected, not a
+bug. Use `prefix + u` to navigate agents; it shows the project path and status
+instead of a hash.
 
-#### Bell notifications need a one-time Claude Code setup
+#### Bells
 
-The plugin can flag the window you launched an agent from when that agent rings
-the terminal bell — so you notice a finished run without opening the picker.
+The same hooks ring the terminal bell when an agent **finishes a turn** or
+**asks you something** — a question, or a permission prompt. tmux marks the
+window with a red `!` (Part 3), and for an agent in a popup the bell is forwarded
+to the window you launched it from, so you notice a finished run without opening
+the picker. There is nothing to set up.
 
-It only *forwards* a bell; Claude Code has to emit one, and that takes **both**
-of the two settings below. Check where yours stand:
+Claude Code rings for its own permission prompts already —
+`"preferredNotifChannel": "terminal_bell"` in `settings.json` — so that one hook
+stays quiet rather than ring twice. Claude also rings once more by itself when a
+finished session has sat unanswered for a minute
+(`messageIdleNotifThresholdMs` in `~/.config/claude/.claude.json`, which
+chezmoi does not manage). Copilot rings for nothing on its own (its `beep`
+setting is off), so every one of its bells comes from the hooks.
 
-```sh
-jq '.preferredNotifChannel'        ~/.config/claude/settings.json
-jq '.messageIdleNotifThresholdMs'  ~/.config/claude/.claude.json
-```
+Set `@hatch_forward_bell 'off'` in `tmux.conf` to stop the forwarding from
+popups.
 
-`null` from either one means no bell ever rings, so there is nothing to forward.
+> **Why hooks, when upstream dropped them.** agent-hatch is a fork of
+> [craftzdog/tmux-claude-hatch](https://github.com/craftzdog/tmux-claude-hatch)
+> (the plugin this config used to load from TPM as
+> `tmux-claude-session-manager`). Upstream reads the session files Claude Code
+> writes about itself — no setup, but Claude-only by design. Every agent has
+> hooks, so this fork reports through them instead, and one picker covers them
+> all. The fork lives in this repo rather than under TPM because its other half
+> is that hook config, which has to change together with it. (If a hooks block
+> calling `tmux-claude-session-manager/scripts/state.sh` ever reappears, it is
+> left over from the plugin's much older hook-based version — delete it.)
 
-Mind those paths — on this machine the two settings do **not** live where the
-plugin's README says. Your `CLAUDE_CONFIG_DIR` points at `~/.config/claude`, so
-the README's `~/.claude/settings.json` and `~/.claude.json` are both really:
+#### Adding an agent
 
-| README says | On this machine |
-|---|---|
-| `~/.claude/settings.json` | `~/.config/claude/settings.json` |
-| `~/.claude.json` | `~/.config/claude/.claude.json` |
+Gemini CLI, say:
 
-**How** it notifies — in `settings.json`:
+1. Give it hooks that call `status.sh gemini <state>`. The header of
+   `~/.config/tmux/agent-hatch/hooks/status.sh` maps each state to the Claude and
+   Copilot events, and lists Gemini's equivalents.
+2. Put it in the `prefix + y` menu, in `tmux.conf` above agent-hatch's
+   `run-shell` line:
 
-```json
-{ "preferredNotifChannel": "terminal_bell" }
-```
+   ```tmux
+   set -g @hatch_agents 'claude copilot gemini'
+   ```
 
-Only `terminal_bell` and `iterm2_with_bell` write a real bell character. The
-other channels send escape sequences tmux does not count as a bell, and the
-default `auto` picks by terminal — so pin it explicitly.
+   It gets `g` in the menu; `set -g @hatch_gemini_key 'x'` picks another.
 
-**When** it notifies — in `.claude.json` (`settings.json` ignores this key and
-drops it without complaining):
-
-```json
-{ "messageIdleNotifThresholdMs": 0 }
-```
-
-Claude rings after sitting idle this long. The default is 60000 — a minute,
-by which point you have usually looked anyway. `0` rings the moment a turn ends.
-
-> ⚠️ `~/.config/claude/settings.json` is chezmoi-managed too
-> (`dot_config/claude/settings.json.tmpl` in this repo). Same rule as
-> `tmux.conf`: edit the source, then `chezmoi apply`. `.claude.json` is
-> *not* managed — Claude Code rewrites it constantly, so edit that one in
-> place.
-
-Set `@claude_forward_bell 'off'` in `tmux.conf` if you would rather have no
-bells at all.
-
-> **Why there is no `hooks` block — and why status still works.** An older
-> version of this plugin drove the picker's status from Claude Code hooks, and
-> `settings.json` used to carry four of them (`UserPromptSubmit`,
-> `Notification`, `PreToolUse`, `Stop`) calling
-> `tmux-claude-session-manager/scripts/state.sh`. The plugin dropped that script
-> once Claude Code started publishing status itself: every session writes its own
-> state to disk, a supervisor daemon aggregates it, and `claude agents --json`
-> hands the picker the `working` / `waiting` / `idle` you see. The four hooks
-> outlived the script they called and failed silently on every prompt and on
-> every turn end, so they were deleted from the template. Nothing was lost: the
-> states they set by hand are exactly what the picker reads for free. If a
-> `hooks` block pointing at `state.sh` ever reappears, it is stale — delete it.
+That is all — no new binding. The picker and the status bar pick it up from its
+hooks.
 
 #### Options
 
-All optional, all set in `tmux.conf` **before** the `run` line at the bottom:
+All optional, all set in `tmux.conf` **above** agent-hatch's `run-shell` line:
 
 ```tmux
-set -g @claude_launch_key     'y'        # prefix key: launch for current dir
-set -g @claude_list_key       'u'        # prefix key: open the picker
-set -g @claude_command        'claude'   # command run in new sessions
-set -g @claude_args           ''         # extra args appended to it
-set -g @claude_session_prefix 'claude-'  # tmux session name prefix
-set -g @claude_popup_width    '90%'      # popup width
-set -g @claude_popup_height   '90%'      # popup height
-set -g @claude_fzf_options    ''         # extra options for the fzf picker
-set -g @claude_forward_bell   'on'       # highlight origin window on a bell
+set -g @hatch_launch_key      'y'               # prefix key: the launch menu
+set -g @hatch_agents          'claude copilot'  # the agents in it, in order
+set -g @hatch_claude_key      'c'               # an agent's key in the menu (per agent;
+                                                #   copilot 'o', gemini 'g', else its initial)
+set -g @hatch_claude_command  'claude'          # command run in new sessions (per agent)
+set -g @hatch_claude_args     ''                # extra args appended to it (per agent)
+set -g @hatch_list_key        'u'               # prefix key: open the picker (also its menu key)
+set -g @hatch_popup_width     '90%'             # popup width
+set -g @hatch_popup_height    '90%'             # popup height
+set -g @hatch_fzf_options     ''                # extra options for the fzf picker
+set -g @hatch_sort            'status'          # or 'recent': newest activity first
+set -g @hatch_forward_bell    'on'              # highlight origin window on a bell
 ```
 
 None are set in your config, so you are on every default above.
 
 `prefix + y` and `prefix + u` are free in this config — nothing else claims
-them — so there is no conflict to worry about. (And the plugin loads from the
-last line of `tmux.conf`, so even if you did bind them yourself earlier in the
-file, the plugin would win. Change `@claude_launch_key` rather than fighting it.)
+them — so there is no conflict to worry about. With a single agent in
+`@hatch_agents` there is nothing to pick, and `prefix + y` skips the menu.
 
-**Requirements, all already met here:** tmux ≥ 3.2 (you have 3.7b), `fzf`, `jq`,
-and Claude Code ≥ 2.1.139 (you have 2.1.239).
+**Requirements, all already met here:** tmux ≥ 3.3, `fzf`, and agents that run
+hooks — Claude Code, and Copilot CLI with its hooks directory
+(`$COPILOT_HOME/hooks/`).
 
 ---
 
@@ -741,19 +762,20 @@ narrow enough to leave room. Open one file in each.
 `prefix + Tab`, type a few characters of the path, `Enter`. Much faster than
 selecting it with the mouse.
 
-**Run Claude on three projects at once**
+**Run agents on three projects at once**
 
-In each project's session, `cd` to the project root and press **`prefix + y`** —
-Claude opens in a popup, in its own tmux session tied to that directory. Give it
-a task, then `M-d` to dismiss the popup and carry on working; it keeps running.
+In each project's session, `cd` to the project root and press **`prefix + y`**,
+then `c` for Claude or `o` for Copilot — the agent opens in a popup, in its
+own tmux session tied to that directory. Give it a task, then `M-d` to dismiss
+the popup and carry on working; it keeps running.
 
 When you want to know who is done, **`prefix + u`** from anywhere. The picker
 lists all three with `working` / `waiting` / `idle`, the ones needing you at the
 top, and a live preview of each screen. `Enter` drops you back into one,
-`Ctrl-x` kills a finished one.
+`Ctrl-x` stops a finished one.
 
-That is the whole loop: `prefix + y` to start, `M-d` to walk away, `prefix + u`
-to check back. See [Part 4](#tmux-claude-session-manager-in-detail) for details.
+That is the whole loop: `prefix + y` to start, `M-d` to walk away,
+`prefix + u` to check back. See [Part 4](#agent-hatch-in-detail) for details.
 
 ---
 
@@ -830,6 +852,20 @@ chezmoi overwrote it. Edit via `chezmoi edit ~/.config/tmux/tmux.conf`, then
 
 **I want to see what a key is actually bound to.**
 `prefix + ?`, then `/` to search. Or from a shell: `tmux list-keys | grep M-h`.
+
+**An agent is running but `prefix + u` does not list it.**
+It has not reported in. Most often it was started before its hooks were
+installed — restart it. Otherwise look at what every pane holds, from any
+shell:
+
+```sh
+tmux list-panes -a -F '#{session_name}:#{window_index}.#{pane_index}  #{pane_current_command}  #{@hatch}'
+```
+
+The last column is the record, `agent|state|seen|session|command`. Empty on the
+agent's pane means its hooks never ran (an agent outside tmux has nowhere to
+report). A record whose last field differs from the pane's command is stale —
+the agent that wrote it is gone — and is hidden on purpose.
 
 ---
 

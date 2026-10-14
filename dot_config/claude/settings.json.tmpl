@@ -14,6 +14,10 @@
 {{- if eq .chezmoi.os "android" -}}
 {{-   $statusline = printf "bash %s" $statusline -}}
 {{- end -}}
+{{- /* agent-hatch's hook, which records this session's status on its tmux
+       pane for the prefix + u picker and the status bar tile. Run through
+       bash for the same Termux reason as above. */ -}}
+{{- $hatch := printf "bash %s claude" (joinPath .chezmoi.homeDir ".config/tmux/agent-hatch/hooks/status.sh") -}}
 {{- /*
     Permissions. Rules are checked deny, then ask, then allow; the first match
     wins, so an allow can never carve an exception out of a deny or an ask.
@@ -35,6 +39,42 @@
            no NORMAL counterpart; the script draws every vim mode instead */}}
     "hideVimModeIndicator": true
   },
+{{- /* Which event means which state, and why PostToolUse only acts while
+       waiting, is in the header of agent-hatch/hooks/status.sh. Notification
+       is --quiet because preferredNotifChannel above already rings for
+       permission prompts; Stop and AskUserQuestion ring from the hook. Not on
+       Windows, which has no tmux to report to. */}}
+{{- if ne .chezmoi.os "windows" }}
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [{ "type": "command", "command": {{ printf "%s idle --quiet" $hatch | quote }} }] }
+    ],
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": {{ printf "%s busy" $hatch | quote }} }] }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "AskUserQuestion",
+        "hooks": [{ "type": "command", "command": {{ printf "%s waiting" $hatch | quote }} }]
+      }
+    ],
+    "PostToolUse": [
+      { "hooks": [{ "type": "command", "command": {{ printf "%s busy --if-waiting" $hatch | quote }} }] }
+    ],
+    "Notification": [
+      {
+        "matcher": "permission_prompt|elicitation_dialog",
+        "hooks": [{ "type": "command", "command": {{ printf "%s waiting --quiet" $hatch | quote }} }]
+      }
+    ],
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": {{ printf "%s idle" $hatch | quote }} }] }
+    ],
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": {{ printf "%s gone" $hatch | quote }} }] }
+    ]
+  },
+{{- end }}
 {{- /* the company's managed strictKnownMarketplaces only allows its own
        marketplace, so third-party ones are personal-machine only */}}
 {{- if not .myComputer.isCompanyMachine }}

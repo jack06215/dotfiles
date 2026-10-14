@@ -20,16 +20,15 @@
 # pairs with `working_hours` in ~/.config/tock/tock.yaml - that setting stops a
 # forgotten activity, this one lets you see it before it gets that far.
 #
-# Two `tock` calls per refresh, ~7 ms each (measured), so there is no cache here
-# the way claude_agents.sh needs one for its ~200 ms Node query. tock is a
-# single Go binary reading one plaintext file; this costs less than the one git
-# call vcs_status.sh makes on the other side of the bar.
+# Two `tock` calls per refresh, ~7 ms each (measured), so there is no cache
+# here. tock is a single Go binary reading one plaintext file; this costs less
+# than the one git call vcs_status.sh makes on the other side of the bar.
 
 # shellcheck source=/dev/null
 source "${TMUX_POWERLINE_DIR_LIB}/util.sh"
 
 # 󰅐 is a Nerd Font Material Design glyph (U+F0150, clock-outline), the same
-# family as the robot in claude_agents.sh. "tk" stands in without a patched
+# family as the robot in agents.sh. "tk" stands in without a patched
 # font - it is also the command you type to start tracking, so the fallback
 # still points at what the segment is about.
 if tp_patched_font_in_use; then

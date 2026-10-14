@@ -150,7 +150,7 @@ fi
 # plugin repo for the full option list.
 #
 # A segment that produces no output is dropped entirely — separators and all —
-# so the "only when it matters" segments below (claude_agents, the git counts,
+# so the "only when it matters" segments below (agents, the git counts,
 # battery on AC) cost no width when there is nothing to say.
 
 # shellcheck disable=SC1143,SC2128
@@ -164,7 +164,7 @@ if [ -z "$TMUX_POWERLINE_LEFT_STATUS_SEGMENTS" ]; then
 		# while the C-s prefix is still new muscle memory.
 		"mode_indicator ${surface1} ${overlay2}"
 		# The bright tile: session name is the identity you switch between with
-		# M-s, and the thing every claude-… popup session is named after.
+		# M-s; inside an agent popup it reads claude-… or copilot-….
 		"tmux_session_info ${lavender} ${crust}"
 		# Which machine. Constant when local, but this config also runs over SSH
 		# and under nested tmux (M-q / tmux-suspend), where it stops being
@@ -184,9 +184,10 @@ fi
 # shellcheck disable=SC1143,SC2128
 if [ -z "$TMUX_POWERLINE_RIGHT_STATUS_SEGMENTS" ]; then
 	TMUX_POWERLINE_RIGHT_STATUS_SEGMENTS=(
-		# Custom segment: how many Claude Code sessions are waiting on you.
-		# Hidden entirely when none are running. See segments/claude_agents.sh.
-		"claude_agents ${surface0} ${text}"
+		# Custom segment: how many coding agents (Claude Code, Copilot) are
+		# waiting on you. Hidden entirely when none are running. See
+		# segments/agents.sh.
+		"agents ${surface0} ${text}"
 		# Current pane's directory. Complements vcs_status on the left: that one
 		# says which branch, this one says where in the tree.
 		"pwd ${surface1} ${subtext1}"

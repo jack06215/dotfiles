@@ -372,12 +372,12 @@ items:
         key: f
         command: 'run-shell -b "TMUX_FZF_CLIENT=#{client_tty} $HOME/.local/share/tmux/plugins/tmux-fzf/main.sh"'
       - separator: true
-      - name: Claude - launch here (prefix y)
+      - name: Agents - launch here (prefix y)
         key: y
-        command: 'run-shell "$HOME/.local/share/tmux/plugins/tmux-claude-session-manager/scripts/launch.sh #{q:pane_current_path} #{q:window_id}"'
-      - name: Claude - list sessions (prefix u)
+        command: 'run-shell "$HOME/.config/tmux/agent-hatch/scripts/menu.sh #{q:client_name} #{pane_id}"'
+      - name: Agents - picker (prefix u)
         key: u
-        command: 'run-shell "$HOME/.local/share/tmux/plugins/tmux-claude-session-manager/scripts/list.sh #{q:client_name}"'
+        command: 'run-shell "$HOME/.config/tmux/agent-hatch/scripts/list.sh #{q:client_name}"'
       # No tmux-suspend entry: its script takes the resume key and the whole
       # @suspend_suspended_options blob as arguments, and passing that blob here
       # needs the nested quoting rule 2 rules out. Use M-q.

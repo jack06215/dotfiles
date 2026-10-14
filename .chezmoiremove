@@ -39,6 +39,10 @@
 .config/termux/termux.properties
 .config/termux/start-backend-server
 
+# The status bar's Claude tile became the agents tile when agent-hatch brought
+# Copilot into the picker; it reads the picker's own pane state now.
+.config/tmux-powerline/segments/claude_agents.sh
+
 # The Brewfile, Chocolatey and PowerToys exporters moved to tools/setup/, which
 # is repo-only. Run them through `bazel run //tools/setup:...` or from the
 # checkout.

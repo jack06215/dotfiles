@@ -154,10 +154,3 @@ export TMUX_POWERLINE_SEG_TOCK_SHOW_TODAY="true"
 # a tracker producing wrong numbers. "false" hides it when idle instead.
 export TMUX_POWERLINE_SEG_TOCK_SHOW_WHEN_IDLE="true"
 # }
-
-# claude_agents.sh (custom, see segments/claude_agents.sh) {
-# `claude agents --json` is a Node process, so the answer is cached. 10s
-# means at most every other refresh pays for it.
-export TMUX_POWERLINE_SEG_CLAUDE_AGENTS_UPDATE_INTERVAL="10"
-export TMUX_POWERLINE_SEG_CLAUDE_AGENTS_TIMEOUT="5"
-# }
