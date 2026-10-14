@@ -25,7 +25,7 @@ return {
         copilot = {
           -- Avante's default is gpt-4o-2024-11-20. IDs come from Copilot's
           -- /models endpoint, so check what your plan exposes with <leader>a?
-          model = "claude-sonnet-5.5",
+          model = "claude-opus-5.5",
         },
       },
       -- Leave inline completion to copilot.lua: Avante warns that using
@@ -42,7 +42,9 @@ return {
       -- LazyVim ships snacks; the native selector is broken alongside blink.cmp.
       -- Our own snacks provider: avante's re-reads every matching file per key.
       selector = {
-        provider = function(selector) require("plugins.avante.selector")(selector) end,
+        provider = function(selector)
+          require("plugins.avante.selector")(selector)
+        end,
       },
       input = { provider = "snacks" },
       -- Avante's own tools stay on; mcphub's overlapping "neovim" server is off
