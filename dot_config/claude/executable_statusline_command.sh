@@ -47,6 +47,7 @@ if fields=$(echo "$input" | jq -r '[
             .effort.level // "",
             .fast_mode // false,
             (.session_name // "" | gsub("[\t\n\u001f]"; " ")),
+            .agent.name // "",
             .worktree.name // .workspace.git_worktree // "",
             .pr.number // "",
             .pr.review_state // "",
@@ -60,7 +61,7 @@ if fields=$(echo "$input" | jq -r '[
         ] | map(if . == null then "" else tostring end) | join("\u001f")'); then
   IFS=$'\x1f' read -r model_name model_id used_pct ctx_size input_tokens current_dir project_dir \
     cost_usd duration_ms lines_added lines_removed version vim_mode effort_level fast_mode \
-    session_name worktree_name pr_number pr_state pr_kind quota_5h quota_7d cache_state <<< "$fields"
+    session_name agent_name worktree_name pr_number pr_state pr_kind quota_5h quota_7d cache_state <<< "$fields"
 
   # Extract version from model.id (e.g., "claude-opus-4-6" -> "4.6")
   # Only append if display_name doesn't already contain the version
@@ -87,6 +88,7 @@ else
   effort_level=""
   fast_mode=false
   session_name=""
+  agent_name=""
   worktree_name=""
   pr_number=""
   pr_state=""
@@ -314,13 +316,16 @@ duration_part=""
 row3=$(join_parts "$cost_part" "$churn_display" "$duration_part" \
   "$(format_quota 5h "$quota_5h")" "$(format_quota 7d "$quota_7d")")
 
-# Row 4: model name + effort + fast mode, usage bar + context tokens, prompt cache
+# Row 4: model name + effort + fast mode, agent (--agent or the agent
+# setting), usage bar + context tokens, prompt cache
 model_part="${CYAN}${BOLD}${model_name}${RESET}"
 [ -n "$effort_level" ] && model_part="${model_part} ${MAGENTA}${effort_level}${RESET}"
 [ "$fast_mode" = "true" ] && model_part="${model_part} ${YELLOW}fast${RESET}"
+agent_part=""
+[ -n "$agent_name" ] && agent_part="${CYAN}agent ${agent_name}${RESET}"
 usage_part="${progress_bar} ${used_pct}%"
 [ -n "$ctx_display" ] && usage_part="${usage_part} (${ctx_display})"
-row4=$(join_parts "$model_part" "${USAGE_COLOR}${usage_part}${RESET}" "$cache_part")
+row4=$(join_parts "$model_part" "$agent_part" "${USAGE_COLOR}${usage_part}${RESET}" "$cache_part")
 
 # Assemble output, skipping any row that ended up empty (e.g. no git repo, no churn)
 output="$row1"
