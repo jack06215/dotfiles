@@ -3,10 +3,12 @@ return {
   dependencies = {
     "nvim-lua/plenary.nvim",
   },
-  build = "bundled_build.lua", -- Bundles `mcp-hub` binary along with the neovim plugin
+  -- Global install (lands in $XDG_DATA_HOME/npm/bin via npmrc); re-run on
+  -- plugin updates so mcp-hub stays at the version the plugin requires.
+  build = "npm install -g mcp-hub@latest",
   version = false,
   opts = {
-    use_bundled_binary = true, -- Use local `mcp-hub` binary
+    use_bundled_binary = false, -- Use the global `mcp-hub` on PATH
     ---Chat-plugin related options-----------------
     auto_approve = true, -- Auto approve mcp tool calls
     auto_toggle_mcp_servers = true, -- Let LLMs start and stop MCP servers automatically
