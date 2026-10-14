@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Monthly AI credit allowance that this month's spend is shown against
+readonly AIC_BUDGET=1900
+
 input=$(cat)
 
 # ANSI color codes
@@ -55,6 +58,8 @@ if fields=$(echo "$input" | jq -r '[
             .pr.kind // "",
             .rate_limits.five_hour.used_percentage // "",
             .rate_limits.seven_day.used_percentage // "",
+            .ai_used.total_nano_aiu // 0,
+            .session_id // "",
             (.prompt_cache | if . == null then ""
               elif .warm and .expires_at != null then (.expires_at | floor | strflocaltime("%H:%M"))
               elif .caching_observed then "cold"
@@ -62,7 +67,7 @@ if fields=$(echo "$input" | jq -r '[
         ] | map(if . == null then "" else tostring end) | join("\u001f")'); then
   IFS=$'\x1f' read -r model_name model_id used_pct ctx_size input_tokens current_dir project_dir \
     cost_usd duration_ms lines_added lines_removed version vim_mode effort_level fast_mode \
-    session_name agent_name worktree_name pr_number pr_state pr_kind quota_5h quota_7d cache_state <<< "$fields"
+    session_name agent_name worktree_name pr_number pr_state pr_kind quota_5h quota_7d ai_nano session_id cache_state <<< "$fields"
 
   # Extract version from model.id
   if [[ "$model_id" =~ ([0-9]+)-([0-9]+) ]]; then
@@ -95,6 +100,8 @@ else
   pr_kind=""
   quota_5h=""
   quota_7d=""
+  ai_nano=0
+  session_id=""
   cache_state=""
 fi
 
@@ -167,6 +174,46 @@ function format_quota() {
   local label=$1 pct=${2%.*}
   [ -z "$pct" ] && return
   printf '%s' "$(pct_color "$pct")${label} ${pct}%${RESET}"
+}
+
+# AI credits from Copilot's nano-AIU count (1 AIC = 1e9): 0.42, 12.3, 154
+function format_aic() {
+  awk -v n="$1" 'BEGIN {
+    c = n / 1e9; f = c < 10 ? "%.2f" : c < 100 ? "%.1f" : "%.0f"; printf f, c }'
+}
+
+# This month's AI credits, in nano-AIU, across every Copilot CLI session on
+# this machine. Copilot only reports the running session's total, so each run
+# records it in a SQLite ledger, one row per session per month: credits banked
+# before a /clear or /new reset the count, and the current count. Concurrent
+# sessions are serialized by SQLite's locking, and the busy timeout makes a
+# writer wait for the lock rather than drop its update. The month turns over
+# with Copilot's quota, on the 1st in UTC, which is the clock strftime uses.
+function aic_month_nano() {
+  local dir="${XDG_STATE_HOME:-$HOME/.local/state}/copilot" upsert=""
+  mkdir -p "$dir" 2> /dev/null || return
+  # Both values are spliced into the SQL, so only a plain id and count pass
+  if [[ "$session_id" =~ ^[A-Za-z0-9_-]+$ && "$ai_nano" =~ ^[0-9]+$ ]]; then
+    upsert="INSERT INTO aic (month, session_id, session_nano)
+      VALUES (strftime('%Y-%m', 'now'), '$session_id', $ai_nano)
+      ON CONFLICT (month, session_id) DO UPDATE SET
+        banked_nano = banked_nano + iif(excluded.session_nano < session_nano, session_nano, 0),
+        session_nano = excluded.session_nano
+      WHERE excluded.session_nano != session_nano;"
+  fi
+  sqlite3 "$dir/aic.db" 2> /dev/null << SQL
+.timeout 2000
+CREATE TABLE IF NOT EXISTS aic (
+  month TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  banked_nano INTEGER NOT NULL DEFAULT 0,
+  session_nano INTEGER NOT NULL,
+  PRIMARY KEY (month, session_id)
+);
+$upsert
+SELECT coalesce(sum(banked_nano + session_nano), 0) FROM aic
+WHERE month = strftime('%Y-%m', 'now');
+SQL
 }
 
 USAGE_COLOR=$(pct_color "$used_pct")
@@ -247,6 +294,18 @@ if [ "${cost_usd%.*}" != "0" ] || [ "${cost_usd#*.}" != "$cost_usd" ]; then
   cost_display=$(awk "BEGIN {printf \"\$%.2f\", $cost_usd}")
 fi
 
+# Format AI credits: this session's, and this month's against AIC_BUDGET.
+# Token-based billing reports no quota, so the month is tracked locally and
+# misses what VS Code, github.com or another machine spent.
+aic_display=""
+[ "${ai_nano:-0}" != "0" ] && aic_display="$(format_aic "$ai_nano") AIC"
+aic_month_part=""
+month_nano=$(aic_month_nano)
+if [ "${month_nano:-0}" != "0" ]; then
+  month_pct=$(awk -v n="$month_nano" -v b="$AIC_BUDGET" 'BEGIN { printf "%d", n / 1e9 * 100 / b }')
+  aic_month_part="$(pct_color "$month_pct")AIC used $(format_aic "$month_nano")/${AIC_BUDGET} ${month_pct}%${RESET}"
+fi
+
 # Format duration
 duration_display=""
 if [ "${duration_ms:-0}" -gt 0 ]; then
@@ -298,13 +357,16 @@ worktree_part=""
 [ -n "$worktree_name" ] && worktree_part="${MAGENTA}worktree ${worktree_name}${RESET}"
 row2=$(join_parts "$git_part" "$worktree_part" "$pr_part")
 
-# Row 3: cost, code churn, session duration, plan quota — omitted when all are empty
+# Row 3: cost, AI credits, code churn, session duration, plan quota, monthly
+# AI credits — omitted when all are empty
 cost_part=""
 [ -n "$cost_display" ] && cost_part="${GREEN}${cost_display}${RESET}"
+aic_part=""
+[ -n "$aic_display" ] && aic_part="${GREEN}${aic_display}${RESET}"
 duration_part=""
 [ -n "$duration_display" ] && duration_part="${GRAY}${duration_display}${RESET}"
-row3=$(join_parts "$cost_part" "$churn_display" "$duration_part" \
-  "$(format_quota 5h "$quota_5h")" "$(format_quota 7d "$quota_7d")")
+row3=$(join_parts "$cost_part" "$aic_part" "$churn_display" "$duration_part" \
+  "$(format_quota 5h "$quota_5h")" "$(format_quota 7d "$quota_7d")" "$aic_month_part")
 
 # Row 4: model name + effort + fast mode, agent (--agent or the agent
 # setting), usage bar + context tokens, prompt cache
