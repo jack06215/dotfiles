@@ -65,6 +65,8 @@ export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git
 export COLIMA_HOME="${XDG_CONFIG_HOME}/colima"
 export CONDARC="$XDG_CONFIG_HOME/conda/condarc"
 export CLAUDE_CONFIG_DIR="$XDG_CONFIG_HOME/claude"
+# Copilot CLI ignores XDG_CONFIG_HOME and defaults to ~/.copilot.
+export COPILOT_HOME="$XDG_CONFIG_HOME/copilot"
 export DOCKER_CONFIG="$XDG_CONFIG_HOME/docker"
 # FZF_DEFAULT_COMMAND / FZF_DEFAULT_OPTS are defined in fzf.zsh, which loads
 # later and always wins - defining them here too just risks drift.
