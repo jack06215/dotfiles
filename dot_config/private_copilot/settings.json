@@ -1,3 +1,12 @@
 {
-  "model": "claude-opus-5.5"
+  "model": "claude-opus-5.5",
+  "effortLevel": "xhigh",
+  "statusLine": {
+    "type": "command",
+    "command": "~/.config/copilot/statusline_command.sh"
+  },
+  "footer": {
+    "showDirectory": false,
+    "showBranch": false
+  }
 }
