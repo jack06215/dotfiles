@@ -375,11 +375,12 @@ EOF
 fi
 
 # --- Wrapper at $PREFIX/bin/claude ---
-# Once per 24h on launch, checks npm for a newer version. If found,
-# downloads, verifies checksum, patchelfs, swaps. --update-now forces
-# an immediate check, bypassing the rate limit. Any failure (network,
-# checksum, patchelf) is reported to stderr and the cached binary is
-# used. Repairs the ELF interpreter for any candidate it must test; the
+# Once per 24h on launch, checks npm for a newer version in the background,
+# so the launch never waits on it. If found, downloads, verifies checksum,
+# patchelfs, swaps; the next launch runs it. --update-now forces an
+# immediate check in the foreground, bypassing the rate limit. Any failure
+# (network, checksum, patchelf) is reported (to stderr with --update-now,
+# else to versions/.update.log) and the cached binary is used. Repairs the ELF interpreter for any candidate it must test; the
 # already-verified binary takes the zero-cost fast path and skips that work.
 # Unsets LD_PRELOAD before exec so the glibc binary doesn't crash on
 # libtermux-exec's unversioned libc.so dependency.
@@ -392,6 +393,7 @@ PATCHELF="$PATCHELF"
 STAMP="\$VERSIONS_DIR/.last-update-check"
 BLOCKLIST="\$VERSIONS_DIR/.blocklist"
 VERIFIED="\$VERSIONS_DIR/.verified"
+UPDATE_LOG="\$VERSIONS_DIR/.update.log"
 RATE_LIMIT=86400
 
 retry_update_soon() {
@@ -468,7 +470,8 @@ else
   [ \$((now - last)) -ge \$RATE_LIMIT ] && should_check=1
 fi
 
-if [ "\$should_check" = 1 ]; then
+# The update: one-updater lock, download, checksum, patchelf, smoke test, swap.
+update_check() {
   # One-updater lock: only one claude process downloads at a time. A second
   # launch during the (up to 5 min) download skips the update and runs the
   # cached binary instead of racing on a shared staging file. A crashed
@@ -498,6 +501,7 @@ if [ "\$should_check" = 1 ]; then
       tmp="\$new_bin.\$\$.tmp"
       if [ ! -f "\$new_bin" ] && ! grep -qxF "\$latest" "\$BLOCKLIST" 2>/dev/null; then
         dl="https://downloads.claude.ai/claude-code-releases/\$latest"
+        echo "[claude] update: downloading \$latest" >&2
         if curl -fsSL --max-time 300 "\$dl/linux-arm64/claude" -o "\$tmp" 2>/dev/null && [ -s "\$tmp" ]; then
           exp=\$(curl -fsSL --max-time 5 "\$dl/manifest.json" 2>/dev/null | jq -er '.platforms["linux-arm64"].checksum' 2>/dev/null || echo "")
           act=\$(sha256sum "\$tmp" 2>/dev/null | cut -d' ' -f1)
@@ -548,6 +552,20 @@ if [ "\$should_check" = 1 ]; then
       echo "[claude] update: could not query npm registry, using cached" >&2
     fi
     rmdir "\$LOCK" 2>/dev/null
+  fi
+}
+
+if [ "\$should_check" = 1 ]; then
+  if [ "\$force_update" = 1 ]; then
+    update_check
+  else
+    # Off the launch path: the download is ~250 MB with a 5 min timeout and the
+    # smoke test up to 45 s more, all of it silent, so a launch that waited on
+    # it looked hung (a tmux popup sat blank). HUP is ignored so closing the
+    # terminal mid-download neither kills the updater nor strands its lock, and
+    # the double fork hands it to init rather than to the claude exec'd below.
+    # The new version is picked up on the next launch; messages go to the log.
+    ( trap '' HUP; update_check </dev/null >"\$UPDATE_LOG" 2>&1 & )
   fi
 fi
 
