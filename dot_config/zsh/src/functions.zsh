@@ -64,8 +64,9 @@ function pbpaste_dump() {
 #
 # Kept as the name its callers use (the notify_* shortcuts below, gh.zsh's CI
 # watchers); notify.zsh holds the per-platform backends - terminal-notifier on
-# macOS, a BurntToast toast on WSL2. Loaded on first use, since this file is
-# also sourced on its own by modules that zshfn runs without init.zsh.
+# macOS, a BurntToast toast on WSL2, termux-notification on Termux. Loaded on
+# first use, since this file is also sourced on its own by modules that zshfn
+# runs without init.zsh.
 function send_notification() {
   (($+functions[notify])) || source "${ZDOTDIR:-$HOME/.config/zsh}/src/notify.zsh"
   notify "$@"

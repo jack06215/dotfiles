@@ -115,14 +115,17 @@ setup.ps1
 {{ end }}
 
 
-# WSL2-only shims in ~/.local/bin (dot_local/bin): pbcopy/pbpaste wrap
-# win32yank.exe - macOS has the real ones in /usr/bin, and these must never
-# shadow them - and powershell.exe links the Windows binary onto PATH, which
-# appendWindowsPath=false keeps off it, for tools that probe for it by name
-# (nvim's img-clip pastes images through it).
-{{ if not .myComputer.isWSL2 }}
+# Shims in ~/.local/bin (dot_local/bin). pbcopy/pbpaste wrap win32yank.exe on
+# WSL2 and termux-api's clipboard commands on Termux - macOS has the real ones
+# in /usr/bin, and these must never shadow them. powershell.exe, WSL2 only,
+# links the Windows binary onto PATH, which appendWindowsPath=false keeps off
+# it, for tools that probe for it by name (nvim's img-clip pastes images
+# through it).
+{{ if not (or .myComputer.isWSL2 (eq .chezmoi.os "android")) }}
 .local/bin/pbcopy
 .local/bin/pbpaste
+{{ end }}
+{{ if not .myComputer.isWSL2 }}
 .local/bin/powershell.exe
 {{ end }}
 

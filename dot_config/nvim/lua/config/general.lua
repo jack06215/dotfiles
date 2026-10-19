@@ -143,8 +143,8 @@ if is_wsl or is_win then
   -- appendWindowsPath=false keeps Windows dirs off PATH, so the bare name only
   -- resolved in an nvim started from the interactive zsh (which appends
   -- chocolatey's dir) - and elsewhere every yank failed with E475 while
-  -- :checkhealth still said OK. ~/.local/bin's pbcopy/pbpaste (dot_local/bin,
-  -- WSL2 only) wrap win32yank at the path `chezmoi init` found for it.
+  -- :checkhealth still said OK. On WSL2, ~/.local/bin's pbcopy/pbpaste
+  -- (dot_local/bin) wrap win32yank at the path `chezmoi init` found for it.
   local copy, paste
   local bin = vim.fn.expand("~/.local/bin")
   if is_wsl and vim.fn.executable(bin .. "/pbcopy") == 1 then
