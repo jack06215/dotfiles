@@ -5,6 +5,26 @@
 # way they source functions.zsh, so they still work when zshfn runs them
 # without init.zsh.
 
+# Hint colours. gum has no theme file, but every style flag also reads a
+# GUM_<CMD>_<FLAG> variable, and exporting them here reaches every gum call
+# made from this shell or its children. The defaults paint placeholders, the
+# filter prompt and the input/write headers in 256-colour 240 (#585858), and the
+# choose/filter headers in 99 (purple), which only work on a solid dark
+# background: WezTerm is translucent, so a white window behind it turns the
+# Mocha background mid-grey, right where 240 sits and close enough to 99 to blur.
+# Palette indices follow the terminal's scheme instead - in Catppuccin Mocha 7
+# is subtext1 and 15 the dimmer subtext0, so a placeholder still reads as one
+# next to typed text.
+export GUM_INPUT_HEADER_FOREGROUND=7
+export GUM_INPUT_PLACEHOLDER_FOREGROUND=15
+export GUM_WRITE_HEADER_FOREGROUND=7
+export GUM_WRITE_PLACEHOLDER_FOREGROUND=15
+export GUM_CHOOSE_HEADER_FOREGROUND=7
+export GUM_FILTER_HEADER_FOREGROUND=7
+export GUM_FILTER_PLACEHOLDER_FOREGROUND=15
+export GUM_FILTER_PROMPT_FOREGROUND=7
+export GUM_FILTER_UNSELECTED_PREFIX_FOREGROUND=15
+
 function _check_gum_cmd() {
   command -v gum > /dev/null 2>&1 || {
     # funcstack[2] is the calling function, so the message names it.
