@@ -192,9 +192,10 @@ if [ -z "$TMUX_POWERLINE_RIGHT_STATUS_SEGMENTS" ]; then
 		# says which branch, this one says where in the tree.
 		"pwd ${surface1} ${subtext1}"
 		# Shows 󰚥 when charged on AC, and only becomes a percentage (turning red
-		# under 50%) once actually on battery. Solid separator rather than thin
-		# because pwd before it is a different colour; the thin one is only for
-		# splitting tiles that share a background.
+		# under 50%) once charging or on battery. The plugin's segment, plus
+		# Termux support: see segments/battery.sh. Solid separator rather than
+		# thin because pwd before it is a different colour; the thin one is only
+		# for splitting tiles that share a background.
 		"battery ${surface2} ${text}"
 		"date_day ${teal} ${crust}"
 		"date ${teal} ${crust} ${TMUX_POWERLINE_SEPARATOR_LEFT_THIN}"

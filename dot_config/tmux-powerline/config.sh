@@ -122,9 +122,9 @@ export TMUX_POWERLINE_SEG_HOSTNAME_FORMAT="short"
 export TMUX_POWERLINE_SEG_PWD_MAX_LEN="42"
 # }
 
-# battery.sh {
-# On macOS this renders 󰚥 while charged on AC and only spends columns on a
-# number once actually discharging (turning red below 50%).
+# battery.sh (upstream, plus Termux - see segments/battery.sh) {
+# On macOS and Termux this renders 󰚥 while charged on AC and only spends
+# columns on a number once charging or discharging (turning red below 50%).
 export TMUX_POWERLINE_SEG_BATTERY_TYPE="percentage"
 # }
 
