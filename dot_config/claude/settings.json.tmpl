@@ -18,6 +18,18 @@
        pane for the prefix + u picker and the status bar tile. Run through
        bash for the same Termux reason as above. */ -}}
 {{- $hatch := printf "bash %s claude" (joinPath .chezmoi.homeDir ".config/tmux/agent-hatch/hooks/status.sh") -}}
+{{- /* Orca's agent status hook, which reports working / waiting / done to its
+       tabs, dashboard and notifications. Orca installs its own copy into
+       ~/.claude/settings.json, which CLAUDE_CONFIG_DIR keeps Claude Code from
+       reading, so the same script is called from here, on the events Orca
+       registers there. It runs only in an Orca pane (ORCA_PANE_KEY) once Orca
+       has installed the script; anywhere else the hook just drains its input.
+       ORCA_HOOK_AGENT_PID is Claude Code's pid, as Orca's own command passes
+       it. */ -}}
+{{- $orcaHook := joinPath .chezmoi.homeDir ".orca/agent-hooks/claude-hook.sh" -}}
+{{- $orca := printf "if [ -n \"${ORCA_PANE_KEY-}\" ] && [ -x %s ]; then ORCA_HOOK_AGENT_PID=$PPID exec /bin/sh %s; fi; cat >/dev/null" $orcaHook $orcaHook -}}
+{{- $orcaHooks := printf "{ \"hooks\": [{ \"type\": \"command\", \"command\": %s, \"timeout\": 10 }] }" ($orca | quote) -}}
+{{- $orcaToolHooks := printf "{ \"matcher\": \"*\", \"hooks\": [{ \"type\": \"command\", \"command\": %s, \"timeout\": 10 }] }" ($orca | quote) -}}
 {{- /*
     Permissions. Rules are checked deny, then ask, then allow; the first match
     wins, so an allow can never carve an exception out of a deny or an ask.
@@ -42,24 +54,35 @@
 {{- /* Which event means which state, and why PostToolUse only acts while
        waiting, is in the header of agent-hatch/hooks/status.sh. Notification
        is --quiet because preferredNotifChannel above already rings for
-       permission prompts; Stop and AskUserQuestion ring from the hook. Not on
-       Windows, which has no tmux to report to. */}}
+       permission prompts; Stop and AskUserQuestion ring from the hook. Each
+       event's second entry is Orca's ($orcaHooks above). Not on Windows,
+       which has no tmux to report to, and where Orca's hook is a .cmd. */}}
 {{- if ne .chezmoi.os "windows" }}
   "hooks": {
     "SessionStart": [
-      { "hooks": [{ "type": "command", "command": {{ printf "%s idle --quiet" $hatch | quote }} }] }
+      { "hooks": [{ "type": "command", "command": {{ printf "%s idle --quiet" $hatch | quote }} }] },
+      {{ $orcaHooks }}
     ],
     "UserPromptSubmit": [
-      { "hooks": [{ "type": "command", "command": {{ printf "%s busy" $hatch | quote }} }] }
+      { "hooks": [{ "type": "command", "command": {{ printf "%s busy" $hatch | quote }} }] },
+      {{ $orcaHooks }}
     ],
     "PreToolUse": [
       {
         "matcher": "AskUserQuestion",
         "hooks": [{ "type": "command", "command": {{ printf "%s waiting" $hatch | quote }} }]
-      }
+      },
+      {{ $orcaToolHooks }}
+    ],
+    "PermissionRequest": [
+      {{ $orcaToolHooks }}
     ],
     "PostToolUse": [
-      { "hooks": [{ "type": "command", "command": {{ printf "%s busy --if-waiting" $hatch | quote }} }] }
+      { "hooks": [{ "type": "command", "command": {{ printf "%s busy --if-waiting" $hatch | quote }} }] },
+      {{ $orcaToolHooks }}
+    ],
+    "PostToolUseFailure": [
+      {{ $orcaToolHooks }}
     ],
     "Notification": [
       {
@@ -67,11 +90,28 @@
         "hooks": [{ "type": "command", "command": {{ printf "%s waiting --quiet" $hatch | quote }} }]
       }
     ],
+    "SubagentStart": [
+      {{ $orcaHooks }}
+    ],
+    "SubagentStop": [
+      {{ $orcaHooks }}
+    ],
+    "TeammateIdle": [
+      {{ $orcaHooks }}
+    ],
+    "PostCompact": [
+      {{ $orcaHooks }}
+    ],
     "Stop": [
-      { "hooks": [{ "type": "command", "command": {{ printf "%s idle" $hatch | quote }} }] }
+      { "hooks": [{ "type": "command", "command": {{ printf "%s idle" $hatch | quote }} }] },
+      {{ $orcaHooks }}
+    ],
+    "StopFailure": [
+      {{ $orcaHooks }}
     ],
     "SessionEnd": [
-      { "hooks": [{ "type": "command", "command": {{ printf "%s gone" $hatch | quote }} }] }
+      { "hooks": [{ "type": "command", "command": {{ printf "%s gone" $hatch | quote }} }] },
+      {{ $orcaHooks }}
     ]
   },
 {{- end }}
