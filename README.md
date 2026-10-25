@@ -357,6 +357,21 @@ are skipped, and [docs/windows-setup.md](docs/windows-setup.md) explains why.
 
 ## Platform notes
 
+### macOS system settings
+
+`run_onchange_after_macos-defaults.sh.tmpl` writes the System Settings choices
+that live in `defaults` domains (appearance, menu bar and clock, Spotlight,
+Dock, Stage Manager, screenshots, Finder, trackpad, Magic Mouse, keyboard
+shortcuts, text input, input sources, accessibility) and restarts the Dock,
+Finder and ControlCenter. Every settings key those domains held is written,
+including ones that match what macOS ships with, so a new Mac ends up as this
+one is whatever a later release defaults to. Bookkeeping keys (schema versions,
+timestamps, window frames, recents) are left out, which is also why it isn't a
+whole-domain `defaults import`. To track another setting, find it with
+`defaults read <domain>` and add a `defaults write` line. Trackpad, mouse,
+scroll direction and input sources need a logout to take effect, and the
+accessibility writes need the terminal to have Full Disk Access.
+
 ### WSL2 → Windows config push
 
 On a WSL2 machine the Windows apps read their config from the Windows home, which
