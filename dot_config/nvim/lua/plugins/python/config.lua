@@ -14,10 +14,12 @@ return {
     end,
   },
 
-  -- Manage & upgrade entries in requirements.txt
+  -- Manage & upgrade entries in requirements.txt. Also loads for pyproject.toml,
+  -- where K (hover) and diagnostics work but upgrades don't: the plugin can't
+  -- place edits inside Poetry tables yet.
   {
     "MeanderingProgrammer/py-requirements.nvim",
-    event = { "BufRead requirements.txt" },
+    event = { "BufRead requirements*.txt", "BufRead pyproject.toml" },
     dependencies = { "nvim-lua/plenary.nvim" },
     opts = {},
     keys = {
