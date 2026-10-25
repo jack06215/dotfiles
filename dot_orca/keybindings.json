@@ -1,0 +1,27 @@
+{
+  "//": [
+    "Plain JSON: Orca reads this with JSON.parse, so notes live in this key, which it keeps when Settings > Shortcuts rewrites the file.",
+    "macOS only, and only on Cmd (Mod), like wezterm.lua's Cmd layer: Ctrl and Alt stay with nvim, tmux and zsh in the terminal tabs. On Linux and Windows Mod is Ctrl.",
+    "Cmd-N and Cmd-Left/Right are WezTerm's new tab and tab switching; Create worktree keeps Cmd-Shift-N.",
+    "Cmd-, is unbound by default so that Codex in a terminal gets it.",
+    "Dictation is off: Cmd-E would ask for the microphone."
+  ],
+  "version": 1,
+  "keybindings": {},
+  "platforms": {
+    "darwin": {
+      "tab.newTerminal": ["Mod+T", "Mod+N"],
+      "workspace.create": ["Mod+Shift+N"],
+      "tab.nextAllTypes": ["Mod+Shift+BracketRight", "Mod+ArrowRight"],
+      "tab.previousAllTypes": ["Mod+Shift+BracketLeft", "Mod+ArrowLeft"],
+      "app.settings": ["Mod+Comma"],
+      "dashboard.toggle": ["Mod+Alt+D"],
+      "sourceControl.sendReviewNotes": ["Mod+Alt+S"],
+      "terminal.equalizePaneSizes": ["Mod+Alt+Equal"],
+      "tab.openQuickCommandsMenu": ["Mod+Shift+K"],
+      "voice.dictation": null
+    },
+    "linux": {},
+    "win32": {}
+  }
+}

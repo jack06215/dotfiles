@@ -64,7 +64,9 @@ export CARGO_HOME="$XDG_DATA_HOME/cargo"
 export CARGO_REGISTRIES_CRATES_IO_PROTOCOL=git
 export COLIMA_HOME="${XDG_CONFIG_HOME}/colima"
 export CONDARC="$XDG_CONFIG_HOME/conda/condarc"
-export CLAUDE_CONFIG_DIR="$XDG_CONFIG_HOME/claude"
+# Only as the default: Orca's extra Claude accounts each launch with their
+# own config dir, which a login shell in its terminal must not replace.
+export CLAUDE_CONFIG_DIR="${CLAUDE_CONFIG_DIR:-$XDG_CONFIG_HOME/claude}"
 # Copilot CLI ignores XDG_CONFIG_HOME and defaults to ~/.copilot.
 export COPILOT_HOME="$XDG_CONFIG_HOME/copilot"
 export DOCKER_CONFIG="$XDG_CONFIG_HOME/docker"

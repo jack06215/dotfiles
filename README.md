@@ -150,6 +150,7 @@ Set `ZSH_DEBUG_INIT=1` or `ZSH_PROFILE_STARTUP=1` to trace/profile startup.
 | `navi.zsh` | binds `Ctrl-G` to the `navi` widget over `private_navi/cheats/*.cheat`, a port of pet's `snippet.toml`. Runs alongside pet rather than replacing it; `NAVI_CONFIG` in `dot_zshenv` pins the config path because navi otherwise resolves it per-platform (`~/Library/Application Support/navi` on macOS). nushell gets the same `Ctrl-G` from `dot_config/nushell/function.nu`, whose `navi` wrapper passes `--path` for `cheats-nu/` so the nu pipelines stay out of the zsh picker — the same split pet makes with `snippet.nu.toml` |
 | `tock.zsh` | time tracking: `tk`, `tockpick`/`tkr`, `tkn`/`tkd`, `tks`/`tkc`/`tkl`/`tkw`/`tka` (see [Time tracking](#time-tracking-tock)) |
 | `wezterm.zsh` | `wezterm_config`: gum-driven live tuning of WezTerm opacity, macOS blur / Windows backdrop, persisted in `~/.local/state/wezterm/appearance.json` of the machine WezTerm runs on (on WSL2 the Windows home) |
+| `orca.zsh` | `orca_settings_check`: reads a copy of Orca's settings database (Orca has no settings file, CLI or import) and lists each setting these dotfiles rely on as ok or fix, with where it lives in Settings and why; exits 1 while any need fixing. Its shortcuts are `dot_orca/keybindings.json` |
 | `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |
 | `search.zsh` | fzf-based search helpers |
 | `aws.zsh`, `bazel.zsh`, `k8s.zsh`, `mysql.zsh`, `dart.zsh` | domain-specific shortcuts |
