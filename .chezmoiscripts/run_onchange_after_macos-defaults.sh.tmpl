@@ -2,9 +2,10 @@
 macOS system settings that live in $(defaults) domains, captured from the Mac
 on 2026-10-24. Values a new macOS 27 account already has are left out; many are
 in /System/Library/Templates/Data/Library/User Template and in the
-PreferenceDefaults of the trackpad and mouse drivers.
+PreferenceDefaults of the trackpad and mouse drivers. Not applied on a company
+machine.
 */ -}}
-{{- if .myComputer.isDarwin -}}
+{{- if and .myComputer.isDarwin (not .myComputer.isCompanyMachine) -}}
 #!/bin/bash
 set -euo pipefail
 
