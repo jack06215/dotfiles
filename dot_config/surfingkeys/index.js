@@ -10,7 +10,8 @@ settings.prevLinkRegex = /((<<|prev(ious)?)|<|‹|«|←|前[のへ]+)/i;
 settings.nextLinkRegex = /((>>|next)|>|›|»|→|次[のへ]+)/i;
 settings.hintAlign = 'left';
 settings.hintShiftNonActive = true;
-settings.blocklistPattern = /mail\.google\.com/i;
+// Surfingkeys is fully off on these pages (the QMK key tester needs every raw key)
+settings.blocklistPattern = /mail\.google\.com|config\.qmk\.fm\/#\/test/i;
 settings.tabsMRUOrder = false;
 settings.historyMUOrder = false;
 settings.cursorAtEndOfInput = false;
