@@ -304,7 +304,27 @@
 
   // ----------------------------------------------------------- terminal ----
   "terminal.integrated.defaultProfile.windows": "PowerShell 7",
-  "terminal.integrated.defaultProfile.osx": "zsh",
+  // A new terminal attaches to this window's tmux session, creating it the
+  // first time, so it survives closing the panel and quitting VS Code.
+  // "code-" keeps it apart from dev-workspace.sh's session for the same repo,
+  // which a second client would resize to the panel. Plain zsh stays in the
+  // dropdown, and tasks and debug run there too (the automation profile)
+  // rather than inside tmux.
+  "terminal.integrated.defaultProfile.osx": "tmux",
+  "terminal.integrated.profiles.osx": {
+    "tmux": {
+      "path": "tmux",
+      "args": ["new-session", "-A", "-s", "code-${workspaceFolderBasename}"],
+      "icon": "terminal-tmux"
+    },
+    "zsh": {
+      "path": "zsh",
+      "args": ["-l"]
+    }
+  },
+  "terminal.integrated.automationProfile.osx": {
+    "path": "zsh"
+  },
   "terminal.integrated.profiles.windows": {
     "PowerShell 7": {
       "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe",
@@ -327,6 +347,9 @@
     "workbench.action.closePanel",
     "workbench.action.terminal.toggleTerminal"
   ],
+  // Option sends ESC-prefixed keys, not composed glyphs (M-t -> "†"), for
+  // tmux's M-h/j/k/l and M-v/b/y/t; as both Option keys in wezterm.lua
+  "terminal.integrated.macOptionIsMeta": true,
   "terminal.integrated.scrollback": 5000,
   "terminal.integrated.enableMultiLinePasteWarning": "never",
 
