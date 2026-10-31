@@ -6,7 +6,7 @@ Cursor-style AI sidebar, configured for GitHub Copilot (`provider = "copilot"`).
 
 1. `:Copilot auth` once (copilot.lua). Avante reads the token from
    `~/.config/github-copilot/{hosts,apps}.json`, no API key needed.
-2. `:Lazy sync` (the `build` step downloads the prebuilt binary via `make`).
+2. `:Lazy sync` (the `build` step downloads the prebuilt binary via `:AvanteBuild`).
 3. Open the sidebar with `<leader>aa` and pick a model with `<leader>a?` — the
    list comes from your Copilot plan, so set `providers.copilot.model` in
    `config.lua` to one of those IDs.

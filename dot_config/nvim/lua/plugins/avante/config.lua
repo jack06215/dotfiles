@@ -1,12 +1,14 @@
 return {
   {
     "yetone/avante.nvim", -- now avante-corp/avante.nvim; GitHub redirects
-    -- if you want to build from source then do `make BUILD_FROM_SOURCE=true`
     -- A string, not a function: lazy.nvim calls a build function and ignores
     -- what it returns, so returning "make" never builds anything.
     build = vim.fn.has("win32") == 1 and "powershell -ExecutionPolicy Bypass -File Build.ps1 -BuildFromSource false"
       or {
-        "make",
+        -- Downloads the release libs. Not `make`, whatever upstream's README
+        -- says: the Makefile only compiles from source, which needs cargo.
+        -- `:AvanteBuild source=true` is that path.
+        ":AvanteBuild",
         -- The v0.4.0 macOS release libs link libiconv from the CI's /nix/store,
         -- so dlopen fails and avante reports "missing avante_templates". Point
         -- them at the system libiconv and re-sign; a no-op once upstream fixes it.
