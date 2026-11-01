@@ -46,7 +46,7 @@ require("plugins.codecompanion").setup {
     },
     mcphub = {
       opts = {
-        make_vars = true,
+        make_vars = false,
         make_slash_commands = true,
         show_result_in_chat = true
       }
@@ -67,6 +67,28 @@ require("plugins.codecompanion").setup {
   }
 }
 ```
+
+## Recorder
+
+`recorder.lua` is a local extension that saves every chat turn and inline request to
+`~/.local/share/nvim/codecompanion/history.db`, with one row per request: `request`, `code`, `result`
+and metadata. It needs `sqlite3` on `PATH`, and warns once if it's missing or a write fails.
+
+```sh
+sqlite3 ~/.local/share/nvim/codecompanion/history.db \
+  'SELECT created_at, kind, model, status, request FROM interactions ORDER BY id DESC LIMIT 20'
+```
+
+- The database is plain text and can hold anything sent to the model, including secrets from an open
+  file. It's `0600`, lives outside this repo, and is never pruned.
+- `.chezmoiignore` keeps the extension off machines with `isCompanyMachine` set.
+- Inline `result` is a unified diff, or the reply if the model didn't edit. An inline row's status is
+  `accepted` once any of its edits are kept. A row still at `proposed` was rejected or never reviewed.
+- Inline recording wraps the private `Inline.done` and `Inline.stop`. If an update renames them you get
+  one warning and inline stops being recorded, but inline keeps working.
+- Not recorded: background requests such as title generation, `:CodeCompanionCLI` sessions, chats that
+  fail before they start (such as over the token limit), and chats closed mid-response. A stopped chat
+  or inline request keeps its row, but not the partial reply.
 
 ## Keymaps
 

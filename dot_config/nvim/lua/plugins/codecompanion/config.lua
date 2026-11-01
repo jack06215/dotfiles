@@ -1,3 +1,7 @@
+local has_vectorcode = vim.fn.executable("vectorcode") == 1
+-- Not deployed to company machines (see .chezmoiignore)
+local has_recorder = vim.uv.fs_stat(vim.fn.stdpath("config") .. "/lua/plugins/codecompanion/recorder.lua") ~= nil
+
 return {
   "olimorris/codecompanion.nvim",
   cmd = { "CodeCompanion", "CodeCompanionChat", "CodeCompanionActions" },
@@ -13,10 +17,7 @@ return {
     {
       "Davidyz/VectorCode",
       version = "*",
-      -- Keeps the vectorcode CLI in step with the plugin. `pip upgrade` is not
-      -- a pip command, so the old build step failed on every update; this
-      -- upgrades through whichever tool installed it and is a no-op where the
-      -- CLI (or both tools) are absent.
+      cond = has_vectorcode,
       build = function()
         if vim.fn.executable("vectorcode") == 0 then
           return
@@ -63,37 +64,42 @@ return {
       mcphub = {
         callback = "mcphub.extensions.codecompanion",
         opts = {
-          make_vars = true,
+          make_vars = false,
           make_slash_commands = true,
           show_result_in_chat = true,
         },
       },
       vectorcode = {
+        enabled = has_vectorcode,
         opts = {
           add_tool = true,
         },
       },
+      recorder = {
+        enabled = has_recorder,
+        callback = "plugins.codecompanion.recorder",
+      },
     },
     adapters = {
-      copilot = function()
-        return require("codecompanion.adapters").extend("copilot", {
-          -- Ensure copilot is installed and configured externally
-        })
-      end,
-      ollama = function()
-        return require("codecompanion.adapters").extend("ollama", {
-          schema = {
-            model = { default = "qwen3:latest" },
-            num_ctx = { default = 20000 },
-          },
-        })
-      end,
+      http = {
+        copilot = function()
+          return require("codecompanion.adapters").extend("copilot", {})
+        end,
+        ollama = function()
+          return require("codecompanion.adapters").extend("ollama", {
+            schema = {
+              model = { default = "qwen3.6:35b" },
+              num_ctx = { default = 20000 },
+            },
+          })
+        end,
+      },
     },
     strategies = {
       chat = {
         adapter = {
           name = "copilot",
-          model = "claude-sonnet-4", -- Replace if unsupported
+          model = "claude-opus-5.5",
         },
         roles = {
           user = "jack06215",
@@ -129,7 +135,7 @@ return {
       inline = {
         adapter = {
           name = "copilot",
-          model = "gpt-4.1",
+          model = "gpt-6.1-sol",
         },
       },
     },

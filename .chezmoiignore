@@ -186,3 +186,9 @@ keyboards/**
 .config/zennotes
 .config/zennotes/**
 {{ end }}
+
+# The CodeCompanion recorder keeps prompts and the code sent with them in plain
+# text. config.lua switches the extension off when this file isn't deployed.
+{{ if .myComputer.isCompanyMachine }}
+.config/nvim/lua/plugins/codecompanion/recorder.lua
+{{ end }}

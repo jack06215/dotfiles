@@ -64,6 +64,7 @@ root-repo
 ruff
 rust
 shellcheck
+sqlite
 starship
 strace
 sudo
