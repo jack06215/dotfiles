@@ -13,7 +13,7 @@
   default = ""
 [lookups.pypoetryDir.table]
   "darwin/jack06215/nacho" = ".cache/pypoetry/virtualenvs"
-  "darwin/A0229/jack.cho" = "Library/Caches/pypoetry/virtualenvs"
+  "darwin/A0229/jack.cho" = ".cache/pypoetry/virtualenvs"
 
 # poetry venv directory names are per-machine hashes, so these key on the
 # username too. Joined onto the resolved pypoetryDir above. A machine with no
@@ -23,7 +23,6 @@
   default = ""
 [lookups.zshPythonVenv.table]
   "darwin/jack06215/nacho" = "monorepo-e2o0ZM2H-py3.14"
-  "darwin/A0229/jack.cho" = "monorepo-kcQbGqAg-py3.14"
 
 [lookups.fwMonorepoPythonVenv]
   default = ""

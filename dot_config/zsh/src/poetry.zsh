@@ -5,19 +5,15 @@
 # sources before this file.
 
 # Poetry's virtualenvs dir, worked out the way Poetry does instead of asked of
-# `poetry config`, which costs as much as `poetry env info` itself.
-# virtualenvs.path in Poetry's config.toml is not read: no machine sets it.
-#
-# On macOS the cache dir depends on the platformdirs Poetry was installed with:
-# recent ones put $XDG_CACHE_HOME (set in .zshenv) ahead of ~/Library/Caches,
-# older ones ignore it. A pypoetry dir under $XDG_CACHE_HOME tells which.
+# `poetry config`, which costs as much as `poetry env info` itself. The env vars
+# override config.toml, which pins cache-dir to $XDG_CACHE_HOME/pypoetry on
+# every OS (dot_config/pypoetry/config.toml.tmpl). virtualenvs.path in
+# config.toml is not read: no machine sets it.
 function _poetry_venvs_dir() {
   if [[ -n ${POETRY_VIRTUALENVS_PATH:-} ]]; then
     print -r -- "$POETRY_VIRTUALENVS_PATH"
   elif [[ -n ${POETRY_CACHE_DIR:-} ]]; then
     print -r -- "$POETRY_CACHE_DIR/virtualenvs"
-  elif [[ $OSTYPE == darwin* && ! (-n ${XDG_CACHE_HOME:-} && -d $XDG_CACHE_HOME/pypoetry) ]]; then
-    print -r -- "$HOME/Library/Caches/pypoetry/virtualenvs"
   else
     print -r -- "${XDG_CACHE_HOME:-$HOME/.cache}/pypoetry/virtualenvs"
   fi
@@ -26,8 +22,7 @@ function _poetry_venvs_dir() {
 # The picker's rows for activate_poetry_env: $reply gets "<display>\t<path>"
 # per env, the project's own one first and marked *, and $REPLY the fzf header.
 # The envs are those in Poetry's virtualenvs dir, then every in-project .venv
-# beside a pyproject.toml the scan below finds - where Poetry creates new envs
-# now that dot_config/pypoetry sets in-project = true.
+# beside a pyproject.toml the scan below finds.
 #
 # Poetry is not run. Its rules are followed instead (EnvManager.get in
 # poetry/utils/env/env_manager.py): the project is the nearest pyproject.toml

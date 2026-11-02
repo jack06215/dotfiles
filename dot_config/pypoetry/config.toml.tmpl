@@ -1,0 +1,9 @@
+# Pinned to the XDG cache dir so every Poetry agrees on where envs live: on
+# macOS, Poetry builds with older platformdirs ignore $XDG_CACHE_HOME.
+cache-dir = {{ joinPath .xdg.cacheHome "pypoetry" | quote }}
+
+[virtualenvs]
+use-poetry-python = false
+
+[installer]
+parallel = true

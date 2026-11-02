@@ -1,6 +1,0 @@
-[virtualenvs]
-in-project = true
-use-poetry-python = false
-
-[installer]
-parallel = true
