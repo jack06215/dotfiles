@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Lets browser extensions talk to the local Ollama server.
+
+  Ollama answers 403 to any request whose Origin header isn't in
+  OLLAMA_ORIGINS, and the default list has no extension schemes. Surfingkeys'
+  `A` (LLM chat, settings.defaultLLMProvider = 'ollama') calls
+  http://127.0.0.1:11434 from the extension, so its origin -
+  chrome-extension://<id> in Chrome, moz-extension://<uuid> in Firefox - has
+  to be on the list.
+
+  `ollama serve` runs as the Homebrew service sh.brew.ollama, and brew rewrites
+  that plist from the formula on every `brew services restart` (which the
+  Brewfile's restart_service: :changed triggers on each upgrade), so the
+  variable can't live there. This agent instead puts it in the launchd user
+  environment at login, which every service launchd starts afterwards
+  inherits, then restarts ollama in case it came up first. If ollama isn't
+  loaded yet the kickstart just fails, and ollama picks the variable up when it
+  does start.
+-->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>com.jack06215.ollama-origins</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/sh</string>
+		<string>-c</string>
+		<string>launchctl setenv OLLAMA_ORIGINS 'chrome-extension://*,moz-extension://*' &amp;&amp; launchctl kickstart -k "gui/$(id -u)/sh.brew.ollama"</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+</dict>
+</plist>
