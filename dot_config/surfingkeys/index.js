@@ -15,8 +15,15 @@ settings.blocklistPattern = /mail\.google\.com|config\.qmk\.fm\/#\/test/i;
 settings.tabsMRUOrder = false;
 settings.historyMUOrder = false;
 settings.cursorAtEndOfInput = false;
-// Show LLM/AI chat via built-in `A` if you configure settings.llm
+// LLM chat on `A`. Surfingkeys asks Ollama for qwen2.5-coder:32b unless a model
+// is named here, and a model that isn't pulled gets a 404 that leaves the chat
+// stuck on "Working on, be patient". Keep this in step with `ollama list`.
+// Ollama also needs OLLAMA_ORIGINS to allow extensions, which
+// ~/Library/LaunchAgents/com.jack06215.ollama-origins.plist sets.
 settings.defaultLLMProvider = 'ollama';
+settings.llm = {
+  ollama: { model: 'qwen3.6:35b' },
+};
 
 api.Hints.setCharacters('asdfwerxcvuionm');
 
