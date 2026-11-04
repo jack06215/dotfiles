@@ -386,16 +386,16 @@ user_pref("widget.use-xdg-desktop-portal.file-picker", 1);
 user_pref("widget.disable-workspace-management", true);
 
 // PlemolJP console font
-user_pref("font.name.monospace.x-western", "PlemolJP Console NF Medium");
-user_pref("font.name-list.monospace.x-western", "PlemolJP Console NF Medium");
+user_pref("font.name.monospace.x-western", "PlemolJP Console NF");
+user_pref("font.name-list.monospace.x-western", "PlemolJP Console NF");
 user_pref("devtools.editor.fontFamily", "PlemolJP Console NF Medium");
 
-// Japanese fonts (Settings > Fonts > Advanced > "Fonts for: Japanese")
+// Japanese fonts
 {{- if eq .chezmoi.os "darwin" }}
 user_pref("font.name.sans-serif.ja", "Hiragino Sans"); // W0-W9 weights; Firefox default ProN has only W3/W6
-user_pref("font.name.serif.ja", "Hiragino Mincho ProN");
+user_pref("font.name.serif.ja", "Toppan Bunkyu Mincho"); // text-oriented Mincho; Firefox default Hiragino Mincho ProN
 {{- end }}
-user_pref("font.name.monospace.ja", "PlemolJP Console NF Medium"); // default Osaka-Mono
+user_pref("font.name.monospace.ja", "PlemolJP Console NF"); // default Osaka-Mono
 user_pref("intl.accept_languages", "en,ja,en-us"); // ja before zh-TW (macOS locale order) for kanji on untagged pages
 
 // GO links
