@@ -1,6 +1,12 @@
+{{- /* WSL2 asks in a pinentry-qt window (WSLg draws it on the Windows desktop),
+       as pinentry-mac does on macOS: pinentry-curses takes over the terminal
+       and garbles a TUI such as nvim or lazygit that runs `git commit`. Other
+       Linux stays on curses, which works on a box with no display. */ -}}
 {{- $pinentryDir := "" -}}
 {{- if eq .chezmoi.os "darwin" -}}
 {{-   $pinentryDir = "/opt/homebrew/bin/pinentry-mac" -}}
+{{- else if .myComputer.isWSL2 -}}
+{{-   $pinentryDir = "/usr/bin/pinentry-qt" -}}
 {{- else if eq .chezmoi.os "linux" -}}
 {{-   $pinentryDir = "/usr/bin/pinentry-curses" -}}
 {{- else if eq .chezmoi.os "windows" -}}

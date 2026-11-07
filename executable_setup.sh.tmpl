@@ -50,8 +50,12 @@ APT_PACKAGES=(
   # wl-copy/wl-paste: lazygit's and gh-dash's copy only know those, xclip and
   # xsel. WSLg keeps the Wayland clipboard in sync with the Windows one.
   wl-clipboard
-  # gpg-agent.conf points pinentry at /usr/bin/pinentry-curses
+  # gpg-agent.conf points pinentry at /usr/bin/pinentry-curses, or on WSL2
+  # at /usr/bin/pinentry-qt, a window WSLg puts on the Windows desktop
   gnupg pinentry-curses
+{{- if .myComputer.isWSL2 }}
+  pinentry-qt
+{{- end }}
 )
 
 {{ end -}}
