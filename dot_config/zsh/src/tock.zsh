@@ -93,30 +93,46 @@ function tk() {
     return
   fi
 
+  if (($#)); then
+    # Unquoted `$*` on purpose: `tk fix the CSV exporter` should read as one
+    # description rather than needing quotes around it. Quoting still works.
+    tock start -p "$(_tock_project)" -d "$*"
+    return
+  fi
+
+  _tock_start_prompted
+}
+
+# _tock_start_prompted [description]   bare `tk`: ask for a description, tag
+# and note, then start
+#
+# Split out of `tk` so that something which already knows what the work is
+# called - gbr, with the branch it just created - can pre-fill the description
+# and turn the first prompt into "enter to accept, or edit it". The tag and note
+# prompts that follow are the same ones `tk` and `prefix + k k` ask.
+#
+# Escape on the description, or clearing it, starts nothing and returns 1,
+# which is how gbr's caller gets to skip tracking without an extra yes/no.
+function _tock_start_prompted() {
+  _check_gum_cmd || return 1
+
   local project desc tag note
   local -a tag_args=() note_args=()
   project=$(_tock_project)
 
-  if (($#)); then
-    # Unquoted `$*` on purpose: `tk fix the CSV exporter` should read as one
-    # description rather than needing quotes around it. Quoting still works.
-    desc="$*"
-  else
-    _check_gum_cmd || return 1
+  desc=$(gum input --header="Working on what? (${project}, esc skips)" \
+    --placeholder="description" --value="${1-}") || return 1
+  [[ -n "$desc" ]] || {
+    print -u2 -- "tk: nothing started (empty description)"
+    return 1
+  }
 
-    desc=$(gum input --header="Working on what? (${project})" --placeholder="description") || return 1
-    [[ -n "$desc" ]] || {
-      print -u2 -- "tk: nothing started (empty description)"
-      return 1
-    }
+  # Escape here means "no tag", not "abort" - a tag is the optional half, and
+  # having to re-type the description because you did not want one would make
+  # the picker cost more than it saves.
+  tag=$(gum choose --header="Tag? (esc for none)" -- "${_TOCK_TAGS[@]}") || tag=""
 
-    # Escape here means "no tag", not "abort" - a tag is the optional half, and
-    # having to re-type the description because you did not want one would make
-    # the picker cost more than it saves.
-    tag=$(gum choose --header="Tag? (esc for none)" -- "${_TOCK_TAGS[@]}") || tag=""
-
-    note=$(_tock_note "Note? (esc skips) — ${desc}")
-  fi
+  note=$(_tock_note "Note? (esc skips) — ${desc}")
 
   # An array rather than ${tag:+--tag "$tag"}: zsh does not word-split the
   # result of a parameter expansion, so that idiom hands tock the single
