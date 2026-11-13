@@ -66,7 +66,20 @@ function gbr() {
 
   gum confirm "Create branch '$branch'?" || return 1
 
-  git checkout -b "$branch"
+  git checkout -b "$branch" || return
+
+  # A new branch is new work, so go straight into the tock prompt (the same one
+  # as `tk` / `prefix + k k`) with the branch name already filled in as the
+  # description: enter keeps it, esc skips tracking. The branch exists either
+  # way, so skipping is not a gbr failure. tock.zsh is sourced after this file
+  # by init.zsh, which is fine for a call made at run time; the guards keep gbr
+  # working on a machine without tock.
+  if (($+functions[_tock_start_prompted])) && (($+commands[tock])); then
+    # The tmux status segment otherwise picks the new activity up on its next
+    # 5-second tick, as the which-key tock menu notes.
+    _tock_start_prompted "$branch" && [[ -n "$TMUX" ]] && tmux refresh-client -S
+  fi
+  return 0
 }
 
 function gcg() {

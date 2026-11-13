@@ -1,15 +1,14 @@
 #!/bin/sh
-# Create (or re-attach to) the "opal" coding workspace: the six-pane
-# arrangement build_opal_layout() makes in wezterm.lua, rebuilt in tmux.
+# Create (or re-attach to) the "opal" coding workspace: a four-pane
+# arrangement of a full-width editor over a strip of logs, shell and srv.
 #
+#   +-------------------------------------------+
+#   |                                           |
+#   |                 1 editor                  |
+#   |                100% x 85%                 |
+#   |                                           |
 #   +------+----------------------------+-------+
-#   |      |                            | 2     |
-#   |      |         1 editor           | agent |
-#   |      |         85% x 90%          +-------+
-#   |      |                            | 3 aux |
-#   |      |                            |       |
-#   +------+----------------------------+-------+
-#   | 4    |         5 shell            | 6 srv |  <- full width, 10% tall
+#   | 2    |          3 shell           | 4 srv |  <- full width, 15% tall
 #   | logs |                            |       |
 #   +------+----------------------------+-------+
 #
@@ -32,13 +31,12 @@
 #   closing the terminal tab, and quitting WezTerm entirely.
 #
 # Optional auto-start commands (empty by default — panes are plain shells):
-#   TMUX_WS_EDITOR=nvim   TMUX_WS_AGENT=claude   TMUX_WS_AUX=codex
-#   TMUX_WS_SHELL=...     TMUX_WS_LOGS='...'     TMUX_WS_SRV='kubectl port-forward ...'
+#   TMUX_WS_EDITOR=nvim   TMUX_WS_SHELL=...
+#   TMUX_WS_LOGS='...'    TMUX_WS_SRV='kubectl port-forward ...'
 #
-# Sizes mirror the WezTerm layout: the strip is 10% of the height and spans the
-# full width, the right column is 15% of the width and stops above the strip,
-# and the strip's outer panes are 15% of what is left of it — so srv ends up the
-# same 15% as the column above it and the two borders line up.
+# Sizes: the strip is 15% of the height and spans the full width, and the editor
+# takes everything above it. Inside the strip, srv is 15% of the width (at least
+# 30 columns) and logs is 15% of what is left after srv.
 #
 # WHY THE SIZES ARE RE-APPLIED ON EVERY ATTACH (relayout + set-hook, below):
 # splitting at build time is not enough. WezTerm spawns this tab at its default
@@ -51,10 +49,6 @@
 # Re-deriving on client-attached and client-resized fixes that, and also means
 # moving between a laptop screen and an external monitor re-normalizes instead
 # of accumulating drift.
-#
-# Caveat inherited from opal: 15% of the width is 30-ish columns on most
-# displays, and Claude Code / Codex wrap badly below ~80. If you actually run an
-# agent in pane 2, raise the 15 in `right_w` inside relayout().
 
 set -eu
 
@@ -92,24 +86,25 @@ relayout() {
   # Below this there is no arrangement worth forcing; leave tmux's own alone.
   [ "$w" -ge 60 ] && [ "$h" -ge 20 ] || return 0
 
-  right_w=$((w * 15 / 100))
-  [ "$right_w" -ge 30 ] || right_w=30
-  bottom_h=$((h * 10 / 100))
+  srv_w=$((w * 15 / 100))
+  [ "$srv_w" -ge 30 ] || srv_w=30
+  bottom_h=$((h * 15 / 100))
   [ "$bottom_h" -ge 5 ] || bottom_h=5
 
-  # -1 for the border between editor and the column, -2 for the border above the
-  # strip plus the editor's own pane-border-status title row.
-  editor_w=$((w - right_w - 1))
+  # -2 for the border above the strip plus the editor's own pane-border-status
+  # title row.
   editor_h=$((h - bottom_h - 2))
 
   set -- $ids
-  # $1 editor  $2 agent  $3 aux  $4 logs  $5 shell  $6 srv
-  [ $# -eq 6 ] || return 0
+  # $1 editor  $2 logs  $3 shell  $4 srv
+  # A session built with the old six-pane layout records six ids; leave it alone
+  # until it is rebuilt with -r.
+  [ $# -eq 4 ] || return 0
 
-  tmux resize-pane -t "$1" -x "$editor_w" -y "$editor_h"
-  tmux resize-pane -t "$2" -y $(((editor_h - 1) / 2))
-  tmux resize-pane -t "$6" -x "$right_w"
-  tmux resize-pane -t "$4" -x $((editor_w * 15 / 100))
+  tmux resize-pane -t "$1" -y "$editor_h"
+  tmux resize-pane -t "$4" -x "$srv_w"
+  # -1 for the border between shell and srv.
+  tmux resize-pane -t "$2" -x $(((w - srv_w - 1) * 15 / 100))
 }
 
 # Hook entry point. Kept before the interactive path so it never tries to attach.
@@ -174,14 +169,9 @@ if ! tmux has-session -t "=$session" 2> /dev/null; then
   # session behind, which every later run then cheerfully re-attaches to.
   trap 'tmux kill-session -t "=$session" 2> /dev/null || true' EXIT
 
-  # Order matters, and it is the whole difference from the old cockpit layout.
   # The strip is split off the untouched window first, so it runs the full
-  # width; everything after it divides only what is above. Splitting the agent
-  # column off first (what the cockpit did) gives that column the full height
-  # and stops the strip short of the window edge instead.
+  # width; srv and logs then divide only the strip.
   shell=$(tmux split-window -t "$editor" -v -c "$start_dir" -P -F '#{pane_id}')
-  agent=$(tmux split-window -t "$editor" -h -c "$start_dir" -P -F '#{pane_id}')
-  aux=$(tmux split-window -t "$agent" -v -c "$start_dir" -P -F '#{pane_id}')
   srv=$(tmux split-window -t "$shell" -h -c "$start_dir" -P -F '#{pane_id}')
   # -b puts the new pane before the target, i.e. to its left.
   logs=$(tmux split-window -t "$shell" -h -b -c "$start_dir" -P -F '#{pane_id}')
@@ -190,10 +180,8 @@ if ! tmux has-session -t "=$session" 2> /dev/null; then
 
   tmux set-option -w -t "$session:opal" pane-border-status top
   tmux set-option -w -t "$session:opal" pane-border-format ' #P #{pane_title} '
-  tmux set-option -w -t "$session:opal" @opal_panes "$editor $agent $aux $logs $shell $srv"
+  tmux set-option -w -t "$session:opal" @opal_panes "$editor $logs $shell $srv"
 
-  tmux select-pane -t "$agent" -T ai_chat
-  tmux select-pane -t "$aux" -T aux
   tmux select-pane -t "$logs" -T logs
   tmux select-pane -t "$shell" -T shell
   tmux select-pane -t "$srv" -T srv
@@ -204,8 +192,6 @@ if ! tmux has-session -t "=$session" 2> /dev/null; then
   tmux set-hook -t "$session" client-resized "$hook"
   relayout "$session:opal"
 
-  autostart "$agent" "${TMUX_WS_AGENT:-}"
-  autostart "$aux" "${TMUX_WS_AUX:-}"
   autostart "$logs" "${TMUX_WS_LOGS:-}"
   autostart "$shell" "${TMUX_WS_SHELL:-}"
   autostart "$srv" "${TMUX_WS_SRV:-}"
