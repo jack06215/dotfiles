@@ -21,10 +21,10 @@
   },
 
   // ------------------------------------------------------------ nvicode ----
-  // The Python that runs nvicode's TUIs: the monorepo's venv by path
-  // (.pypoetry.zshPythonDir, as pycli uses). Left empty, nvicode asks poetry,
-  // which answers with the active venv whatever the project - the work
-  // monorepo's, when VS Code is started from a shell that has it activated.
+  // The Python that runs nvicode's TUIs: the monorepo's uv venv by path
+  // (.pypoetry.zshPythonDir, as pycli uses). Left empty, nvicode looks for
+  // .venv in nvicode.python.project itself; an nvicode build from before
+  // that asks poetry instead, which no longer finds the monorepo's venv.
   // Not set on a machine without the venv.
 {{- if .pypoetry.zshPythonDir }}
   "nvicode.python.command": [{{ joinPath .pypoetry.zshPythonDir "bin/python" | toJson }}],

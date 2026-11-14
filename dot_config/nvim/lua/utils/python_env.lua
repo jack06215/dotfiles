@@ -13,7 +13,21 @@ local function detect()
   local is_wsl = sys == "Linux" and vim.fn.has("wsl") == 1
 
   ------------------------------------------------------------------
-  -- 2) Poetry venv (works in WSL)
+  -- 2) .venv in project root (uv's project venv, or Poetry in-project)
+  ------------------------------------------------------------------
+  --    Checked before asking Poetry: it costs no subprocess, and in a uv
+  --    project such as the monorepo `poetry env info` only fails anyway.
+  local sep = sys == "Windows_NT" and "\\" or "/"
+  local venv_dir = project_root .. sep .. ".venv"
+
+  if vim.fn.isdirectory(venv_dir) == 1 then
+    local bin = venv_dir .. sep .. (sys == "Windows_NT" and "Scripts\\python.exe" or "bin/python")
+
+    return bin, vim.fn.fnamemodify(project_root, ":t") .. "/.venv"
+  end
+
+  ------------------------------------------------------------------
+  -- 3) Poetry venv (works in WSL)
   ------------------------------------------------------------------
   --    No shell: the project path goes in as cwd, so spaces in it are fine.
   local p = ""
@@ -26,18 +40,6 @@ local function detect()
     local bin = sys == "Windows_NT" and (p .. "\\Scripts\\python.exe") or (p .. "/bin/python")
 
     return bin, vim.fn.fnamemodify(p, ":t")
-  end
-
-  ------------------------------------------------------------------
-  -- 3) .venv in project root
-  ------------------------------------------------------------------
-  local sep = sys == "Windows_NT" and "\\" or "/"
-  local venv_dir = project_root .. sep .. ".venv"
-
-  if vim.fn.isdirectory(venv_dir) == 1 then
-    local bin = venv_dir .. sep .. (sys == "Windows_NT" and "Scripts\\python.exe" or "bin/python")
-
-    return bin, vim.fn.fnamemodify(bin, ":t")
   end
 
   ------------------------------------------------------------------

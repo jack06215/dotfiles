@@ -108,13 +108,13 @@
         "default" $lookups.zshPythonVenv.default
       )
 -}}
-{{- /* No table row: ask poetry for the monorepo's venv instead, so a new
-       machine needs no hash copied into lookups.toml. "" when the monorepo,
-       poetry or the venv is missing; re-run `chezmoi init` after
-       `poetry install`. */ -}}
+{{- /* No table row: the monorepo's uv venv, which `uv sync` always puts at
+       <monorepo>/.venv, so a new machine needs no row in lookups.toml. ""
+       when the monorepo or its venv is missing; re-run `chezmoi init` after
+       `uv sync`. */ -}}
 {{- $monorepo := joinPath $home "workspace/jack06215/monorepo" -}}
-{{- if and (not $zshPythonDir) (ne .chezmoi.os "windows") (stat (joinPath $monorepo "pyproject.toml")) (lookPath "poetry") -}}
-{{-   $zshPythonDir = output "sh" "-c" "cd \"$1\" && poetry env info --path 2>/dev/null || true" "sh" $monorepo | trim -}}
+{{- if and (not $zshPythonDir) (ne .chezmoi.os "windows") (stat (joinPath $monorepo ".venv/bin/activate")) -}}
+{{-   $zshPythonDir = joinPath $monorepo ".venv" -}}
 {{- end -}}
 
 {{- $gitSign :=

@@ -38,7 +38,7 @@ function pycli_cmdline() {
   fi
   if [[ -z "$venv" || ! -x "$venv/bin/python" ]]; then
     print -u2 "pycli: venv python not found: ${venv:-(no venv)}/bin/python"
-    print -u2 "pycli: run 'poetry install' or check .pypoetry.zshPythonDir in chezmoi"
+    print -u2 "pycli: run 'uv sync' in the monorepo then 'chezmoi init', or check .pypoetry.zshPythonDir in chezmoi"
     return 1
   fi
 

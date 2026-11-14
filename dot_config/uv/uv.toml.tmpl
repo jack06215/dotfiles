@@ -1,0 +1,6 @@
+# The Claude Code sandbox lets Bash commands write only to listed paths, and uv
+# takes a lock in this directory on every command. sandbox.filesystem.allowWrite
+# in dot_config/claude/settings.json.tmpl renders the same path from
+# .xdg.cacheHome. If this path changes, change that entry too, or uv fails
+# inside the sandbox.
+cache-dir = {{ joinPath .xdg.cacheHome "uv" | quote }}
