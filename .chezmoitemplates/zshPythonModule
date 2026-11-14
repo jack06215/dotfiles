@@ -39,7 +39,7 @@ if [[ ! -d $dir ]]; then
 fi
 if [[ ! -f $venv/bin/activate ]]; then
   print -u2 "${0:t}: venv activate script not found: ${venv:-(no venv)}/bin/activate"
-  print -u2 "${0:t}: run 'poetry install' or check .pypoetry.zshPythonDir in chezmoi"
+  print -u2 "${0:t}: run 'uv sync' in the monorepo then 'chezmoi init', or check .pypoetry.zshPythonDir in chezmoi"
   exit 1
 fi
 

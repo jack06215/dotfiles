@@ -17,12 +17,11 @@
 
 # poetry venv directory names are per-machine hashes, so these key on the
 # username too. Joined onto the resolved pypoetryDir above. A machine with no
-# zshPythonVenv row asks `poetry env info --path` in the monorepo instead, so
-# a row is only needed to override that.
+# zshPythonVenv row uses the monorepo's uv venv (<monorepo>/.venv) instead, so
+# a row is only needed to override that with a Poetry venv.
 [lookups.zshPythonVenv]
   default = ""
 [lookups.zshPythonVenv.table]
-  "darwin/jack06215/nacho" = "monorepo-e2o0ZM2H-py3.14"
 
 [lookups.fwMonorepoPythonVenv]
   default = ""
