@@ -177,10 +177,15 @@
              save prompts on a machine without the sandbox */}}
       "Bash(mypy *)",
       "Bash(npx markdownlint-cli *)",
-      "Bash(poetry run ruff *)",
       "Bash(pyright *)",
       "Bash(python -m pytest *)",
       "Bash(sed -n *)",
+      {{- /* no uv sync: it removes packages that aren't in the lock */}}
+      "Bash(uv --version)",
+      "Bash(uv lock)",
+      "Bash(uv lock *)",
+      "Bash(uv run *)",
+      "Bash(uv tree *)",
       {{- /* MCP reads; the writes are in ask */}}
       "mcp__claude_ai_Atlassian__fetch",
       "mcp__claude_ai_Atlassian__get*",
@@ -347,6 +352,12 @@
       "gh *",
       "git *"
     ],
+    {{- /* uv takes a lock in its cache even for uv run --frozen, so without
+           this every uv command fails here and retries unsandboxed. The path
+           is the cache-dir that dot_config/uv/uv.toml.tmpl pins */}}
+    "filesystem": {
+      "allowWrite": [{{ joinPath .xdg.cacheHome "uv" | quote }}]
+    },
     "network": {
       "allowLocalBinding": true
     }
