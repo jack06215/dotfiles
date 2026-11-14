@@ -160,10 +160,6 @@ Library/**
 .config/vorssiant/**
 .config/zsh/src/sleep.zsh
 .config/zsh/src/wakeup.zsh
-.config/zsh/src/myscripts/enable_sleepwatcher
-.config/zsh/src/myscripts/disable_sleepwatcher
-.config/zsh/src/myscripts/set_run_on_sleep
-.config/zsh/src/myscripts/set_run_on_wake
 .config/zsh/src/myscripts/connected-wifi-ssid
 .config/zsh/src/myscripts/convert-mp3-to-aiff
 .config/myscripts/set_mcp_server_claude_desktop.py
