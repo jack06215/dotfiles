@@ -124,6 +124,13 @@ window_rules:
         window_class: { regex: "HwndWrapper*" }
       # WezTerm (leave unmanaged/floating).
       - window_process: { equals: "wezterm-gui" }
+      # WSLg windows (Linux GUI apps from WSL2, such as gpg's pinentry). The
+      # Windows side is a Remote Desktop RemoteApp window, and WSLg's Wayland
+      # compositor keeps its own copy of where that window is. When GlazeWM
+      # moves or resizes the window, the compositor keeps the old position, so
+      # the window draws but takes no keyboard or mouse input.
+      - window_process: { equals: "msrdc" }
+        window_class: { equals: "RAIL_WINDOW" }
 
 binding_modes:
   # alt+control+r → resize with h/j/k/l or arrows; enter/escape exits.
