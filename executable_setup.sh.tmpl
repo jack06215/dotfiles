@@ -51,10 +51,11 @@ APT_PACKAGES=(
   # xsel. WSLg keeps the Wayland clipboard in sync with the Windows one.
   wl-clipboard
   # gpg-agent.conf points pinentry at /usr/bin/pinentry-curses, or on WSL2
-  # at /usr/bin/pinentry-qt, a window WSLg puts on the Windows desktop
+  # at ~/.local/bin/pinentry-wslg, which runs pinentry-qt on Qt's Wayland
+  # platform (qtwayland5) because the X11 window draws black under WSLg
   gnupg pinentry-curses
 {{- if .myComputer.isWSL2 }}
-  pinentry-qt
+  pinentry-qt qtwayland5
 {{- end }}
 )
 
