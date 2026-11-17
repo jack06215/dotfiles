@@ -1,0 +1,10 @@
+#!/bin/sh
+# gpg-agent's pinentry on WSL2 (see gpg-agent.conf). Deployed only on WSL2
+# (see .chezmoiignore).
+#
+# Ubuntu's pinentry-qt is a Qt5 build, and Qt5 uses its xcb (X11) platform
+# unless QT_QPA_PLATFORM names another one, so WSLg shows the window through
+# XWayland. That window draws solid black, which makes the passphrase box
+# impossible to use. The same window drawn by WSLg's Wayland compositor works.
+# The wayland platform comes from the qtwayland5 package.
+QT_QPA_PLATFORM=wayland exec /usr/bin/pinentry-qt "$@"

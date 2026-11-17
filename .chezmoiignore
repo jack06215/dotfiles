@@ -120,13 +120,15 @@ setup.ps1
 # in /usr/bin, and these must never shadow them. powershell.exe, WSL2 only,
 # links the Windows binary onto PATH, which appendWindowsPath=false keeps off
 # it, for tools that probe for it by name (nvim's img-clip pastes images
-# through it).
+# through it). pinentry-wslg, WSL2 only, is the pinentry that gpg-agent.conf
+# names there.
 {{ if not (or .myComputer.isWSL2 (eq .chezmoi.os "android")) }}
 .local/bin/pbcopy
 .local/bin/pbpaste
 {{ end }}
 {{ if not .myComputer.isWSL2 }}
 .local/bin/powershell.exe
+.local/bin/pinentry-wslg
 {{ end }}
 
 # The repo's own README describes the repo; it is not a dotfile.
