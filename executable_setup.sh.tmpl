@@ -198,6 +198,11 @@ function install_homebrew() {
 }
 
 function upgrade_homebrew_packages() {
+  # ~/.zshenv exports HOMEBREW_NO_AUTO_UPDATE=1, which setup.sh inherits when
+  # run from zsh. brew then installs and upgrades to the versions in the
+  # formula index on disk, and only `brew update` refreshes that index.
+  brew update || note_failure 'brew update'
+
   # ~/Brewfile is rendered from Brewfile.tmpl, which picks the manifest under
   # brewfiles/ matching this OS: taps + formulae + casks on macOS, taps +
   # formulae on Linux. It also carries the Homebrew 6.0 tap-trust state, and
