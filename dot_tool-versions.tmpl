@@ -8,5 +8,11 @@ nodejs 23.9.0
 python 3.13.13
 shellcheck 0.11.0
 shfmt 3.13.1
+{{- /* macOS gets MySQL 8.4 from the Brewfile (mysql@8.4). asdf's mysql
+       plugin (iroddis/asdf-mysql) takes its download URLs from dbdeployer's
+       tarball list, which as of November 2026 has no macOS build newer than
+       8.0.34, so `asdf install mysql` on a Mac fails with no message. */}}
+{{- if ne .chezmoi.os "darwin" }}
 mysql 8.4.10
+{{- end }}
 poetry 2.4.1

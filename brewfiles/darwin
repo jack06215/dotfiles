@@ -35,8 +35,6 @@ brew "cryptography"
 brew "awscurl"
 # Simple command-line tool to read AWS CloudWatch logs
 brew "awslogs"
-# Microsoft Azure CLI 2.0
-brew "azure-cli"
 # Bourne-Again SHell, a UNIX command interpreter
 brew "bash"
 # Clone of cat(1) with syntax highlighting and Git integration
@@ -349,6 +347,8 @@ cask "1password-cli"
 cask "nikitabobko/tap/aerospace", trusted: true
 # Enable Windows-like alt-tab
 cask "alt-tab"
+# Microsoft Azure CLI 2.0
+cask "azure-cli"
 # Utility that prevents the system from going to sleep
 cask "caffeine"
 # Desktop app for GPT-4 / GPT-3.5 (OpenAI API)
