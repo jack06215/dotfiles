@@ -8,7 +8,7 @@ echo "$(date) sleepwatcher triggered ($0)" >> "$XDG_CACHE_HOME/sleepwatcher.log"
 source "$ZDOTDIR/src/darwin_pre_init.zsh"
 # packages/, not the monorepo root: the sleepwatcher modules import each other
 # as `sleepwatcher.*` (Bazel builds them with packages/ as the import root).
-export PYTHONPATH="$HOME/workspace/jack06215/monorepo/packages"
+export PYTHONPATH={{ joinPath (includeTemplate "monorepoDir" .) "packages" | quote }}
 
 # Get the day of the week (0 = Sunday, 6 = Saturday)
 day_of_week=$(date +%w)

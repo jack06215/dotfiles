@@ -22,7 +22,7 @@
   .chezmoiscripts/run_onchange_after_pycli-carapace-specs.sh.tmpl generates
   from the same tools on apply.
 */ -}}
-{{- $repo := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo" -}}
+{{- $repo := includeTemplate "monorepoDir" . -}}
 {{- $venv := .pypoetry.zshPythonDir -}}
 {{- $python := joinPath $venv "bin/python" -}}
 # Prints `pycli <args>` as one line of shell, for what can't call a zsh

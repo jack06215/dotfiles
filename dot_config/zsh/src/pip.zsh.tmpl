@@ -2,7 +2,7 @@
 {{- if .pypoetry.zshPythonDir -}}
 {{- $runtime = joinPath .pypoetry.zshPythonDir "bin/python" -}}
 {{- end -}}
-{{- $helper := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo/packages/myscripts/fpip_helper.py" -}}
+{{- $helper := joinPath (includeTemplate "monorepoDir" .) "packages/myscripts/fpip_helper.py" -}}
 source "$ZDOTDIR/src/gum.zsh"
 
 # name, description, handler

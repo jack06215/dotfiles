@@ -21,7 +21,7 @@
   Same guard as pycli.zsh.tmpl: without the monorepo or its venv this renders
   empty, and chezmoi skips an empty script.
 */ -}}
-{{- $repo := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo" -}}
+{{- $repo := includeTemplate "monorepoDir" . -}}
 {{- $venv := .pypoetry.zshPythonDir -}}
 {{- $python := joinPath $venv "bin/python" -}}
 {{- if and $venv (stat (joinPath $repo "packages/carapace/generate.py")) (stat $python) -}}

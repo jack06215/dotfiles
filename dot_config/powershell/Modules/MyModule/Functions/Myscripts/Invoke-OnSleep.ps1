@@ -5,7 +5,7 @@ function Invoke-OnSleep {
 
         .DESCRIPTION
         The Windows stand-in for the sleep hook sleepwatcher runs on macOS
-        (dot_config/zsh/src/executable_sleep.zsh), and the same thing
+        (dot_config/zsh/src/executable_sleep.zsh.tmpl), and the same thing
         Scripts\sleep.ps1 does. It only records the event: an ISO 8601
         timestamp followed by SLEEP, appended to
         C:\ProgramData\sleepwatcher\logs\events.log. The folder is created

@@ -11,9 +11,9 @@
 
 # Where github.com/jack06215/monorepo is checked out. setup.sh clones it here
 # when it is missing, and .chezmoi.toml.tmpl looks for the uv venv at
-# <monorepoDir>/.venv. Other templates and zsh scripts still hard-code
-# ~/workspace/jack06215/monorepo, so a row that moves the checkout must also
-# change those.
+# <monorepoDir>/.venv. Templates read it through .chezmoitemplates/monorepoDir.
+# After a change here, run `chezmoi init` so that the recorded venv path
+# follows the new location.
 [lookups.monorepoDir]
   default = "workspace/jack06215/monorepo"
 [lookups.monorepoDir.table]

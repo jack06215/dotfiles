@@ -2,7 +2,7 @@
 {{- $model := ternary "opus[1m]" "opus" .myComputer.isCompanyMachine -}}
 {{- /* read scope outside the cwd: the personal monorepo, on personal machines
        that have it checked out; empty everywhere else */ -}}
-{{- $monorepo := joinPath .chezmoi.homeDir "workspace/jack06215/monorepo" -}}
+{{- $monorepo := includeTemplate "monorepoDir" . -}}
 {{- if or .myComputer.isCompanyMachine (not (stat $monorepo)) -}}
 {{-   $monorepo = "" -}}
 {{- end -}}
