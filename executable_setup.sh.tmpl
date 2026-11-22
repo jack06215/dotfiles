@@ -33,11 +33,7 @@ GH_EXTENSIONS=(
 # pycli, pipf and the zsh Python venv run from this checkout. The directory is
 # lookups.toml's monorepoDir.
 MONOREPO_URL='https://github.com/jack06215/monorepo.git'
-MONOREPO_DIR={{ includeTemplate "lookupPath" (dict
-                  "chezmoi" .chezmoi
-                  "base"    .chezmoi.homeDir
-                  "table"   .lookups.monorepoDir.table
-                  "default" .lookups.monorepoDir.default) | quote }}
+MONOREPO_DIR={{ includeTemplate "monorepoDir" . | quote }}
 
 {{ if $isLinux -}}
 # apt packages for Debian/Ubuntu (WSL2 included): what Homebrew cannot or

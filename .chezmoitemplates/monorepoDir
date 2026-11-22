@@ -1,0 +1,17 @@
+{{- /*
+    monorepoDir: where github.com/jack06215/monorepo is checked out. The value
+    is lookups.toml's monorepoDir, joined onto the home directory.
+
+    Argument: a dict that holds `chezmoi` and `lookups`. A template that
+    chezmoi renders on apply passes `.`. .chezmoi.toml.tmpl must pass a dict
+    with its own $lookups, because chezmoi has not loaded .chezmoidata yet
+    when it renders that file.
+
+    Usage:
+      {{ includeTemplate "monorepoDir" . }}
+*/ -}}
+{{- includeTemplate "lookupPath" (dict
+      "chezmoi" .chezmoi
+      "base"    .chezmoi.homeDir
+      "table"   .lookups.monorepoDir.table
+      "default" .lookups.monorepoDir.default) -}}

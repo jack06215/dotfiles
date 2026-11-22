@@ -18,9 +18,7 @@ Prerequisite: [chezmoi](https://www.chezmoi.io/).
 
 ```sh
 mkdir -p ~/workspace/jack06215
-mkdir -p ~/workspace/jack06215/monorepo
 git clone https://github.com/jack06215/dotfiles ~/workspace/jack06215/dotfiles
-git clone https://github.com/jack06215/monorepo.git ~/workspace/jack06215/monorepo
 chezmoi init --apply --source ~/workspace/jack06215/dotfiles
 ```
 
@@ -156,7 +154,7 @@ Set `ZSH_DEBUG_INIT=1` or `ZSH_PROFILE_STARTUP=1` to trace/profile startup.
 | `aws.zsh`, `bazel.zsh`, `k8s.zsh`, `mysql.zsh`, `dart.zsh` | domain-specific shortcuts |
 | `poetry.zsh` | `activate_poetry_env [query]`: fzf over every Poetry env - the cached ones and each project's in-project `.venv` - labelled with its project; the current project's env is marked `*` and listed first. Works it out without running Poetry. `deactivate_poetry_env` |
 | `zsh_python_init.zsh` | resolves the monorepo's uv venv (`.pypoetry.zshPythonDir`, normally `<monorepo>/.venv`) and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN` + aliases |
-| `executable_sleep.zsh` / `executable_wakeup.zsh` | sleepwatcher hooks (macOS); skip weekends, gate on `sleepwatcher.should_run`, drive a Teamspirit clock-in/out script |
+| `executable_sleep.zsh.tmpl` / `executable_wakeup.zsh.tmpl` | sleepwatcher hooks (macOS); skip weekends, gate on `sleepwatcher.should_run`, drive a Teamspirit clock-in/out script |
 | `myscripts/` | standalone executables: `whisper-mic`, `transcribe-yt`, `convert-mp3-to-aiff`, etc. |
 
 ## Terminal & editor
