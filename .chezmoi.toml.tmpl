@@ -112,8 +112,15 @@
        <monorepo>/.venv, so a new machine needs no row in lookups.toml. ""
        when the monorepo or its venv is missing; re-run `chezmoi init` after
        `uv sync`. */ -}}
-{{- $monorepo := joinPath $home "workspace/jack06215/monorepo" -}}
-{{- if and (not $zshPythonDir) (ne .chezmoi.os "windows") (stat (joinPath $monorepo ".venv/bin/activate")) -}}
+{{- $monorepo :=
+      includeTemplate "lookupPath" (dict
+        "chezmoi" .chezmoi
+        "base"    $home
+        "table"   $lookups.monorepoDir.table
+        "default" $lookups.monorepoDir.default
+      )
+-}}
+{{- if and (not $zshPythonDir) $monorepo (ne .chezmoi.os "windows") (stat (joinPath $monorepo ".venv/bin/activate")) -}}
 {{-   $zshPythonDir = joinPath $monorepo ".venv" -}}
 {{- end -}}
 
