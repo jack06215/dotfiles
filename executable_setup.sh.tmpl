@@ -30,6 +30,15 @@ GH_EXTENSIONS=(
   'dlvhdr/gh-dash'
 )
 
+# pycli, pipf and the zsh Python venv run from this checkout. The directory is
+# lookups.toml's monorepoDir.
+MONOREPO_URL='https://github.com/jack06215/monorepo.git'
+MONOREPO_DIR={{ includeTemplate "lookupPath" (dict
+                  "chezmoi" .chezmoi
+                  "base"    .chezmoi.homeDir
+                  "table"   .lookups.monorepoDir.table
+                  "default" .lookups.monorepoDir.default) | quote }}
+
 {{ if $isLinux -}}
 # apt packages for Debian/Ubuntu (WSL2 included): what Homebrew cannot or
 # should not provide.
@@ -306,6 +315,59 @@ function install_tmux_plugins() {
   fi
   "${tpm}/bin/install_plugins" || note_failure 'tmux plugin install'
 }
+
+# Runs before reapply_dotfiles, because templates such as Claude Code's
+# settings.json check for the checkout when they render. A checkout that is
+# already there is not pulled, because it can hold work in progress.
+#
+# GIT_TERMINAL_PROMPT=0: git's credential helper for github.com is
+# `gh auth git-credential`. Without a gh login, git would stop the script at a
+# username prompt. With the prompt off, the clone fails and is reported.
+function clone_monorepo() {
+  if [[ -e "${MONOREPO_DIR}/.git" ]]; then
+    echo "${MONOREPO_DIR} exists; skipping."
+    return 0
+  fi
+  mkdir -p "$(dirname "${MONOREPO_DIR}")"
+  GIT_TERMINAL_PROMPT=0 git clone "${MONOREPO_URL}" "${MONOREPO_DIR}" \
+    || note_failure "git clone ${MONOREPO_URL} (try after 'gh auth login')"
+}
+
+{{ if $usesHomebrew -}}
+# Creates <monorepo>/.venv, which pycli, pipf and zsh_python_init.zsh take
+# their Python from. --locked installs what uv.lock pins. If uv.lock is behind
+# pyproject.toml, the sync fails instead of rewriting uv.lock in the checkout.
+# Not on Termux: there is no Android wheel for many of the locked packages,
+# which is why pkgfiles/termux installs numpy, pandas and grpcio from pkg.
+function sync_monorepo_venv() {
+  if [[ ! -f "${MONOREPO_DIR}/pyproject.toml" ]]; then
+    echo "${MONOREPO_DIR} is not cloned; skipping."
+    return 0
+  fi
+  if ! command -v uv &> /dev/null; then
+    note_failure 'uv sync (uv not installed; it comes from the Brewfile)'
+    return 0
+  fi
+  if ! uv sync --locked --directory "${MONOREPO_DIR}"; then
+    note_failure "uv sync in ${MONOREPO_DIR}"
+    return 0
+  fi
+{{- if not .pypoetry.zshPythonDir }}
+
+  # .chezmoi.toml.tmpl records the venv as .pypoetry.zshPythonDir only if the
+  # venv exists when `chezmoi init` runs. This machine's config was made
+  # before the venv existed, so init runs again to record it.
+  #
+  # init reads isCompanyMachine from $IS_COMPANY_MACHINE, and nothing in the
+  # dotfiles sets that variable. When the environment does not set it, the
+  # recorded value is passed back in, because init would otherwise reset it
+  # to false.
+  IS_COMPANY_MACHINE="${IS_COMPANY_MACHINE:-{{ .myComputer.isCompanyMachine }}}" chezmoi init \
+    || note_failure 'chezmoi init'
+{{- end }}
+}
+
+{{ end -}}
 
 # run_onchange_ scripts that found a tool missing on the first apply (yazi
 # packages, the pinned shfmt, the dictionary) render differently once it is
@@ -601,6 +663,12 @@ function setup_common() {
   section 'Installing tmux plugins'
   install_tmux_plugins
 
+  section 'Cloning the monorepo'
+  clone_monorepo
+
+  section "Syncing the monorepo's Python venv"
+  sync_monorepo_venv
+
   section 'Re-applying dotfiles'
   reapply_dotfiles
 }
@@ -666,6 +734,9 @@ function setup_termux() {
 
   section 'Installing Claude Code'
   install_termux_claude_code
+
+  section 'Cloning the monorepo'
+  clone_monorepo
 
   section 'Re-applying dotfiles'
   reapply_dotfiles
