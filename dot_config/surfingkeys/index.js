@@ -699,10 +699,10 @@ siteMapkey(/youtube\.com/, () => {
     () => { location.href = 'https://www.youtube.com/playlist?list=WL'; });
 });
 
-// Monkeytype — copy the result screen as a YAML document. Each copy starts
-// with `---` and a timestamp, so pastes can be appended to one log file.
-// Selectors follow monkeytype's pages/test-result.html and test/result.ts.
-// The wpm chart is a <canvas>, so per-word burst stands in for it.
+// Monkeytype: `yr` copies the result screen as one YAML document that starts
+// with `---`, so pastes can be appended to one log file. The document is the
+// input of skills/monkeytype-review/scripts/analyze.py, so change both together.
+// Selectors follow monkeytype's frontend/src/ts/components/pages/test/result/.
 const YAML_PLAIN    = /^[A-Za-z_][\w./-]*(?: [\w./-]+)*$/;
 const YAML_RESERVED = /^(?:y|n|yes|no|true|false|on|off|null)$/i;
 
@@ -712,99 +712,394 @@ function yamlStr(value) {
   return YAML_PLAIN.test(str) && !YAML_RESERVED.test(str) ? str : JSON.stringify(str);
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function yamlFlow(value) {
+  if (value === null || value === undefined) return 'null';
+  if (typeof value === 'number') {
+    if (Number.isFinite(value)) return String(value);
+    if (Number.isNaN(value)) return 'null';
+    return value > 0 ? '.inf' : '-.inf';
+  }
+  if (typeof value === 'boolean') return String(value);
+  if (Array.isArray(value)) return `[${value.map(yamlFlow).join(', ')}]`;
+  if (isPlainObject(value)) {
+    const entries = Object.entries(value).filter(([, item]) => item !== undefined);
+    return `{${entries.map(([key, item]) => `${key}: ${yamlFlow(item)}`).join(', ')}}`;
+  }
+  return yamlStr(value);
+}
+
+// A `|` block cannot start a line with whitespace unless it has an indentation
+// indicator, so strings with such lines stay quoted.
+function isLiteralBlock(value) {
+  return typeof value === 'string' && value.endsWith('\n')
+    && value.slice(0, -1).split('\n').every((line) => /^\S/.test(line));
+}
+
+// Objects nest as block maps. An array of objects becomes one flow-map record
+// per line, so each chart point and each word stays on one line. A string that
+// ends in a newline becomes a `|` block.
+function yamlLines(map, indent = '') {
+  return Object.entries(map).flatMap(([key, value]) => {
+    if (value === undefined || value === null) return [];
+    if (isPlainObject(value)) return [`${indent}${key}:`, ...yamlLines(value, `${indent}  `)];
+    if (Array.isArray(value) && value.length > 0 && value.every(isPlainObject)) {
+      return [`${indent}${key}:`, ...value.map((item) => `${indent}  - ${yamlFlow(item)}`)];
+    }
+    if (isLiteralBlock(value)) {
+      const lines = value.slice(0, -1).split('\n').map((line) => `${indent}  ${line}`);
+      return [`${indent}${key}: |`, ...lines];
+    }
+    return [`${indent}${key}: ${yamlFlow(value)}`];
+  });
+}
+
 function matchNumber(text, re) {
   const m = String(text).match(re);
   return m ? Number(m[1]) : null;
 }
 
-function monkeytypeResultYaml() {
-  const result = document.querySelector('#result');
-  if (!result || result.classList.contains('hidden')) return null;
+// "12:20", "00:11:02" or "739.6" to seconds
+function parseDuration(str) {
+  if (!str.includes(':')) return matchNumber(str, /([\d.]+)/);
+  return str.split(':').reduce((total, part) => total * 60 + Number(part), 0);
+}
 
-  const bottom = (group) => result.querySelector(`.group.${group} > .bottom`);
-  const text   = (group) => bottom(group)?.textContent.trim() ?? '';
-  // Hover labels hold the unrounded values, e.g. "39.12 wpm", "94.12%\n523 correct\n33 incorrect"
-  const hover  = (group) => bottom(group)?.getAttribute('aria-label') ?? '';
-  // "test type" and "other" are text lines separated by <br>
-  const lines  = (group) => [...(bottom(group)?.childNodes ?? [])]
+function rgbToHex(color) {
+  const parts = String(color).match(/\d+/g);
+  if (!parts || parts.length < 3) return null;
+  return `#${parts.slice(0, 3).map((n) => Number(n).toString(16).padStart(2, '0')).join('')}`;
+}
+
+// The "test type" and "other" stats are text lines separated by <br>
+function textLines(el) {
+  return [...(el?.childNodes ?? [])]
     .filter((node) => node.nodeType === Node.TEXT_NODE)
     .map((node) => node.textContent.trim())
     .filter(Boolean);
-  const speed  = (group) =>
-    matchNumber(hover(group), /([\d.]+) wpm/) ?? matchNumber(text(group), /([\d.]+)/);
-  const seconds = (str) => (str.includes(':')
-    ? str.split(':').reduce((total, part) => total * 60 + Number(part), 0)
-    : matchNumber(str, /([\d.]+)/));
+}
 
-  const [test = '', ...options] = lines('testType');
-  const language = test.startsWith('custom') ? null : options.shift();
-  const chars    = text('key').split('/').map(Number);
-  const keys     = [/(\d+) correct/, /(\d+) incorrect/].map((re) => matchNumber(hover('acc'), re));
-  const timeText = result.querySelector('.group.time .text')?.textContent.trim() ?? '';
-  const crown    = result.querySelector('.group.wpm .crown');
-  const pb       = !!crown && !['hidden', 'ineligible', 'error', 'warning']
-    .some((cls) => crown.classList.contains(cls));
-  const other    = result.querySelector('.group.info')?.classList.contains('hidden') ? [] : lines('info');
+// Each stat is a label element and a value element. The value's aria-label
+// holds the unrounded numbers, e.g. "17.51 wpm" or "91.02%\n1095 correct\n108 incorrect".
+function monkeytypeStats(result) {
+  const stats = new Map();
+  for (const stat of result.querySelectorAll('[data-ui-element="resultStat"]')) {
+    const label = stat.firstElementChild?.textContent.trim();
+    const value = stat.querySelector('[data-ui-element="resultStatValue"]');
+    if (label && value && !stats.has(label)) stats.set(label, { stat, value });
+  }
+  return stats;
+}
 
-  const out   = ['---', 'monkeytype:'];
-  const field = (key, value) => {
-    if (value !== null && value !== undefined && !Number.isNaN(value)) out.push(`  ${key}: ${value}`);
+// The crown stacks four icons and shows the one for its state (crownColors in
+// ResultMainStats.tsx). Only the "normal" state means a new personal best.
+function monkeytypeCrown(speedStat) {
+  const box = speedStat?.querySelector('.fa-crown')?.parentElement;
+  if (!box || box.closest('[style*="opacity: 0"]')) return undefined;
+  const shown = (icon) => {
+    const el = box.querySelector(`.${icon}`);
+    return !!el && (!el.classList.contains('opacity-0') || el.classList.contains('opacity-100'));
   };
+  let type = 'normal';
+  if (shown('fa-question')) type = 'error';
+  else if (shown('fa-exclamation-triangle')) type = 'warning';
+  else if (shown('fa-slash')) type = 'ineligible';
+  else if (box.classList.contains('outline-main')) type = 'pending';
+  return { type, text: box.getAttribute('aria-label') ?? '' };
+}
 
-  field('date', isoWithOffset(new Date()));
-  field('test', yamlStr(test));
-  if (language) field('language', yamlStr(language));
-  if (options.length) field('options', `[${options.map(yamlStr).join(', ')}]`);
-  field('wpm', speed('wpm'));
-  field('raw', speed('raw'));
-  field('acc', matchNumber(hover('acc'), /^([\d.]+)%/) ?? matchNumber(text('acc'), /([\d.]+)/));
-  if (keys.every((n) => n !== null)) field('keys', `{correct: ${keys[0]}, incorrect: ${keys[1]}}`);
-  if (chars.length === 4 && chars.every(Number.isFinite)) {
-    field('chars', `{correct: ${chars[0]}, incorrect: ${chars[1]}, extra: ${chars[2]}, missed: ${chars[3]}}`);
+function monkeytypeDetail(result) {
+  const stats = monkeytypeStats(result);
+  // The speed stat comes first, and its label is the typing speed unit
+  const [[unit, speed] = []] = stats;
+  const value = (label) => stats.get(label)?.value;
+  const hover = (label) => value(label)?.getAttribute('aria-label') ?? '';
+  const text  = (label) => value(label)?.textContent.trim() ?? '';
+  // Balloons read "17.51 wpm", or "87.55 cpm (17.51 wpm)" for other units
+  const speedOf = (label) =>
+    matchNumber(hover(label), /([\d.]+) wpm/) ?? matchNumber(text(label), /([\d.]+)/);
+
+  const [test = '', ...options] = textLines(value('test type'));
+  const language = test.startsWith('custom') ? undefined : options.shift();
+  const other = textLines(value('other'));
+  const tagsValue = stats.get('test type')?.stat
+    .querySelector('.mt-2 [data-ui-element="resultStatValue"]');
+  const tags = [...(tagsValue?.children ?? [])]
+    .map((el) => el.textContent.trim())
+    .filter((name) => name && name !== 'no tags');
+  const chars = text('characters').split('/').map(Number);
+  const keys = [/(\d+) correct/, /(\d+) incorrect/].map((re) => matchNumber(hover('acc'), re));
+  const time = value('time');
+  const timeNotes = [...(time?.querySelectorAll('[data-ui-element="resultStatSubValue"]') ?? [])]
+    .map((el) => el.textContent.trim());
+  const typedTime = timeNotes.map((note) => note.match(/^([\d:]+) (session|today)$/)).find(Boolean);
+  const crown = monkeytypeCrown(speed?.stat);
+
+  return {
+    test,
+    language,
+    options: options.length ? options : undefined,
+    other: other.length ? other : undefined,
+    tags: tags.length ? tags : undefined,
+    source: stats.has('source') ? text('source') : undefined,
+    unit,
+    wpm: speedOf(unit),
+    raw: speedOf('raw'),
+    acc: matchNumber(hover('acc'), /^([\d.]+)%/) ?? matchNumber(text('acc'), /([\d.]+)/),
+    keys: keys.every((n) => n !== null) ? { correct: keys[0], incorrect: keys[1] } : undefined,
+    chars: chars.length === 4 && chars.every(Number.isFinite)
+      ? { correct: chars[0], incorrect: chars[1], extra: chars[2], missed: chars[3] }
+      : undefined,
+    consistency: matchNumber(hover('consistency'), /^([\d.]+)% \(/)
+      ?? matchNumber(text('consistency'), /([\d.]+)/),
+    key_consistency: matchNumber(hover('consistency'), /([\d.]+)% key/),
+    time: matchNumber(hover('time'), /^([\d.]+)s \(/)
+      ?? parseDuration(time?.firstElementChild?.textContent.trim() ?? ''),
+    afk: matchNumber(hover('time'), /([\d.]+)s afk/),
+    afk_pct: matchNumber(hover('time'), /afk ([\d.]+)%/),
+    [`${typedTime?.[2] ?? 'session'}_time`]: typedTime ? parseDuration(typedTime[1]) : undefined,
+    pb: crown?.type === 'normal',
+    crown,
+  };
+}
+
+async function monkeytypeHistoryWords() {
+  const query = () => [...document.querySelectorAll('#resultWordsHistory [data-ui-element="word"]')];
+  if (query().length === 0) {
+    document.querySelector('#showWordHistoryButton')?.click();
+    for (let tries = 0; tries < 20 && query().length === 0; tries++) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
   }
-  field('consistency', matchNumber(hover('consistency'), /^([\d.]+)% \(/) ?? matchNumber(text('consistency'), /([\d.]+)/));
-  field('key_consistency', matchNumber(hover('consistency'), /([\d.]+)% key/));
-  field('time', matchNumber(hover('time'), /^([\d.]+)s \(/) ?? seconds(timeText));
-  field('afk_pct', matchNumber(hover('time'), /afk ([\d.]+)%/));
-  field('pb', pb);
-  if (other.length) field('other', `[${other.map(yamlStr).join(', ')}]`);
+  return query();
+}
 
-  // Input history: `burst` = word wpm, `input` = what was typed before fixing
-  // typos, letter.corrected = a typo that was fixed, .error = still wrong
-  const words = [...result.querySelectorAll('#resultWordsHistory .words .word')]
-    .filter((el) => el.getAttribute('input'));
-  if (words.length) out.push('  words:');
-  for (const el of words) {
-    const word = [...el.querySelectorAll('letter')]
-      .filter((letter) => !letter.classList.contains('extra'))
-      .map((letter) => letter.textContent)
-      .join('');
-    const typed = el.getAttribute('input');
-    const burst = Number(el.getAttribute('burst'));
-    const fixed = el.querySelectorAll('letter.corrected').length;
+// A word's burst is in the DOM only while the word is hovered: Word in
+// ResultWordsHistory.tsx renders `.wordInputHighlight .speed` from a hover
+// signal that a plain mouseenter listener sets, so a synthetic event works.
+async function hoverWordSpeeds(wordEls) {
+  wordEls.forEach((el) => el.dispatchEvent(new MouseEvent('mouseenter')));
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  const speeds = wordEls.map((el) => {
+    const text = el.querySelector('.wordInputHighlight .speed')?.textContent.trim() ?? '';
+    return text.startsWith('Infinite') ? Infinity : matchNumber(text, /^(\d+)/) ?? undefined;
+  });
+  wordEls.forEach((el) => el.dispatchEvent(new MouseEvent('mouseleave')));
+  return speeds;
+}
 
-    const fields = [`word: ${yamlStr(word)}`];
-    if (el.hasAttribute('burst')) fields.push(`wpm: ${burst >= 1000 ? '.inf' : Math.round(burst)}`);
-    if (typed !== word) fields.push(`typed: ${yamlStr(typed)}`);
-    if (fixed > 0) fields.push(`fixed: ${fixed}`);
-    if (el.classList.contains('error')) fields.push('error: true');
-    out.push(`    - {${fields.join(', ')}}`);
+function monkeytypeHeatmap(history, speeds) {
+  const cells = [...(history.firstElementChild?.querySelectorAll('div[style*="background"]') ?? [])];
+  if (cells.length) {
+    const labels = cells.map((cell) => cell.textContent.trim());
+    return {
+      steps: labels.map((label, i) => (i === 0 ? 0 : matchNumber(label, /^(\d+)/))),
+      labels,
+      colors: cells.map((cell) => rgbToHex(cell.style.backgroundColor)),
+    };
+  }
+  // The heatmap is toggled off, so derive the steps the way buildHeatmap in
+  // ResultWordsHistory.tsx does: the 15th, 35th, 65th and 85th percentile bursts.
+  const sorted = speeds.filter((speed) => speed !== undefined).sort((a, b) => a - b);
+  if (!sorted.length) return undefined;
+  return { steps: [0, 0.15, 0.35, 0.65, 0.85].map((q) => (q === 0 ? 0 : sorted[(sorted.length * q) | 0])) };
+}
+
+function heatmapBucket(speed, steps) {
+  if (!Number.isFinite(speed) || !steps) return undefined;
+  return steps.reduce((bucket, step, i) => (speed >= step ? i : bucket), undefined);
+}
+
+// One mark per letter: `.` correct, `f` typo fixed with backspace, `x` still
+// wrong, `+` extra letter, `-` not typed.
+const LETTER_MARKS = { correct: '.', incorrect: 'x', extra: '+', untyped: '-' };
+
+function monkeytypeWord(el, index, speed, steps) {
+  const letters = [...el.querySelectorAll('letter')];
+  const marks = letters
+    .map((letter) => (letter.hasAttribute('data-ui-corrected')
+      ? 'f'
+      : LETTER_MARKS[letter.dataset.uiState] ?? '?'))
+    .join('');
+  const word = letters
+    .filter((letter) => letter.dataset.uiState !== 'extra')
+    .map((letter) => letter.textContent)
+    .join('');
+  // What was typed before fixing typos, with spaces shown as `_`
+  const typed = el.dataset.input;
+  const fixed = [...marks].filter((mark) => mark === 'f').length;
+  return {
+    i: index,
+    word,
+    wpm: speed,
+    bucket: heatmapBucket(speed, steps),
+    typed: typed !== word ? typed : undefined,
+    fixed: fixed || undefined,
+    error: el.dataset.uiState === 'typedIncorrectly' || undefined,
+    extra_fixed: letters.some((letter) => letter.hasAttribute('data-ui-extra-corrected')) || undefined,
+    marks: /[^.]/.test(marks) ? marks : undefined,
+    letters: marks.includes('+') ? letters.map((letter) => letter.textContent).join('') : undefined,
+  };
+}
+
+const MONKEYTYPE_CHART_ATTR = 'data-sk-monkeytype-chart';
+
+// Runs in the page's own JS context, so it must not use anything from this
+// file. It imports Monkeytype's Chart.js chunk by the URL the page loaded it
+// from, and the browser returns the module instance the page already uses, so
+// Chart.getChart finds the live result chart.
+async function monkeytypeChartInPage(eventName, attribute) {
+  const reply = (payload) => {
+    document.documentElement.setAttribute(attribute, JSON.stringify(payload));
+    document.dispatchEvent(new Event(eventName));
+  };
+  try {
+    const chunk = /\/vendor-chart\.[^/]+\.js$/;
+    const url = [...document.querySelectorAll('link[rel="modulepreload"]')]
+      .map((link) => link.href)
+      .find((href) => chunk.test(href))
+      ?? performance.getEntriesByType('resource')
+        .map((entry) => entry.name)
+        .find((name) => chunk.test(name));
+    if (!url) throw new Error('Chart.js chunk not found');
+    const chartModule = await import(url);
+    const Chart = Object.values(chartModule)
+      .find((item) => typeof item === 'function' && typeof item.getChart === 'function');
+    if (!Chart) throw new Error('Chart.js chunk exports no Chart');
+    const chart = Chart.getChart(document.querySelector('#result canvas'));
+    if (!chart) throw new Error('no chart on the result canvas');
+    reply({
+      labels: chart.data.labels,
+      datasets: chart.data.datasets.map((set) => ({ axis: set.yAxisID, data: set.data })),
+    });
+  } catch (err) {
+    reply({ error: String(err?.message ?? err) });
+  }
+}
+
+// The per-second chart data exists only in the page's memory: Monkeytype saves
+// "toolong" instead of the chart for tests over 122 s. Surfingkeys code runs in
+// an isolated JS context that cannot see the page's modules, but a <script>
+// element runs in the page's context. Monkeytype's CSP has no script-src, so the
+// inline script is allowed.
+function readMonkeytypeChart(timeoutMs = 3000) {
+  return new Promise((resolve) => {
+    const root = document.documentElement;
+    const eventName = `sk-monkeytype-chart-${Date.now()}`;
+    const finish = (payload) => {
+      clearTimeout(timer);
+      document.removeEventListener(eventName, onReply);
+      root.removeAttribute(MONKEYTYPE_CHART_ATTR);
+      resolve(payload);
+    };
+    const onReply = () => {
+      try {
+        finish(JSON.parse(root.getAttribute(MONKEYTYPE_CHART_ATTR)) ?? { error: 'empty chart data' });
+      } catch (err) {
+        finish({ error: `unreadable chart data: ${err.message}` });
+      }
+    };
+    const timer = setTimeout(() => finish({ error: 'chart lookup timed out' }), timeoutMs);
+    document.addEventListener(eventName, onReply);
+    const script = document.createElement('script');
+    script.textContent =
+      `(${monkeytypeChartInPage})(${JSON.stringify(eventName)}, ${JSON.stringify(MONKEYTYPE_CHART_ATTR)});`;
+    root.append(script);
+    script.remove();
+  });
+}
+
+// Keyed by yAxisID ("wpm", "raw", "burst", "error" in ResultChart.tsx) because
+// the wpm dataset's label is the typing speed unit.
+function monkeytypeChartRows(chart) {
+  const series = {};
+  for (const set of chart.datasets ?? []) series[set.axis === 'error' ? 'errors' : set.axis] = set.data ?? [];
+  const at = (name, i) => (typeof series[name]?.[i] === 'number' ? series[name][i] : undefined);
+  return (chart.labels ?? []).map((label, i) => ({
+    t: Number(label),
+    wpm: at('wpm', i),
+    raw: at('raw', i),
+    burst: at('burst', i),
+    errors: at('errors', i),
+  }));
+}
+
+// Monkeytype lists a word as slow when burst < threshold, but the hover shows
+// trunc(burst). The two agree only for whole-number thresholds. The default is
+// the average burst, as in Monkeytype's own "copy slow words" dialog.
+function askSlowThreshold(speeds, unit) {
+  const valid = speeds.filter((speed) => Number.isFinite(speed) && speed > 0);
+  const average = valid.length ? Math.round(valid.reduce((a, b) => a + b, 0) / valid.length) : 80;
+  const answer = window.prompt(`Slow words: ${unit ?? 'wpm'} threshold`, String(average));
+  if (answer === null) return null;
+  const threshold = Number(answer.trim());
+  return Number.isInteger(threshold) && threshold > 0 ? threshold : NaN;
+}
+
+function isMissedWord(word) {
+  return word.typed !== undefined || word.marks !== undefined || !!word.error || !!word.extra_fixed;
+}
+
+async function monkeytypeResultYaml() {
+  const result = document.querySelector('#result');
+  if (!result || result.getClientRects().length === 0
+      || !result.querySelector('[data-ui-element="resultStat"]')) {
+    return { error: 'No Monkeytype result on screen' };
   }
 
-  return { yaml: `${out.join('\n')}\n`, words: words.length };
+  const detail = monkeytypeDetail(result);
+  // Padding words after the last typed word have no input
+  const typedWords = (await monkeytypeHistoryWords())
+    .map((el, index) => ({ el, index }))
+    .filter(({ el }) => el.dataset.input);
+  const speeds = await hoverWordSpeeds(typedWords.map(({ el }) => el));
+  const history = document.querySelector('#resultWordsHistory');
+  const heatmap = history ? monkeytypeHeatmap(history, speeds) : undefined;
+  const words = typedWords.map(({ el, index }, n) => monkeytypeWord(el, index, speeds[n], heatmap?.steps));
+  const chart = await readMonkeytypeChart();
+
+  const threshold = askSlowThreshold(speeds, detail.unit);
+  if (threshold === null) return { error: 'Monkeytype copy cancelled' };
+  if (Number.isNaN(threshold)) return { error: 'The threshold must be a whole number above 0' };
+
+  const wordBlock = (list) => (list.length ? `${list.join(' ')}\n` : '');
+  const rows = chart.error ? undefined : monkeytypeChartRows(chart);
+  const doc = {
+    result: {
+      wpm_threshold: threshold,
+      word_list: wordBlock(words.map((w) => w.word)),
+      missed_word_list: wordBlock([...new Set(words.filter(isMissedWord).map((w) => w.word))]),
+      slow_word: wordBlock(words.filter((w) => Number.isFinite(w.wpm) && w.wpm < threshold).map((w) => w.word)),
+    },
+    detail: { ...detail, heatmap, chart: rows, chart_error: chart.error, words },
+  };
+  const lines = ['---', `datetime: ${isoWithOffset(new Date())}`, ...yamlLines(doc)];
+  return {
+    yaml: `${lines.join('\n')}\n`,
+    words: words.length,
+    chartPoints: rows?.length ?? 0,
+    chartError: chart.error,
+  };
 }
 
 siteMapkey(/monkeytype\.com/, () => {
-  api.mapkey('yr', '#7Copy Monkeytype result as YAML', () => {
-    const copied = monkeytypeResultYaml();
-    if (!copied) {
-      api.Front.showBanner('No Monkeytype result on screen');
-      return;
+  api.mapkey('yr', '#7Copy Monkeytype result as YAML', async () => {
+    try {
+      const copied = await monkeytypeResultYaml();
+      if (copied.error) {
+        api.Front.showBanner(copied.error);
+        return;
+      }
+      api.Clipboard.write(copied.yaml);
+      api.Front.showBanner(copied.chartError
+        ? `Copied Monkeytype result (${copied.words} words, no chart: ${copied.chartError})`
+        : `Copied Monkeytype result (${copied.words} words, ${copied.chartPoints} chart points)`);
+    } catch (err) {
+      api.Front.showBanner(`Monkeytype copy failed: ${err.message}`);
     }
-    api.Clipboard.write(copied.yaml);
-    api.Front.showBanner(copied.words > 0
-      ? `Copied Monkeytype result (${copied.words} words)`
-      : 'Copied Monkeytype result (open input history to include words)');
   });
 });
 
@@ -830,7 +1125,7 @@ const siteHelps = [
   { pattern: /b\.hatena\.ne\.jp/, help: ['[[ / ]]: Move between dates'] },
   { pattern: /github\.com/,      help: ['ga: Assigned PRs', 'gr: Review-requested PRs', 'gm: My open PRs', ';dw: Open DeepWiki'] },
   { pattern: /trotto\.io/,       help: [';gol: Open a Trotto Go Link'] },
-  { pattern: /monkeytype\.com/,  help: ['yr: Copy result as YAML'] },
+  { pattern: /monkeytype\.com/,  help: ['yr: Copy result, chart and input history as YAML (asks for the slow-word threshold)'] },
   { pattern: /leetcode\.com/,    help: ['A, then /agents dsa: Socratic hints, no code unless you give up', 'A, then /agents walkthrough: step-by-step solution with code', '/clear in the chat: start the next problem fresh (keeps the agent)'] },
   { pattern: /.*/,               help: 'No site-specific help available.' },
 ];

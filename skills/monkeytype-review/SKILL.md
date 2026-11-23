@@ -1,6 +1,6 @@
 ---
 name: monkeytype-review
-description: 'Analyze Monkeytype typing test results and coach what to practice next. Use when the user pastes a Monkeytype result as YAML (a `monkeytype:` block copied with the Surfingkeys `yr` shortcut), asks to review their typing test or typing progress, or runs /monkeytype-review.'
+description: 'Analyze Monkeytype typing test results and coach what to practice next. Use when the user pastes a Monkeytype result as YAML (a document with `datetime:`, `result:` and `detail:` copied with the Surfingkeys `yr` shortcut), asks to review their typing test or typing progress, or runs /monkeytype-review.'
 ---
 
 # Monkeytype Review
@@ -44,7 +44,7 @@ New results are appended to the history log `~/.local/share/monkeytype/results.y
 - **Trend** and **Recurring problems**: history from the log, per word list. Code word lists are much slower than English for everyone, so never compare speed across word lists.
 - **Practice list**: a draft. Reorder or trim it if your findings point elsewhere.
 
-Not available anywhere: the second-by-second speed chart, timing between individual keys, and which finger actually pressed each key (the finger map is the standard assignment, not a measurement). Don't infer or invent them.
+Not in the report: the second-by-second chart (the YAML carries it in `detail.chart` for plotting, but the script doesn't analyze it). Not available anywhere: timing between individual keys, and which finger actually pressed each key (the finger map is the standard assignment, not a measurement). Don't infer or invent them.
 
 Evidence rules:
 

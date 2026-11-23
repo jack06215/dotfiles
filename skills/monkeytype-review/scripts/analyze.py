@@ -6,9 +6,10 @@ compact Markdown report: results against the accuracy goal, slow vs fast words,
 each typo classified by alignment against a QWERTY finger map, speed through
 the test, trends from a history log, and a draft practice list.
 
-The input is the fixed YAML subset `yr` writes (dot_config/surfingkeys/index.js),
-so a strict reader below parses it with the standard library alone: the script
-runs on the macOS system python3 with nothing to install.
+The input is the fixed YAML subset `yr` writes (dot_config/surfingkeys/index.js):
+one document per result with the top-level keys `datetime`, `result` and
+`detail`. A strict reader below parses it with the standard library alone, so
+the script runs on the macOS system python3 with nothing to install.
 
 Usage:
   analyze.py result.yml             analyze, then append new results to the log
@@ -46,7 +47,7 @@ class ParseError(ValueError):
     pass
 
 
-KEY_LINE = re.compile(r'^( *)([A-Za-z_]\w*):(?: (.*))?$')
+KEY_LINE = re.compile(r'^([A-Za-z_]\w*):(?: (.*))?$')
 FLOW_KEY = re.compile(r'^[A-Za-z_]\w*$')
 NUMBER = re.compile(r'^-?\d+(?:\.\d+)?$')
 
@@ -164,50 +165,87 @@ def parse_value(text: str, line_no: int):
     return parse_scalar(text, line_no)
 
 
-def parse_result(chunk: list[tuple[int, str]]) -> Result:
-    first_no, first = chunk[0]
-    if first != 'monkeytype:':
-        raise ParseError(f'line {first_no}: expected "monkeytype:", got {first.strip()!r}')
+# A document line: line number, indentation, and the text after the indentation
+Line = tuple[int, int, str]
+
+
+def parse_mapping(lines: list[Line], i: int, indent: int) -> tuple[dict, int]:
+    """Read `key: value` lines at `indent`, stopping at the first line indented less."""
     data: dict = {}
-    words = None
-    for line_no, line in chunk[1:]:
-        if line.startswith('    - '):
-            if words is None:
-                raise ParseError(f'line {line_no}: list item outside "words:"')
-            item = parse_value(line[6:], line_no)
-            if not isinstance(item, dict) or 'word' not in item:
-                raise ParseError(f'line {line_no}: expected {{word: ..., ...}}')
-            words.append(item)
-            continue
-        match = KEY_LINE.match(line)
-        if not match or match.group(1) != '  ':
-            raise ParseError(f'line {line_no}: unexpected line {line.strip()!r}')
-        key, value = match.group(2), match.group(3)
-        if value is None:
-            words = data.setdefault(key, [])  # only `words:` opens a block list
-        else:
-            words = None
+    while i < len(lines):
+        line_no, line_indent, text = lines[i]
+        if line_indent < indent:
+            break
+        if line_indent > indent:
+            raise ParseError(f'line {line_no}: unexpected indentation')
+        match = KEY_LINE.match(text)
+        if not match:
+            raise ParseError(f'line {line_no}: expected "key: value", got {text!r}')
+        key, value = match.groups()
+        i += 1
+        nested = i < len(lines) and lines[i][1] > indent
+        if value == '|':
+            block = []
+            while i < len(lines) and lines[i][1] > indent:
+                block.append(lines[i][2])
+                i += 1
+            data[key] = '\n'.join(block) + '\n'
+        elif value is not None:
             data[key] = parse_value(value, line_no)
+        elif nested and lines[i][2].startswith('- '):
+            data[key], i = parse_sequence(lines, i, lines[i][1])
+        elif nested:
+            data[key], i = parse_mapping(lines, i, lines[i][1])
+        else:
+            data[key] = None
+    return data, i
+
+
+def parse_sequence(lines: list[Line], i: int, indent: int) -> tuple[list, int]:
+    """Read `- {flow map}` items at `indent`."""
+    items = []
+    while i < len(lines) and lines[i][1] == indent and lines[i][2].startswith('- '):
+        line_no, _, text = lines[i]
+        items.append(parse_value(text[2:], line_no))
+        i += 1
+    return items, i
+
+
+def parse_result(chunk: list[Line]) -> Result:
+    first_no = chunk[0][0]
+    doc, _ = parse_mapping(chunk, 0, 0)
+    detail = doc.get('detail')
+    if 'datetime' not in doc or not isinstance(detail, dict):
+        raise ParseError(f'line {first_no}: expected a `yr` result with "datetime:" and "detail:"')
+    data = dict(detail)
+    data['date'] = doc['datetime']
     if 'wpm' not in data:
-        raise ParseError(f'line {first_no}: result has no wpm')
-    source = '---\n' + '\n'.join(line for _, line in chunk) + '\n'
+        raise ParseError(f'line {first_no}: result has no detail.wpm')
+    words = data.get('words')
+    if words is not None and not (
+        isinstance(words, list) and all(isinstance(w, dict) and 'word' in w for w in words)
+    ):
+        raise ParseError(f'line {first_no}: detail.words must be a list of {{word: ..., ...}} records')
+    source = '---\n' + '\n'.join(' ' * indent + text for _, indent, text in chunk) + '\n'
     return Result(data, source)
 
 
 def parse_results(text: str) -> list[Result]:
-    """Split text into `monkeytype:` documents; blank lines, comments and code fences are skipped."""
-    chunks: list[list[tuple[int, str]]] = []
+    """Split text into `yr` documents; blank lines, comments and code fences are skipped."""
+    chunks: list[list[Line]] = []
     for line_no, raw in enumerate(text.splitlines(), 1):
         line = raw.rstrip()
-        stripped = line.strip()
-        if not stripped or stripped.startswith(('#', '```')):
+        stripped = line.lstrip(' ')
+        # Only an unindented `#` starts a comment: a line of a `|` word list can
+        # start with a code word such as `#include`.
+        if not stripped or line.startswith('#') or stripped.startswith('```'):
             continue
         if stripped == '---':
             chunks.append([])
             continue
-        if not chunks or (line == 'monkeytype:' and chunks[-1]):
+        if not chunks or (line.startswith('datetime:') and chunks[-1]):
             chunks.append([])  # first document, or one pasted without its --- line
-        chunks[-1].append((line_no, line))
+        chunks[-1].append((line_no, len(line) - len(stripped), stripped))
     return [parse_result(chunk) for chunk in chunks if chunk]
 
 
