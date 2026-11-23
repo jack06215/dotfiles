@@ -354,9 +354,14 @@
     ],
     {{- /* uv takes a lock in its cache even for uv run --frozen, so without
            this every uv command fails here and retries unsandboxed. The path
-           is the cache-dir that dot_config/uv/uv.toml.tmpl pins */}}
+           is the cache-dir that dot_config/uv/uv.toml.tmpl pins.
+           The monkeytype-review skill's analyze.py appends each pasted result
+           to results.yml under $XDG_DATA_HOME/monkeytype */}}
     "filesystem": {
-      "allowWrite": [{{ joinPath .xdg.cacheHome "uv" | quote }}]
+      "allowWrite": [
+        {{ joinPath .xdg.cacheHome "uv" | quote }},
+        {{ joinPath .xdg.dataHome "monkeytype" | quote }}
+      ]
     },
     "network": {
       "allowLocalBinding": true
