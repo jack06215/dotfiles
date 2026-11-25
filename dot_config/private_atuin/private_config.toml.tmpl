@@ -1,3 +1,10 @@
+{{- /* Thread capture keeps whole agent transcripts, tool output included,
+       and an `atuin login` would sync them to atuin's server. It is on for
+       personal machines only, so a login on the company machine can't upload
+       work transcripts. The daemon runs only for thread capture here, so it
+       follows the same switch. */ -}}
+{{- $threads := not .myComputer.isCompanyMachine -}}
+
 ## Base directory for Atuin data files (databases, keys, session, etc.)
 ## All data file paths default to being relative to this directory.
 ## linux/mac: ~/.local/share/atuin (or XDG_DATA_HOME/atuin)
@@ -265,14 +272,15 @@ keymap_mode = "vim-normal"
 # strategy = "auto"
 
 [daemon]
-## Thread capture ([threads] below) runs in the daemon, so both settings here are on.
+## Thread capture ([threads] below) runs in the daemon, so both settings here
+## follow [threads] enabled: on for personal machines, off on the company one.
 
 ## Enables using the daemon to sync.
-enabled = true
+enabled = {{ $threads }}
 
 ## Automatically start and manage the daemon when needed.
 ## Not compatible with `systemd_socket = true`.
-autostart = true
+autostart = {{ $threads }}
 
 ## How often the daemon should sync in seconds
 # sync_frequency = 300
@@ -299,15 +307,16 @@ autostart = true
 ## captured by the daemon so you can search and resume them, here or on another machine.
 
 ## Capture threads into the encrypted record store, and sync them like your history.
-enabled = true
+enabled = {{ $threads }}
 
 ## Also capture what each tool call was given and returned (commands and their output,
 ## files read and written), with secrets redacted. Off keeps only each tool's name.
 # capture_tools = true
 
 ## The filter `atuin threads resume` opens in. Unset: "global". ctrl-r in the picker
-## cycles through global, workspace, branch, directory and host.
-# filter_mode = "global"
+## cycles through global, workspace, branch, directory and host. "workspace" opens
+## in "global" outside a git repository, or when the repository has no threads.
+filter_mode = "workspace"
 
 # [theme]
 ## Color theme to use for rendering in the terminal.
