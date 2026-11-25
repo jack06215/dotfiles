@@ -6,7 +6,8 @@
 # its own - with one entry per agent in @hatch_agents, keyed by
 # @hatch_<agent>_key, and the picker under them. Built when the key is pressed,
 # so an agent added to @hatch_agents needs no binding of its own. With a single
-# agent there is nothing to choose, and it launches straight away.
+# agent and no Resume entry there is nothing to choose, and it launches
+# straight away.
 set -uo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=helpers.sh
@@ -18,7 +19,15 @@ pane="${2:-}"
 read -r -a agents <<<"$(get_tmux_option @hatch_agents 'claude copilot')"
 [ "${#agents[@]}" -gt 0 ] || exit 0
 
-if [ "${#agents[@]}" -eq 1 ]; then
+# Resume (resume.sh) lists atuin's captured threads, so it is offered only
+# where atuin captures them; elsewhere its picker would always be empty.
+resume=''
+if command -v atuin >/dev/null 2>&1 &&
+  [ "$(atuin config get threads.enabled 2>/dev/null)" = true ]; then
+  resume=1
+fi
+
+if [ "${#agents[@]}" -eq 1 ] && [ -z "$resume" ]; then
   IFS=$'\t' read -r path window <<EOF
 $(tmux display-message -p ${pane:+-t "$pane"} $'#{pane_current_path}\t#{window_id}' 2>/dev/null)
 EOF
@@ -44,6 +53,13 @@ for agent in "${agents[@]}"; do
     "run-shell \"$DIR/launch.sh $agent ##{q:pane_current_path} ##{q:window_id}\""
   )
 done
+if [ -n "$resume" ]; then
+  items+=(
+    'Resume'
+    "$(get_tmux_option @hatch_resume_key 'r')"
+    "run-shell \"$DIR/resume.sh ##{q:client_name} ##{q:pane_current_path} ##{q:window_id}\""
+  )
+fi
 items+=(
   ''
   'Picker'
