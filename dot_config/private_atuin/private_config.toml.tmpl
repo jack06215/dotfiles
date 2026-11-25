@@ -2,8 +2,10 @@
        and an `atuin login` would sync them to atuin's server. It is on for
        personal machines only, so a login on the company machine can't upload
        work transcripts. The daemon runs only for thread capture here, so it
-       follows the same switch. */ -}}
-{{- $threads := not .myComputer.isCompanyMachine -}}
+       follows the same switch. auto_sync is off on the company machine too,
+       so that a login there doesn't start uploading its history on its own;
+       only an explicit `atuin sync` would. */ -}}
+{{- $personal := not .myComputer.isCompanyMachine -}}
 
 ## Base directory for Atuin data files (databases, keys, session, etc.)
 ## All data file paths default to being relative to this directory.
@@ -36,7 +38,7 @@
 # timezone = "local"
 
 ## enable or disable automatic sync
-# auto_sync = true
+auto_sync = {{ $personal }}
 
 ## enable or disable automatic update checks
 # update_check = true
@@ -276,11 +278,11 @@ keymap_mode = "vim-normal"
 ## follow [threads] enabled: on for personal machines, off on the company one.
 
 ## Enables using the daemon to sync.
-enabled = {{ $threads }}
+enabled = {{ $personal }}
 
 ## Automatically start and manage the daemon when needed.
 ## Not compatible with `systemd_socket = true`.
-autostart = {{ $threads }}
+autostart = {{ $personal }}
 
 ## How often the daemon should sync in seconds
 # sync_frequency = 300
@@ -307,7 +309,7 @@ autostart = {{ $threads }}
 ## captured by the daemon so you can search and resume them, here or on another machine.
 
 ## Capture threads into the encrypted record store, and sync them like your history.
-enabled = {{ $threads }}
+enabled = {{ $personal }}
 
 ## Also capture what each tool call was given and returned (commands and their output,
 ## files read and written), with secrets redacted. Off keeps only each tool's name.

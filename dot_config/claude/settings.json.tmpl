@@ -35,10 +35,12 @@
        entries `atuin hook install claude-code` writes into
        $CLAUDE_CONFIG_DIR/settings.json, the file this template generates, so
        they live here instead. Left out when atuin isn't on PATH, because the
-       hook would then fail on every Bash call. */ -}}
+       hook would then fail on every Bash call. Also left out on the company
+       machine, so that the commands Claude Code runs at work stay out of an
+       atuin history that a login could sync. */ -}}
 {{- $atuin := lookPath "atuin" -}}
 {{- $atuinHooks := "" -}}
-{{- if $atuin -}}
+{{- if and $atuin (not .myComputer.isCompanyMachine) -}}
 {{-   $atuinHooks = printf "{ \"matcher\": \"^Bash$\", \"hooks\": [{ \"type\": \"command\", \"command\": %s }] }" (printf "%s hook claude-code" $atuin | quote) -}}
 {{- end -}}
 {{- /*
