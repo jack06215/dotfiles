@@ -13,7 +13,7 @@
 # By default zsh-vi-mode postpones its init to the first precmd, i.e. after
 # the whole of init.zsh has run, and rebinds the viins/vicmd keymaps when it
 # gets there - silently throwing away every binding this config makes in the
-# meantime (atuin's `/` and `k`, fzf's ^R, pet's ^O, keybinds.zsh).
+# meantime (atuin's `/`, `k`, `?` and ^R, pet's ^O, keybinds.zsh).
 #
 # `sourcing` makes it initialize inside the `zinit light` call instead, so
 # everything sourced later in init.zsh binds *after* the plugin and wins.
@@ -23,9 +23,9 @@ ZVM_INIT_MODE=sourcing
 
 # The same trap one level down: with lazy keybindings the vicmd/visual keymaps
 # are not bound at init but on the first <ESC>, which is long after atuin.zsh
-# has taken `/` and `k` in vicmd - they would work until you first entered
-# normal mode and then vanish. Bind everything up front instead - it costs
-# nothing measurable, the deferred path builds the same list either way.
+# has taken `/`, `k`, `?` and ^R in vicmd - they would work until you first
+# entered normal mode and then vanish. Bind everything up front instead - it
+# costs nothing measurable, the deferred path builds the same list either way.
 ZVM_LAZY_KEYBINDINGS=false
 
 # =============================================================================

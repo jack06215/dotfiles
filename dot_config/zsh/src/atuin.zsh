@@ -323,8 +323,8 @@ fi
 #
 # The vicmd bindings below depend on ZVM_LAZY_KEYBINDINGS=false in
 # vi_mode.zsh: with zsh-vi-mode's lazy default the vicmd keymap is not bound
-# at init but on the first <ESC>, which would overwrite `/` and `k` here the
-# first time normal mode is entered.
+# at init but on the first <ESC>, which would overwrite `/`, `k`, `?` and ^R
+# here the first time normal mode is entered.
 bindkey -M vicmd '/' atuin-search
 bindkey -M emacs '^[[A' atuin-up-search
 bindkey -M vicmd '^[[A' atuin-up-search-vicmd
@@ -333,3 +333,107 @@ bindkey -M emacs '^[OA' atuin-up-search
 bindkey -M vicmd '^[OA' atuin-up-search-vicmd
 bindkey -M viins '^[OA' atuin-up-search-viins
 bindkey -M vicmd 'k' atuin-up-search-vicmd
+
+# Lines up the columns of the picker below. Reads NUL-separated
+# "age<TAB>author<TAB>directory<TAB>command" records from `atuin search` and
+# writes them back with age, author and directory padded to the widest value
+# in this batch, because atuin's --format has no padding. A directory longer
+# than 32 characters keeps its last 30 behind "..". The tabs stay as field
+# separators, so fzf's --accept-nth=4.. still returns the bare command. This
+# body runs on its own under `zsh -fc` in the shell fzf starts for a reload,
+# so it must not call anything else defined in this file.
+#
+# The input is read whole with $(cat) and split on NUL, not looped over with
+# `read -d ''`. fzf runs a reload in a background process group, and zsh's
+# `read -d` changes the terminal's settings, so the kernel stops the whole
+# group with SIGTTOU and fzf keeps loading forever with an empty list.
+_atuin_pick_format() {
+    local -a recs age author dir cmd
+    local input rec a d
+    local -i wa=0 wd=0 dmax=32 cut i
+    input=$(cat)
+    recs=(${(0)input})
+    for rec in "${recs[@]}"; do
+        age+=("${rec%%$'\t'*}")
+        rec=${rec#*$'\t'}
+        a=${rec%%$'\t'*}
+        rec=${rec#*$'\t'}
+        d=${rec%%$'\t'*}
+        cmd+=("${rec#*$'\t'}")
+        d=${d/#$HOME/\~}
+        if ((${#d} > dmax)); then
+            ((cut = ${#d} - dmax + 2))
+            d="..${d:$cut}"
+        fi
+        author+=("$a")
+        dir+=("$d")
+        ((${#a} > wa)) && wa=${#a}
+        ((${#d} > wd)) && wd=${#d}
+    done
+    for ((i = 1; i <= ${#cmd}; i++)); do
+        printf '%4s \t%-*s \t%-*s \t%s\0' "${age[i]}" $wa "${author[i]}" $wd "${dir[i]}" "${cmd[i]}"
+    done
+}
+
+# Atuin's search screen leaves out commands that agents such as Claude Code
+# ran, on every query, and ignores --author. Plain `atuin search` honours
+# --author, so this widget lists your commands and the agents' with it and
+# picks one in fzf. `/` and the up arrow keep atuin's own screen, which shows
+# only your commands. `atuin search` prints oldest first, hence --tac.
+#
+# ctrl-r cycles the scope through global, workspace (the git repo) and
+# directory, the way it cycles filter modes in atuin's own screen. The prompt
+# holds the current scope, and the ctrl-r transform reads it back from
+# $FZF_PROMPT. fzf runs reload and transform commands in a child shell, which
+# can't see this file's functions, so the three actions and the body of
+# _atuin_pick_format are passed in exported variables and used verbatim; that
+# also keeps the literal '$all-user' from being expanded on the way.
+#
+# --tabstop=1 draws each tab as one space, so the padding from
+# _atuin_pick_format decides the column positions. --nth=2.. keeps the age
+# column out of matching.
+_atuin_search_with_agents() {
+    emulate -L zsh
+    setopt pipefail
+    local tab=$'\t' selected ret
+    local src="atuin search --author '\$all-user' --author '\$all-agent' --print0"
+    src+=" --format '{relativetime}${tab}{author}${tab}{directory}${tab}{command}'"
+    local -x _ATUIN_PICK_FMT=${functions[_atuin_pick_format]}
+    local mode
+    for mode in global workspace directory; do
+        local -x "_ATUIN_PICK_${(U)mode}=change-prompt($mode> )+reload($src --filter-mode $mode -- '' 2>/dev/null | zsh -fc \"\$_ATUIN_PICK_FMT\")"
+    done
+    selected=$(
+        fzf --read0 --tac --scheme=history --delimiter=$'\t' --accept-nth=4.. \
+            --tabstop=1 --nth=2.. \
+            --preview-window=hidden --prompt='global> ' --query="$BUFFER" \
+            --header='ctrl-r: scope global / workspace / directory' \
+            --bind 'start:transform:printf %s "$_ATUIN_PICK_GLOBAL"' \
+            --bind 'ctrl-r:transform:case $FZF_PROMPT in
+                global*) printf %s "$_ATUIN_PICK_WORKSPACE" ;;
+                workspace*) printf %s "$_ATUIN_PICK_DIRECTORY" ;;
+                *) printf %s "$_ATUIN_PICK_GLOBAL" ;;
+            esac' </dev/null
+    )
+    ret=$?
+    if [[ -n $selected ]]; then
+        RBUFFER=""
+        LBUFFER=$selected
+    fi
+    zle reset-prompt
+    return $ret
+}
+
+# ^R opens the same picker in every keymap, in place of fzf's history widget,
+# which reads only zsh's own history. An empty FZF_CTRL_R_COMMAND makes
+# `fzf --zsh` in fzf.zsh skip its ^R bindings, and these bindkeys still win if
+# fzf.zsh is ever sourced first. Without atuin this file returns early, so fzf
+# keeps ^R.
+if command -v fzf >/dev/null 2>&1; then
+    zle -N atuin-search-with-agents _atuin_search_with_agents
+    bindkey -M vicmd '?' atuin-search-with-agents
+    bindkey -M emacs '^R' atuin-search-with-agents
+    bindkey -M viins '^R' atuin-search-with-agents
+    bindkey -M vicmd '^R' atuin-search-with-agents
+    FZF_CTRL_R_COMMAND=
+fi
