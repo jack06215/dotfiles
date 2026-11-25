@@ -660,8 +660,9 @@ Two differences from a normal launch:
   a copy under a new session id. If you pick the plain resume line anyway and a
   pane is running that session, the popup jumps to that pane instead.
 
-The entry appears only where atuin captures conversations: on this config,
-the personal machines, not the company one.
+The entry appears only where atuin captures conversations (`[threads]
+enabled`). This config captures them on every machine; on the company one,
+atuin's cloud is blocked, so they never leave that machine.
 
 #### Those `claude-…` and `copilot-…` entries in `M-s`
 

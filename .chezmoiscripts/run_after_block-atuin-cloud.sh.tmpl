@@ -1,0 +1,47 @@
+{{- /*
+Keeps atuin's cloud out of reach on the company Mac, where atuin captures whole
+agent transcripts that must not leave the machine. The atuin config already
+points sync_address at a host that never resolves, but atuin's Hub
+(hub.atuin.sh) has no config setting, so its hosts are sent nowhere here.
+
+run_after_, not run_onchange_: a macOS update or the machine's management can
+rewrite /etc/hosts without this script changing, and run_onchange_ would then
+never put the block back. With the block in place the script exits before
+sudo, so an ordinary apply asks for no password.
+
+/etc/hosts only governs programs that resolve names themselves. One that sends
+its requests through an HTTP proxy (HTTPS_PROXY) has the proxy resolve them;
+nothing in these dotfiles sets a proxy.
+*/ -}}
+{{- if and .myComputer.isDarwin .myComputer.isCompanyMachine -}}
+#!/bin/bash
+set -euo pipefail
+
+hosts=/etc/hosts
+begin='# BEGIN atuin cloud block (chezmoi: run_after_block-atuin-cloud.sh)'
+end='# END atuin cloud block'
+block="$begin
+0.0.0.0 api.atuin.sh
+0.0.0.0 hub.atuin.sh
+0.0.0.0 mcp.atuin.sh
+:: api.atuin.sh
+:: hub.atuin.sh
+:: mcp.atuin.sh
+$end"
+
+current="$(awk -v b="$begin" -v e="$end" '$0 == b { on = 1 } on { print } $0 == e { on = 0 }' "$hosts")"
+[ "$current" = "$block" ] && exit 0
+
+# Everything but an old copy of the block, then the block at the end. cp onto
+# an existing file writes into it, so /etc/hosts keeps its owner and mode.
+tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
+awk -v b="$begin" -v e="$end" '$0 == b { skip = 1 } !skip { print } $0 == e { skip = 0 }' "$hosts" >"$tmp"
+printf '%s\n' "$block" >>"$tmp"
+
+echo "Blocking atuin's cloud hosts in $hosts (needs sudo)"
+sudo cp "$tmp" "$hosts"
+# macOS caches lookups; without a flush a cached answer keeps working.
+sudo dscacheutil -flushcache
+sudo killall -HUP mDNSResponder
+{{- end }}
