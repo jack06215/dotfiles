@@ -271,12 +271,14 @@ records = true
 # strategy = "auto"
 
 [daemon]
+## Thread capture ([threads] below) runs in the daemon, so both settings here are on.
+
 ## Enables using the daemon to sync.
-# enabled = false
+enabled = true
 
 ## Automatically start and manage the daemon when needed.
 ## Not compatible with `systemd_socket = true`.
-# autostart = false
+autostart = true
 
 ## How often the daemon should sync in seconds
 # sync_frequency = 300
@@ -297,6 +299,21 @@ records = true
 
 ## The port that should be used for TCP on non unix systems
 # tcp_port = 8889
+
+[threads]
+## Threads are your AI coding agents' sessions (Claude Code, Codex, opencode and Pi),
+## captured by the daemon so you can search and resume them, here or on another machine.
+
+## Capture threads into the encrypted record store, and sync them like your history.
+enabled = true
+
+## Also capture what each tool call was given and returned (commands and their output,
+## files read and written), with secrets redacted. Off keeps only each tool's name.
+# capture_tools = true
+
+## The filter `atuin threads resume` opens in. Unset: "global". ctrl-r in the picker
+## cycles through global, workspace, branch, directory and host.
+# filter_mode = "global"
 
 # [theme]
 ## Color theme to use for rendering in the terminal.
