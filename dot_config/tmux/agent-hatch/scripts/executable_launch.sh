@@ -37,21 +37,7 @@ if ! tmux has-session -t "=$session" 2>/dev/null; then
   tmux new-session -d -s "$session" -c "$path" "$cmd"
 fi
 
-# "=name:" rather than "=name" from here on: has-session takes a session, but
-# set-option takes a pane, and there a bare "=name" is looked up as a window.
-target="=$session:"
-
-# Marks the session as one of ours: the picker jumps to it differently, and
-# list.sh, bell.sh and the check above go by this rather than by its name. Set
-# on every launch, not just at creation, so a session that predates the option
-# picks it up too.
-tmux set-option -t "$target" @hatch_dedicated "$agent"
-
-# Close the popup when the agent exits, even under a global detach-on-destroy off.
-tmux set-option -t "$target" detach-on-destroy on
-
-# Record which window launched it, so the picker can jump back here later.
-[ -n "$window" ] && tmux set-option -t "$target" @hatch_origin "$window"
+mark_dedicated "$session" "$agent" "$window"
 
 tmux display-popup -w "$w" -h "$h" -b rounded -T " $(agent_title "$agent") " \
   -E "tmux attach-session -t '=$session'"

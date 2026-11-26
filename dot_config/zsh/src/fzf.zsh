@@ -1,3 +1,6 @@
+# ^R isn't fzf's history widget here. atuin.zsh, sourced before this file,
+# binds ^R to its history picker and sets FZF_CTRL_R_COMMAND= so that this
+# eval skips fzf's ^R bindings. A machine without atuin keeps fzf's ^R.
 if command -v fzf >/dev/null 2>&1; then
   eval "$(fzf --zsh)"
 fi

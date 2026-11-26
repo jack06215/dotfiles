@@ -30,6 +30,19 @@
 {{- $orca := printf "if [ -n \"${ORCA_PANE_KEY-}\" ] && [ -x %s ]; then ORCA_HOOK_AGENT_PID=$PPID exec /bin/sh %s; fi; cat >/dev/null" $orcaHook $orcaHook -}}
 {{- $orcaHooks := printf "{ \"hooks\": [{ \"type\": \"command\", \"command\": %s, \"timeout\": 10 }] }" ($orca | quote) -}}
 {{- $orcaToolHooks := printf "{ \"matcher\": \"*\", \"hooks\": [{ \"type\": \"command\", \"command\": %s, \"timeout\": 10 }] }" ($orca | quote) -}}
+{{- /* atuin's agent history hook, which records each Bash command Claude Code
+       runs in atuin's history with claude-code as its author. These are the
+       entries `atuin hook install claude-code` writes into
+       $CLAUDE_CONFIG_DIR/settings.json, the file this template generates, so
+       they live here instead. Left out when atuin isn't on PATH, because the
+       hook would then fail on every Bash call. Also left out on the company
+       machine, so that the commands Claude Code runs at work stay out of an
+       atuin history that a login could sync. */ -}}
+{{- $atuin := lookPath "atuin" -}}
+{{- $atuinHooks := "" -}}
+{{- if and $atuin (not .myComputer.isCompanyMachine) -}}
+{{-   $atuinHooks = printf "{ \"matcher\": \"^Bash$\", \"hooks\": [{ \"type\": \"command\", \"command\": %s }] }" (printf "%s hook claude-code" $atuin | quote) -}}
+{{- end -}}
 {{- /*
     Permissions. Rules are checked deny, then ask, then allow; the first match
     wins, so an allow can never carve an exception out of a deny or an ask.
@@ -74,6 +87,9 @@
         "hooks": [{ "type": "command", "command": {{ printf "%s waiting" $hatch | quote }} }]
       },
       {{ $orcaToolHooks }}
+      {{- if $atuinHooks }},
+      {{ $atuinHooks }}
+      {{- end }}
     ],
     "PermissionRequest": [
       {{ $orcaToolHooks }}
@@ -81,9 +97,15 @@
     "PostToolUse": [
       { "hooks": [{ "type": "command", "command": {{ printf "%s busy --if-waiting" $hatch | quote }} }] },
       {{ $orcaToolHooks }}
+      {{- if $atuinHooks }},
+      {{ $atuinHooks }}
+      {{- end }}
     ],
     "PostToolUseFailure": [
       {{ $orcaToolHooks }}
+      {{- if $atuinHooks }},
+      {{ $atuinHooks }}
+      {{- end }}
     ],
     "Notification": [
       {

@@ -557,13 +557,15 @@ the same spot:
 ┌──── Launch agent ────┐
 │ Claude           (c) │
 │ Copilot          (o) │
+│ Resume           (r) │
 │──────────────────────│
 │ Picker           (u) │
 └──────────────────────┘
 ```
 
-One more key picks the agent; `u` there is the picker, the same as
-`prefix + u`.
+One more key picks the agent; `r` brings back a past conversation (see
+[Resume](#resume-a-past-conversation) below); `u` there is the picker, the same
+as `prefix + u`.
 
 Inside the picker:
 
@@ -632,6 +634,35 @@ The one difference is that the session name is derived from the agent and your
 directory. So `prefix + y` `c` in `~/workspace/jack06215/dotfiles` always
 returns you to *that* project's Claude, and `prefix + y` `o` to its Copilot —
 two separate sessions, not a shared scratchpad.
+
+#### Resume a past conversation
+
+The picker (`prefix + u`) lists agents that are **running now**. `prefix + y`
+`r` is for one you are **no longer running**: you closed Claude, rebooted, or
+want yesterday's conversation back with its context.
+
+It opens atuin's thread picker (the same list as `atuin resume`) in a popup,
+starting on the current repository's conversations; `ctrl-r` there widens it.
+Pick one, and its agent starts in its own dedicated session in that popup, the
+same as a `prefix + y` `c` launch: `M-d` hides it while it keeps running, the
+picker and the status bar show it, and its bells reach the window you started
+from.
+
+Two differences from a normal launch:
+
+- **One session per conversation, not per directory.** A resumed conversation
+  gets its own `claude-resume-…` session, so a directory can have its fresh
+  Claude and a resumed one side by side. `prefix + y` `c` returns to the fresh
+  one; reach the resumed one through `prefix + u`, or pick the same
+  conversation again with `prefix + y` `r`, which re-attaches.
+- **A conversation that is already open is not run twice.** For one that may
+  be open in a running agent, atuin's chooser highlights *fork*, which resumes
+  a copy under a new session id. If you pick the plain resume line anyway and a
+  pane is running that session, the popup jumps to that pane instead.
+
+The entry appears only where atuin captures conversations (`[threads]
+enabled`). This config captures them on every machine; on the company one,
+atuin's cloud is blocked, so they never leave that machine.
 
 #### Those `claude-…` and `copilot-…` entries in `M-s`
 
@@ -702,6 +733,7 @@ set -g @hatch_claude_key      'c'               # an agent's key in the menu (pe
 set -g @hatch_claude_command  'claude'          # command run in new sessions (per agent)
 set -g @hatch_claude_args     ''                # extra args appended to it (per agent)
 set -g @hatch_list_key        'u'               # prefix key: open the picker (also its menu key)
+set -g @hatch_resume_key      'r'               # the Resume entry's key in the menu
 set -g @hatch_popup_width     '90%'             # popup width
 set -g @hatch_popup_height    '90%'             # popup height
 set -g @hatch_fzf_options     ''                # extra options for the fzf picker
@@ -713,7 +745,8 @@ None are set in your config, so you are on every default above.
 
 `prefix + y` and `prefix + u` are free in this config — nothing else claims
 them — so there is no conflict to worry about. With a single agent in
-`@hatch_agents` there is nothing to pick, and `prefix + y` skips the menu.
+`@hatch_agents` and no Resume entry there is nothing to pick, and `prefix + y`
+skips the menu.
 
 **Requirements, all already met here:** tmux ≥ 3.3, `fzf`, and agents that run
 hooks — Claude Code, and Copilot CLI with its hooks directory

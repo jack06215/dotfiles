@@ -1,3 +1,13 @@
+{{- /* Thread capture keeps whole agent transcripts, tool output included,
+       and an `atuin login` would sync them to atuin's server. On the company
+       machine nothing may leave it: sync_address names a host that never
+       resolves (.invalid is reserved for that), so login, register and sync
+       all fail, and auto_sync and update_check are off so that nothing calls
+       out in the background. atuin's Hub (hub.atuin.sh) has no config
+       setting, so .chezmoiscripts/run_after_block-atuin-cloud.sh blocks
+       atuin's hosts in /etc/hosts there as well. */ -}}
+{{- $personal := not .myComputer.isCompanyMachine -}}
+
 ## Base directory for Atuin data files (databases, keys, session, etc.)
 ## All data file paths default to being relative to this directory.
 ## linux/mac: ~/.local/share/atuin (or XDG_DATA_HOME/atuin)
@@ -29,13 +39,13 @@
 # timezone = "local"
 
 ## enable or disable automatic sync
-# auto_sync = true
+auto_sync = {{ $personal }}
 
 ## enable or disable automatic update checks
-# update_check = true
+{{ if $personal }}# update_check = true{{ else }}update_check = false{{ end }}
 
 ## address of the sync server
-# sync_address = "https://api.atuin.sh"
+{{ if $personal }}# sync_address = "https://api.atuin.sh"{{ else }}sync_address = "https://sync-disabled.invalid"{{ end }}
 
 ## how often to sync history. note that this is only triggered when a command
 ## is ran, so sync intervals may well be longer
@@ -256,12 +266,6 @@ keymap_mode = "vim-normal"
 # Defaults to false. The backspace key performs the same functionality as Tab and copies the selected line to the command line to be modified when at the start of the line.
 # accept_with_backspace = false
 
-[sync]
-# Enable sync v2 by default
-# This ensures that sync v2 is enabled for new installs only
-# In a later release it will become the default across the board
-records = true
-
 [preview]
 ## which preview strategy to use to calculate the preview height (respects max_preview_height).
 ## possible values: auto, static
@@ -271,12 +275,14 @@ records = true
 # strategy = "auto"
 
 [daemon]
+## Thread capture ([threads] below) runs in the daemon, so both settings here are on.
+
 ## Enables using the daemon to sync.
-# enabled = false
+enabled = true
 
 ## Automatically start and manage the daemon when needed.
 ## Not compatible with `systemd_socket = true`.
-# autostart = false
+autostart = true
 
 ## How often the daemon should sync in seconds
 # sync_frequency = 300
@@ -297,6 +303,22 @@ records = true
 
 ## The port that should be used for TCP on non unix systems
 # tcp_port = 8889
+
+[threads]
+## Threads are your AI coding agents' sessions (Claude Code, Codex, opencode and Pi),
+## captured by the daemon so you can search and resume them, here or on another machine.
+
+## Capture threads into the encrypted record store, and sync them like your history.
+enabled = true
+
+## Also capture what each tool call was given and returned (commands and their output,
+## files read and written), with secrets redacted. Off keeps only each tool's name.
+# capture_tools = true
+
+## The filter `atuin threads resume` opens in. Unset: "global". ctrl-r in the picker
+## cycles through global, workspace, branch, directory and host. "workspace" opens
+## in "global" outside a git repository, or when the repository has no threads.
+filter_mode = "workspace"
 
 # [theme]
 ## Color theme to use for rendering in the terminal.

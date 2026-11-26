@@ -38,6 +38,25 @@ session_hash() {
   printf '%s' "${out:0:8}"
 }
 
+# mark_dedicated <session> <agent> [origin-window-id]
+# Marks <session> as one of agent-hatch's own: the picker jumps to it
+# differently, and list.sh, bell.sh and the popup guards go by this rather than
+# by its name. Set on every launch, not just at creation, so a session that
+# predates an option picks it up too.
+#
+# "=name:" rather than "=name": has-session takes a session, but set-option
+# takes a pane, and there a bare "=name" is looked up as a window.
+mark_dedicated() {
+  local target="=$1:"
+  tmux set-option -t "$target" @hatch_dedicated "$2"
+  # Close the popup when the agent exits, even under a global
+  # detach-on-destroy off.
+  tmux set-option -t "$target" detach-on-destroy on
+  # Record which window launched it, so the picker can jump back there later.
+  [ -n "${3:-}" ] && tmux set-option -t "$target" @hatch_origin "$3"
+  return 0
+}
+
 # copy_to_clipboard <text>
 # Puts <text> in a tmux paste buffer and on the system clipboard. A native tool
 # is preferred; without one, `set-buffer -w` hands it to the outer terminal via
