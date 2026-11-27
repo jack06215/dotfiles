@@ -1,7 +1,8 @@
 # nvim-hlslens
 
-Virtual text next to each search match saying where you are in the results.
-After `/needle` and one `n`, with the cursor on the third match:
+[kevinhwang91/nvim-hlslens](https://github.com/kevinhwang91/nvim-hlslens)
+shows virtual text next to each search match. After `/needle` and one `n`,
+with the cursor on the third match:
 
 ```
     needle one                                    [2N 1]
@@ -10,49 +11,41 @@ After `/needle` and one `n`, with the cursor on the third match:
     needle four                                   [n 4]
 ```
 
-The match under the cursor gets `[idx/total]`. Every other one gets **the keys
-that would take you there** — `2N`, `N`, `n` — next to its index, so you read
-the motion off the screen instead of counting. Replaces squinting at
-`searchcount()` in the statusline.
+The match under the cursor shows `[index/total]`. Each other match shows the
+keys that go to it (`2N`, `N`, `n`) and its index. You read the motion from the
+screen, and you do not count.
 
-## Keymaps
+## Keys
 
-| Key                | Mode | Action                                     |
-| ------------------ | ---- | ------------------------------------------ |
-| `n` / `N`          | n, x | Next / previous match, then attach the lens |
-| `*` / `#`          | n    | Search word under cursor, then attach       |
-| `g*` / `g#`        | n    | Same, without word boundaries               |
-| `<leader>uH`       | n    | Toggle the lens (`:HlSearchLensToggle`)     |
-| `<leader>xs`       | n    | Export all matches to the quickfix list     |
-| `<leader>ur`       | n    | Clear the highlight — the lens goes with it |
+| Key | Mode | Action |
+| --- | --- | --- |
+| `n`, `N` | normal, visual | Next or previous match, then show the lens. |
+| `*`, `#` | normal | Search for the word under the cursor, then show the lens. |
+| `g*`, `g#` | normal | The same, without word boundaries. |
+| `<leader>uH` | normal | Turn the lens on or off (`:HlSearchLensToggle`). |
+| `<leader>xs` | normal | Put all matches of the last search in the quickfix list. |
+| `<leader>ur` | normal | Clear the highlight, and with it the lens. |
 
-`/` and `?` need no keymap: `auto_enable` hooks `CmdlineLeave`, so the lens is
-already there when the search lands.
+`/` and `?` need no key. `auto_enable` uses the `CmdlineLeave` event, so the
+lens shows when the search ends.
 
-The keymaps live in `config/keymaps/nvim-hlslens.lua`, not in a `keys` block
-here. `n` and `N` are LazyVim defaults, and lazy.nvim installs `keys` stubs
-*before* which-key applies the baseline spec — so a `keys` entry would be
-silently overwritten. Same reason `config/keymaps/telescope.lua` exists.
+The keys are in
+[`lua/config/keymaps/nvim-hlslens.lua`](../../config/keymaps/nvim-hlslens.lua),
+not in a `keys` block. `n` and `N` are LazyVim keys. lazy.nvim makes the
+`keys` stubs before which-key applies the LazyVim keys, so which-key would
+replace a `keys` entry. The plugin loads on `VeryLazy`, because `auto_enable`
+must be ready before the first `/`.
 
-### Why the n/N mappings look the way they do
+## How the n and N keys work
 
-hlslens's README suggests:
+LazyVim binds `n` to `'Nn'[v:searchforward] . 'zv'`:
 
-```lua
-[[<Cmd>execute('normal! ' . v:count1 . 'n')<CR><Cmd>lua require('hlslens').start()<CR>]]
-```
+- `v:searchforward` is 1 after `/` and 0 after `?`. Thus `n` always goes down
+  the buffer, also after a backward search.
+- `zv` opens a fold that contains the match.
 
-That would quietly drop two things LazyVim gives us:
-
-- **`'Nn'[v:searchforward]`** — vim-galore's "saner n/N". `v:searchforward` is
-  `1` after `/` and `0` after `?`, so indexing that pair keeps `n` meaning
-  "down the buffer" even when the last search ran backwards. A plain
-  `normal! n` reverses after `?`.
-- **`zv`** — opens a fold the match landed inside. Without it `n` parks the
-  cursor on a closed fold.
-
-So the mappings stay `expr`, evaluate LazyVim's own expression, and append the
-`start()` call:
+The `n` and `N` keys keep this expression and add the `start()` call of
+hlslens. The snippet in the hlslens README would lose both features.
 
 ```lua
 local function with_lens(expr)
@@ -61,90 +54,67 @@ local function with_lens(expr)
   end
 end
 
-map("n", "n", with_lens("'Nn'[v:searchforward] . 'zv'"), { expr = true })
+local next_key = "'Nn'[v:searchforward]"
+map("n", "n", with_lens(next_key .. " . 'zv'"), { expr = true })
 ```
 
-The argument to `with_lens` is **Vimscript, not Lua** — it is what LazyVim puts
-in the rhs — but the rhs handed to `vim.keymap.set` is a **Lua function**, and
-that part is load-bearing.
+The argument of `with_lens` is Vimscript. The right side given to
+`vim.keymap.set` must be a Lua function.
 
-> ### `<Cmd>` does not survive a Vimscript `expr` rhs
+> [!IMPORTANT]
+> A `<Cmd>…<CR>` in the result of a Vimscript `expr` mapping does not run.
+> Neovim drops it and shows no error. Other key codes, for example `<Esc>`,
+> still work. The same string from a Lua function runs as expected.
 >
-> The obvious version of this helper returns the Vim expression itself:
->
-> ```lua
-> local function with_lens(expr) -- broken
->   return expr .. [[ . "<Cmd>lua require('hlslens').start()<CR>"]]
-> end
-> ```
->
-> `vim.keymap.set` does default `replace_keycodes = true` for `expr` mappings,
-> and `maparg('n', 'n', 0, 1).replace_keycodes` duly reports `1` — but on
-> Neovim 0.12 the `<Cmd>…<CR>` in the result of a **Vimscript-string** `expr`
-> rhs never executes. It is not typed literally either; it is just dropped, with
-> no error. Ordinary keycodes are unaffected: an `<Esc>` in the same position
-> is translated and does leave insert mode. Returning the byte-identical string
-> from a **Lua function** runs the command as expected, which is why the helper
-> is shaped the way it is.
->
-> `auto_enable` makes this look like an hlslens bug rather than a mapping bug:
-> `/foo` shows the lens (the cmdline hooks start the renderer), `<Esc>` runs
-> LazyVim's `:noh`, which stops it — and every `n` after that moves the cursor
-> and highlights the match with no lens attached, because `start()` was never
-> called. `:lua = require("hlslens.render").status` tells them apart: `2` is
-> running, `1` is stopped.
+> `auto_enable` hides this problem. `/foo` shows the lens through the command
+> line events. `<Esc>` runs `:noh` and stops the lens. After that, `n` moves
+> the cursor and highlights the match, but shows no lens, because `start()`
+> never ran. `:lua = require("hlslens.render").status` shows the state: `2` is
+> on, `1` is off.
 
-A typed count (`3n`) still applies to the leading motion either way.
+More notes:
 
-> Do not inline these as `[['Nn'[v:searchforward]]]`. Lua closes a long string
-> at the *first* `]]`, so that reads as `'Nn'[v:searchforward` plus a stray `]`
-> and fails to parse. Hence the helper.
+- A typed count (`3n`) applies to the motion.
+- Visual mode does not add `zv`, as in LazyVim.
+- Keep the expression in the `next_key` variable. `[['Nn'[v:searchforward]]]`
+  as a Lua long string ends at the first `]]`, so Lua cannot parse it.
+- Operator-pending `n` and `N` (`dn`, `cN`) keep the LazyVim key. The
+  `<Cmd>` would run after the operator used the motion, and a lens is not
+  worth the risk of an unexpected edit.
 
-Operator-pending `n`/`N` (`dn`, `cN`) is left on the plain LazyVim mapping. The
-trailing `<Cmd>` would run *after* the operator had already consumed the
-motion, and a lens is not worth risking a surprising edit.
+## Romaji search with kensaku
 
-## Interaction with the kensaku romaji search
+[`../kensaku/`](../kensaku/) changes romaji to a Japanese regex at `<CR>`.
+Before that, `kensaku/preview.lua` writes the converted pattern into `@/` while
+you type, for a live highlight.
 
-`plugins/kensaku` converts romaji to a Japanese-matching regex on `<CR>`, and
-`plugins/kensaku/preview.lua` fakes a live highlight before that by writing the
-converted pattern into `@/` while you type.
+`enable_incsearch` counts the raw command line (`getcmdline()`). During a
+romaji search, the command line is still `nihongo`. Thus while you type, the
+count is for the romaji, not for the 日本語 that the preview highlights. At
+`<CR>`, the converted pattern goes into `@/`, and the count is correct again.
 
-hlslens's `enable_incsearch` reads the **raw command line** (`getcmdline()`),
-which during a romaji search is still `nihongo` — so while you type, its count
-describes the literal romaji, not the 日本語 that kensaku's preview is already
-highlighting. Both agree again on `<CR>`, once the converted pattern lands in
-`@/` and hlslens re-counts.
+This affects only Japanese searches, and only the count that the lens shows.
+To stop it, set
+`enable_incsearch = false` in [`config.lua`](config.lua). ASCII searches are
+not affected.
 
-Cosmetic, and only for Japanese searches. If the mismatch while typing is more
-annoying than the live count is useful, turn it off in `config.lua`:
+## Settings
 
-```lua
-enable_incsearch = false,
-```
+The settings are in [`config.lua`](config.lua). `:h hlslens-config` lists all
+options.
 
-ASCII searches are unaffected — the cmdline and `@/` agree the whole way.
+| Option | Value | Effect |
+| --- | --- | --- |
+| `calm_down` | `false` | The highlight stays until `<leader>ur` clears it. In this config, `<C-l>` moves between windows, so it does not clear the highlight. With `true`, the highlight goes when the cursor leaves a match. |
+| `nearest_only` | `false` | A lens on each visible match. `true` shows a lens only on the match under the cursor. |
+| `nearest_float_when` | `"auto"` | The lens under the cursor moves into a float when the right edge of the window would cut it. `"never"` keeps it in the line. |
 
-## Options worth knowing
+The highlight groups are `HlSearchLens` for the other matches and
+`HlSearchLensNear` for the match under the cursor. Both link to `Comment` by
+default.
 
-Set in `config.lua`; full list in `:h hlslens-config`.
+## flash
 
-- **`calm_down = false`** — the highlight stays until `<leader>ur` clears it
-  (LazyVim's "Redraw / Clear hlsearch"; note `<C-l>` is window-nav here, not
-  `:nohlsearch`). Set `true` and the highlight drops by itself the moment the
-  cursor leaves a match.
-- **`nearest_only = false`** — lens on every visible match. `true` shows only
-  the one under the cursor, which is quieter on a dense file.
-- **`nearest_float_when = "auto"`** — the nearest lens moves into a small float
-  when the virtual text would be pushed off the right edge. `"never"` keeps it
-  inline and lets it get clipped.
-
-Highlight groups are `HlSearchLens` (the `[2N 1]`-style lenses) and
-`HlSearchLensNear` (the `[idx/total]` under the cursor), both linked to
-`Comment` by default.
-
-## Doesn't conflict with flash
-
-`plugins/flash` sets `modes.search.enabled = false`, so flash never attaches to
-`/`. The two stay on separate keys: `s` labels jump targets, `n` counts search
-results.
+[`../flash/`](../flash/) sets `modes.search.enabled = false`, so flash does not
+attach to `/`. The two plugins use different keys: `s` jumps to a label, and
+`n` counts search results.

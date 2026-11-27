@@ -1,118 +1,120 @@
-# skkeleton — Japanese input (SKK)
+# skkeleton
 
-A Japanese IME inside the buffer, so composing Japanese needs no OS-level input
-method. [skkeleton][] is SKK for nvim; it runs on the same denops kensaku
-already loads.
+[vim-skk/skkeleton](https://github.com/vim-skk/skkeleton) is SKK for Neovim: a
+Japanese input method in the buffer. You do not need the input method of the
+OS. It runs on the same denops that kensaku already loads.
 
-Three things here speak Japanese, and they do different jobs:
+Three parts of this config work with Japanese, and each has a different job:
 
-| | Key | Job |
-|---|---|---|
-| `plugins/kensaku` | `/`, `:s` | **Find** Japanese by typing romaji |
-| `plugins/blink` (`blink-cmp-im`) | `<leader>uj` | **Complete** a known word from a menu |
-| **skkeleton** | `<C-j>` | **Compose** anything, including conjugation |
+| Plugin | Key | Job |
+| --- | --- | --- |
+| [`../kensaku/`](../kensaku/) | `/`, `:s` | **Find** Japanese text with romaji. |
+| [`../blink/`](../blink/) (`blink-cmp-im`) | `<leader>uj` | **Complete** a known word from a menu. |
+| skkeleton | `<C-j>` | **Write** any text, including conjugated forms. |
 
-## The idea: capitals mark boundaries
+## Capitals mark the boundaries
 
-SKK does not guess where a word starts or ends — you say so, with capital
+SKK does not guess where a word starts or ends. You show it with capital
 letters. That is the whole interface.
 
 ```
-nihongo          -> にほんご          lowercase: straight kana, no conversion
-Nihongo<Space>   -> ▽にほんご → ▼日本語   leading capital opens conversion
-WakaRimashita    -> 分かりました        second capital marks okurigana
+nihongo          -> にほんご              lowercase: kana only, no conversion
+Nihongo<Space>   -> ▽にほんご → ▼日本語    a first capital starts a conversion
+WakaRimashita    -> 分かりました           a second capital marks the okurigana
 ```
 
-The second capital is what a completion menu can never replicate. `WakaRi`
-tells SKK the stem is わか and り is inflection, so it looks up `わかr` in the
-jisyo's okuri-ari half and conjugates from there. Keep typing `mashita` and it
-confirms as you go.
+A completion menu cannot do what the second capital does. `WakaRi` tells SKK
+that the stem is わか and that り is inflection. SKK looks up `わかr` in the
+okuri-ari part of the jisyo and conjugates from there. Continue to type
+`mashita`, and SKK confirms as you go.
 
 ## Keys
 
-Once `<C-j>` is on:
+After `<C-j>`:
 
-- **`<Space>`** — convert, then cycle to the next candidate
-- **`x`** — previous candidate; **`X`** — purge a learned candidate
-- **`<CR>`** — confirm. Does *not* also break the line, thanks to
-  `eggLikeNewline`; without it, accepting 分かり would drop you onto the next
-  line mid-sentence
-- **`<C-g>`** — cancel the conversion, keep the kana
-- **`q`** — katakana; **`<C-q>`** — half-width katakana; **`/`** — abbrev mode
-- **`l`** — back to ASCII (the usual way out)
-- **`<Esc>`** — disable and leave insert mode
+| Key | Action |
+| --- | --- |
+| `<Space>` | Convert, then go to the next candidate. |
+| `x` | Go to the previous candidate. |
+| `X` | Delete a learned candidate. |
+| `<CR>` | Confirm. It does not also start a new line (`eggLikeNewline`). |
+| `<C-g>` | Cancel the conversion, and keep the kana. |
+| `q` | Katakana. |
+| `<C-q>` | Half-width katakana. |
+| `/` | Abbreviation mode. |
+| `l` | Back to ASCII. This is the usual way out. |
+| `<Esc>` | Turn skkeleton off and leave insert mode. |
 
-`<C-j>` is bound in insert and cmdline only. LazyVim uses it in normal mode for
-window navigation, and those are the only two modes skkeleton has anything to
-say in anyway. Note that inside skkeleton `<C-j>` is `<NL>`, which SKK binds to
-*confirm* — so it toggles when idle and confirms mid-conversion, as SKK expects.
+`<C-j>` works in insert mode and on the command line only. LazyVim uses
+`<C-j>` in normal mode to move between windows, and skkeleton has no job in
+other modes. In skkeleton, `<C-j>` is `<NL>`, which SKK binds to confirm. Thus
+`<C-j>` toggles skkeleton when no conversion is open, and confirms during a
+conversion, as SKK expects.
 
 ## Dictionaries
 
-**Global** — `$XDG_DATA_HOME/dict-ja/SKK-JISYO.utf8`, written at `chezmoi apply`
-by `run_onchange_after_generate-jisyo.sh.tmpl`, which also builds the romaji
-table `blink-cmp-im` uses. UTF-8, so `globalDictionaries` needs no encoding
-argument. If it is missing (offline at apply time) skkeleton still enables, but
-converts nothing.
+- **Global:** `$XDG_DATA_HOME/dict-ja/SKK-JISYO.utf8`. The jisyo generator
+  writes it on apply, as described in
+  [`dot_config/nvim/README.md`](../../../README.md#japanese-input). The file is
+  UTF-8, so `globalDictionaries` needs no encoding. If the file is missing,
+  for example after an apply with no network, skkeleton starts but converts
+  nothing.
+- **User:** `~/.config/nvim/skk/user-jisyo`, which is in this repository,
+  for the same reason as the spell file. Each conversion that you select
+  changes the order of your candidates. That data takes time to build, so it
+  goes to all machines. `registerConvertResult` is on, so skkeleton also learns
+  okuri-ari conversions.
 
-**User** — `~/.config/nvim/skk/user-jisyo`, i.e. **inside this repo**, for the
-same reason `spellfile` is (see `config/general.lua`): every conversion you pick
-reorders your candidates, and that is hand-earned data worth carrying between
-machines rather than relearning on each one. `registerConvertResult` is on so
-okuri-ari conversions are remembered too.
+> [!IMPORTANT]
+> skkeleton writes the user jisyo to the chezmoi target. After it learns new
+> words, run `chezmoi add ~/.config/nvim/skk/user-jisyo`. If you do not, the
+> next `chezmoi apply` reports that the file changed, and if you let it
+> overwrite the file, the new words are lost.
 
-> **`chezmoi add` after learning words.** skkeleton writes to the chezmoi
-> *target*, so new entries need
-> `chezmoi add ~/.config/nvim/skk/user-jisyo` or the next apply reverts them.
-> Exactly the same caveat as `zg` and the spell file.
+## Status line
 
-## Statusline
+[`../lualine/`](../lualine/) shows あ, ア, ｱ or Ａ while skkeleton is on. It
+reads `g:skkeleton#enabled` and `g:skkeleton#mode` directly.
+`skkeleton#is_enabled()` only returns `g:skkeleton#enabled`, and a status line
+item runs at each redraw. The `▽` and `▼` markers in the buffer show a
+conversion in progress. The status line shows the mode for the next key.
 
-`plugins/lualine` shows あ / ア / ｱ / Ａ while skkeleton is on, reading
-`g:skkeleton#enabled` and `g:skkeleton#mode` directly — `skkeleton#is_enabled()`
-is only `return g:skkeleton#enabled`, and a statusline component runs on every
-redraw. The in-buffer ▽/▼ markers show a conversion in progress; this shows the
-mode you are about to type *into*.
+## blink is off while you compose
 
-## blink is suppressed while composing
+`skkeleton-enable-pre` sets `vim.b.completion = false`, and
+`skkeleton-disable-post` sets it back to `nil`. `nil` restores the default and
+does not force completion on. Both plugins want the keys during a conversion,
+and blink wins a tie. If blink stayed on, `<CR>` would accept a completion, not
+the candidate under `▼`.
 
-`skkeleton-enable-pre` sets `vim.b.completion = false`,
-`skkeleton-disable-post` clears it back to `nil` (restoring the default rather
-than pinning completion on). Both want the keys during conversion and blink
-wins ties, so leaving it on means `<CR>` accepts a completion instead of the
-candidate under ▼.
+`vim.b.completion` is the per-buffer switch of blink itself, not a custom flag.
+See `blink/cmp/config/init.lua` in blink.cmp.
 
-`vim.b.completion` is blink's own per-buffer switch, not a custom flag —
-see `blink/cmp/config/init.lua`.
+## Not lazy-loaded
 
-## Not lazy-loaded, deliberately
+denops finds `denops/*/main.ts` when it starts, by a scan of the runtimepath.
+It does not register a plugin that joins the runtimepath later, and that is
+what lazy-loading on `InsertEnter` does. `skkeleton#handle('enable')` then
+waits for a plugin that denops does not know. You see this as a cursor that
+freezes at the first `<C-j>`, with no error message.
 
-denops discovers `denops/*/main.ts` by scanning the runtimepath **when it
-starts**. A plugin added to the runtimepath afterwards — which is exactly what
-lazy-loading on `InsertEnter` does — is never registered, and
-`skkeleton#handle('enable')` then waits forever on a plugin denops does not
-know about. That presents as **the cursor freezing on the first `<C-j>`, with
-no error message**.
+To diagnose it, run `denops#plugin#is_loaded('skkeleton')`. `0` means that denops
+did not find the plugin, even when it is on the runtimepath.
 
-`denops#plugin#is_loaded('skkeleton')` is the diagnostic: `0` means denops
-never saw it, no matter that it is on the runtimepath.
-
-kensaku avoids the same trap for a related reason, and `config/lazy.lua` sets
-`defaults = { lazy = false }` — eager is the house default here.
+kensaku is not lazy-loaded either, and `lua/config/lazy.lua` sets
+`defaults = { lazy = false }`.
 
 ## Requirements
 
-- [Deno][] on `$PATH` — the denops runtime (`brewfiles/*`)
-- `vim-denops/denops.vim`, declared here and again under `kensaku`, `flash` and
-  `fuzzy-motion`; lazy.nvim dedupes it
+- [Deno](https://deno.land) on `$PATH`, for denops. The brewfiles install it.
+- `vim-denops/denops.vim`. It is a dependency here, and also of `kensaku`,
+  `flash` and `fuzzy-motion`. lazy.nvim installs it one time.
 
 ## Related
 
-- `plugins/kensaku` — the same romaji→Japanese direction, for searching
-- `plugins/blink` — `blink-cmp-im`, romaji→word completion. Covers nouns and
-  compounds; anything inflected is skkeleton's job, because SKK stores verb and
-  adjective stems as okuri-ari entries and the jisyo cannot even distinguish
-  godan from ichidan (分かる and 食べる are both `…r`)
-
-[skkeleton]: https://github.com/vim-skk/skkeleton
-[Deno]: https://deno.land
+- [`../kensaku/`](../kensaku/): the same direction, romaji to Japanese, for
+  search.
+- [`../blink/`](../blink/): `blink-cmp-im` completes words from romaji. It
+  covers nouns and compounds. Conjugated forms need skkeleton. SKK keeps verb
+  and adjective stems as okuri-ari entries. The jisyo also cannot tell godan
+  verbs from ichidan verbs (分かる and 食べる are both `…r`).

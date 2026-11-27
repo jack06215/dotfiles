@@ -1,98 +1,89 @@
-# CodeCompanion.nvim
+# codecompanion
 
-CodeCompanion.nvim is a Neovim plugin designed to extend your development experience by integrating helpful extensions such as adapters, strategies, and additional tools.
+[olimorris/codecompanion.nvim](https://github.com/olimorris/codecompanion.nvim)
+is an AI chat and inline editor. It loads at the first `:CodeCompanion`,
+`:CodeCompanionChat` or `:CodeCompanionActions`. On the command line, `cc`
+expands to `CodeCompanion`.
 
-## Dependencies
+## Models
 
-- `j-hui/fidget.nvim`
-- `ravitemer/codecompanion-history.nvim`
-- `ravitemer/mcphub.nvim`
-- `Davidyz/VectorCode`
-- `HakonHarnes/img-clip.nvim`
+| Use | Adapter | Model |
+| --- | --- | --- |
+| Chat | Copilot | `claude-opus-5.5` |
+| Inline edit | Copilot | `gpt-6.1-sol` |
+| Optional | Ollama | `qwen3.6:35b`, with a context of 20000 tokens |
 
-## Installation
+## Chat keys
 
-Use your preferred plugin manager to install CodeCompanion.nvim:
+| Key (insert mode) | Action |
+| --- | --- |
+| `<C-CR>`, `<C-s>` | Send the message. |
+| `<C-x>` | Completion. |
+| `<C-b>` | `/buffer`: add a buffer. |
+| `<C-f>` | `/fetch`: add a web page. |
+| `<C-i>` | `/image`: add an image. It looks in `~/Documents/Screenshots`, or on WSL2 in the Windows `Pictures/Screenshots` folder. |
 
-```lua
-use {
-  "olimorris/codecompanion.nvim",
-  dependencies = {
-    "j-hui/fidget.nvim",
-    "ravitemer/codecompanion-history.nvim",
-    { "ravitemer/mcphub.nvim", cmd = "MCPHub", build = "npm install -g mcp-hub@latest" },
-    { "Davidyz/VectorCode", build = "pip install vectorcode" },
-    { "HakonHarnes/img-clip.nvim", event = "VeryLazy", cmd = "PasteImage" }
-  }
-}
-```
+## Global keys
 
-## Configuration
+[`lua/config/keymaps/codecompanion.lua`](../../config/keymaps/codecompanion.lua)
+sets these keys. which-key shows them as the `CodeCompanion` group.
 
-CodeCompanion.nvim provides various configurations to tailor the plugin to your needs. Below is an example of the default configuration:
+| Key | Mode | Action |
+| --- | --- | --- |
+| `<leader>Cc` | normal, visual | Show or hide the chat. |
+| `<leader>Cp` | normal, visual | Open the action palette. |
+| `<leader>Ca` | visual | Add the selection to the chat. |
 
-```lua
-require("plugins.codecompanion").setup {
-  extensions = {
-    history = {
-      enabled = true,
-      opts = {
-        keymap = "gh",
-        save_chat_keymap = "sc",
-        auto_save = false,
-        auto_generate_title = true,
-        continue_last_chat = false
-      }
-    },
-    mcphub = {
-      opts = {
-        make_vars = false,
-        make_slash_commands = true,
-        show_result_in_chat = true
-      }
-    },
-    vectorcode = {
-      opts = {
-        add_tool = true
-      }
-    }
-  },
-  strategies = {
-    chat = {
-      adapter = {
-        name = "copilot",
-        model = "claude-sonnet-4"
-      }
-    }
-  }
-}
-```
+The prefix is `<leader>C`, not `<leader>a`, because the default keys of
+[avante](../avante/) use `<leader>a`. `<C-a>` keeps its Vim job, which is to
+increment a number.
+
+## Extensions
+
+- **history** (codecompanion-history.nvim). `gh` opens the chat history in a
+  snacks picker, and `sc` saves the chat. It does not save automatically, and
+  it makes a title for each chat. The chats go to
+  `$XDG_DATA_HOME/nvim/codecompanion-history`.
+- **mcphub**. MCP server prompts become slash commands, and tool results show
+  in the chat. See [`../mcphub/`](../mcphub/).
+- **vectorcode**. A code search tool. It is on only when the machine has the
+  `vectorcode` program. The build step upgrades it with `uv` or `pipx`.
+- **img-clip.nvim** pastes an image into the chat as a Markdown link with an
+  absolute path.
+- **recorder**. The local extension in [`recorder.lua`](recorder.lua). See
+  below.
+
+Diffs use `mini_diff`, and the log level is `DEBUG`.
 
 ## Recorder
 
-`recorder.lua` is a local extension that saves every chat turn and inline request to
-`~/.local/share/nvim/codecompanion/history.db`, with one row per request: `request`, `code`, `result`
-and metadata. It needs `sqlite3` on `PATH`, and warns once if it's missing or a write fails.
+[`recorder.lua`](recorder.lua) saves each chat turn and each inline request in
+`$XDG_DATA_HOME/nvim/codecompanion/history.db`. Each request is one row, with
+the request, the code, the result and metadata. It needs `sqlite3` on `PATH`.
+It shows one warning if `sqlite3` is missing or if a write fails.
 
 ```sh
 sqlite3 ~/.local/share/nvim/codecompanion/history.db \
   'SELECT created_at, kind, model, status, request FROM interactions ORDER BY id DESC LIMIT 20'
 ```
 
-- The database is plain text and can hold anything sent to the model, including secrets from an open
-  file. It's `0600`, lives outside this repo, and is never pruned.
-- `.chezmoiignore` keeps the extension off machines with `isCompanyMachine` set.
-- Inline `result` is a unified diff, or the reply if the model didn't edit. An inline row's status is
-  `accepted` once any of its edits are kept. A row still at `proposed` was rejected or never reviewed.
-- Inline recording wraps the private `Inline.done` and `Inline.stop`. If an update renames them you get
-  one warning and inline stops being recorded, but inline keeps working.
-- Not recorded: background requests such as title generation, `:CodeCompanionCLI` sessions, chats that
-  fail before they start (such as over the token limit), and chats closed mid-response. A stopped chat
-  or inline request keeps its row, but not the partial reply.
+> [!WARNING]
+> The database is plain text. It can hold all data sent to the model,
+> including secrets from an open file. The file mode is `0600`, the file is
+> outside this repository, and the recorder never deletes old rows.
+> `.chezmoiignore` does not install `recorder.lua` on a company machine, and
+> `config.lua` turns the extension off when the file is not there.
 
-## Keymaps
-
-- `<C-a>`: Open the action palette
-- `<Leader>a`: Toggle a chat buffer
-- `<LocalLeader>a`: Add code to a chat buffer
-
+- For an inline request, `result` is a unified diff, or the reply when the
+  model did not edit. The status of an inline row becomes `accepted` when you
+  keep one of its edits. A row that stays at `proposed` is an edit that you
+  rejected or did not review.
+- The inline recording wraps the private functions `Inline.done` and
+  `Inline.stop`. If an update changes their names, you get one warning, and
+  the recorder stops recording inline requests. Inline edits continue to work.
+- The recorder does not record these:
+  - Background requests, for example title generation.
+  - `:CodeCompanionCLI` sessions.
+  - Chats that fail before they start, for example over the token limit.
+  - Chats that you close during the reply.
+- A stopped chat or inline request keeps its row, but not the partial reply.

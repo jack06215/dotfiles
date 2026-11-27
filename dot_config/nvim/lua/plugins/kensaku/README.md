@@ -1,117 +1,127 @@
-# kensaku — romaji → Japanese search
+# kensaku
 
-Type romaji, match kana/kanji, no IME switch. [vim-kensaku][] converts the input
-into a Vim regex covering every reading:
+Search Japanese text with romaji. You do not need to change the input method.
+[vim-kensaku](https://github.com/lambdalisue/vim-kensaku) changes the input
+into a Vim regex that matches each reading:
 
 ```
 kensaku#query("nihongo")
 => \m\%(nihongo\|にほんご\|ニホンゴ\|日本\%(語\|…\)\|ｎｉｈｏｎｇｏ\|ﾆﾎﾝｺﾞ\)
 ```
 
-romaji, hiragana, katakana, kanji, full- and half-width — all in one pattern.
+The pattern covers romaji, hiragana, katakana, kanji, and the full-width and
+half-width forms.
 
-## Keymaps
+## Keys
 
-- **`/`, `?`, `:s`, `:g`, `:v`:** `<CR>` — converts automatically, nothing to press
-- **Any other command:** `<C-x>` (command-line mode) — expands the romaji before
-  the cursor in place
+| Command | Key | Effect |
+| --- | --- | --- |
+| `/`, `?`, `:s`, `:g`, `:v` | `<CR>` | Converts the romaji. You press nothing more. |
+| All other commands | `<C-x>` (command-line mode) | Converts the romaji before the cursor, in the line. |
 
-## `/` and `?`
+## / and ?
 
-[kensaku-search.vim][] rewrites the command line on `<CR>` before the search
-runs, so `/nihongo<CR>` jumps to 日本語.
+[kensaku-search.vim](https://github.com/lambdalisue/kensaku-search.vim)
+changes the command line at `<CR>`, before the search runs. Thus
+`/nihongo<CR>` goes to 日本語.
 
-It only fires when the cmdline type is `/` or `?` **and** the whole line parses
-as romaji, so `:` commands are untouched and regex searches keep working —
-`/foo.*bar` contains characters no romaji syllable can produce, so it is left
-alone rather than being escaped into a literal.
+It acts only when two conditions are true:
 
-The search history and `@/` end up holding the converted regex, not what you
-typed. That's what makes the `:%s//` workflow below work.
+- The command-line type is `/` or `?`. A `:` command does not change.
+- The whole line is romaji. `/foo.*bar` has characters that no romaji
+  syllable makes, so the search stays a regex.
 
-## Live highlight while typing
+The search history and `@/` keep the converted regex, not the text that you
+typed. Because of this, the `:%s//` workflow below works.
 
-Conversion happens on `<CR>`, so Vim's own `incsearch` only ever sees the
-literal romaji — type `nihongo` and 日本語 stays dark until you commit.
-`preview.lua` closes that gap: on every keystroke it converts the pattern, puts
-it in `@/` with `hlsearch` forced on, and redraws, so the real targets light up
-as you type. Applies to `/`, `?`, `:s`, `:g` and `:v` alike.
+## Live highlight while you type
 
-`@/` is restored on `CmdlineLeave`, which fires *before* the command runs, so
-nothing here changes what executes — including `:%s//x/g`, which still sees the
-search register you actually had.
+The conversion happens at `<CR>`. Before that, the Vim `incsearch` sees only
+the romaji, so 日本語 stays dark while you type `nihongo`.
+[`preview.lua`](preview.lua) closes that gap. At each key, it converts the
+pattern, puts it in `@/`, turns `hlsearch` on, and redraws. The real targets
+show while you type. This works for `/`, `?`, `:s`, `:g` and `:v`.
 
-`<C-c>` needs care: it fires `CmdlineLeave` but sets the interrupt flag, which
-aborts the handler partway and would leave the preview pattern in `@/`
-poisoning `n`/`N`. So `leave()` queues a retry *before* attempting the
-synchronous restore.
+- `preview.lua` puts the old `@/` back at `CmdlineLeave`. That event comes
+  before the command runs, so the preview does not change what runs. For
+  example, `:%s//x/g` still uses your real search register.
+- `<C-c>` sends `CmdlineLeave`, but it also sets the interrupt flag. The flag
+  stops the handler before it ends, so the preview pattern would stay in `@/`
+  and change `n` and `N`. Thus `leave()` schedules a second try before it
+  restores `@/`.
+- It is a highlight only. The cursor does not jump to the first match, and
+  `inccommand` cannot show the `:s` replacement. That would need the converted
+  pattern in the command line itself.
+- Each key runs one synchronous `kensaku#query`. The query is fast once denops
+  runs, so the preview runs inline, not async.
 
-It is a highlight, not a full `incsearch` — the cursor does not jump to the
-first match, and `inccommand` still cannot preview `:s` replacement text, since
-that would need the converted pattern to be in the command line itself.
+## :s, :g and :v
 
-Cost is one synchronous `kensaku#query` per keystroke, measured at 0.2–1.2 ms
-once denops is warm, so it runs inline rather than async.
-
-## `:s`, `:g`, `:v`
-
-`kensaku-search.vim` replaces the *whole* command line, so it cannot help an ex
-command where only the pattern argument may change. `expand_ex()` in
-`cmdline.lua` does that instead, on the same `<CR>`:
+`kensaku-search.vim` replaces the whole command line, so it cannot help with an
+Ex command where only the pattern can change. `expand_ex()` in
+[`cmdline.lua`](cmdline.lua) does that job, on the same `<CR>`:
 
 ```vim
-:%s/nihongo/hello/gc   " 日本語 -> hello, nothing extra to press
+:%s/nihongo/hello/gc   " 日本語 -> hello, nothing more to press
 :g/nihongo/d
 :v/nihongo/d
 ```
 
-It rewrites the line in place, so the command stays a real `:s` and keeps its
-`inccommand` preview — a wrapper command like `:S/foo/bar/` would lose that.
-Ranges (`1,5`, `'<,'>`, `.,+3`), the long forms (`:substitute`, `:global`), `!`,
-and alternate delimiters (`:%s#nihongo#x#`) all work.
+It changes the line in place, so the command stays a real `:s` with its
+`inccommand` preview. A wrapper command such as `:S/foo/bar/` would lose the
+preview. These forms all work:
 
-### What it refuses to touch
+- ranges: `1,5`, `'<,'>`, `.,+3`
+- long names: `:substitute`, `:global`
+- `!`
+- other delimiters: `:%s#nihongo#x#`
 
-Two guards, because `<CR>` runs on every `:` command you ever type:
+### Guards
 
-- **The command must be `:s` / `:g` / `:v`.** A blanket rewrite of `:` lines
-  would wreck `:e /home/user` — `home` is valid romaji (`ho` + `me`).
-- **The pattern must be pure romaji**, per `g:kensaku_search#pattern`, the same
-  guard kensaku-search uses on `/`. So `:%s/foo.*bar/X/` keeps its regex,
-  `:%s/function/F/` stays literal, and `:%s//x/g` still reuses `@/`.
+`<CR>` runs for each `:` command, so `expand_ex()` has two guards:
 
-### Everything else: `<C-x>`
+- **The command must be `:s`, `:g` or `:v`.** A rewrite of all `:` lines would
+  break `:e /home/user`, because `home` is valid romaji (`ho` + `me`).
+- **The pattern must be only romaji**, as `g:kensaku_search#pattern` defines.
+  kensaku-search uses the same guard on `/`. Thus `:%s/foo.*bar/X/` keeps its
+  regex, `:%s/function/F/` stays literal, and `:%s//x/g` still uses `@/`.
 
-For pattern-taking commands outside that list, expand by hand:
+### All other commands: <C-x>
+
+For other commands that take a pattern, convert by hand:
 
 ```vim
 :vimgrep /nihongo<C-x>/ **/*.md
 " -> :vimgrep /\m\%(nihongo\|にほんご\|日本\%(語\|…\)\)/ **/*.md
 ```
 
-`<C-x>` swaps the trailing run of `[a-zA-Z-]` before the cursor and leaves the
-rest of the line alone. No guard — pressing the key is the intent.
+`<C-x>` replaces the `[a-zA-Z-]` characters just before the cursor, and does
+not change the rest of the line. It has no guard, because you press the key on
+purpose.
 
-Kensaku output is pure `\m` / `\%(...\)` regex containing no delimiter
-character, so it drops between `:s` delimiters without re-escaping.
+The kensaku output is a `\m` regex with `\%(...\)` groups, and it contains no
+delimiter character. Thus it goes between `:s` delimiters with no extra escape.
 
 ## Requirements
 
-- [Deno][] on `$PATH` — the denops runtime
-- `vim-denops/denops.vim` + `lambdalisue/vim-kensaku`
+- [Deno](https://deno.land) on `$PATH`, for denops.
+- `vim-denops/denops.vim` and `lambdalisue/vim-kensaku`.
 
-Both are declared as dependencies here, and again under `flash` and
-`fuzzy-motion`; lazy.nvim dedupes them.
+These two plugins are dependencies here, and also of `flash` and
+`fuzzy-motion`. lazy.nvim installs each plugin one time.
 
-If kensaku can't answer (denops still booting, Deno missing), `query.lua`
-returns `nil` and each caller falls back — `/` searches literally, `<C-x>` does
-nothing, flash matches exactly. Nothing errors.
+The plugin loads at start, not on a key. The mapping is in command-line mode,
+where lazy.nvim cannot replay a key reliably, and the `<Plug>` mapping must
+exist first.
+
+When kensaku cannot answer (denops still starts, or Deno is missing),
+[`query.lua`](query.lua) returns `nil`. Each caller then uses its fallback:
+`/` searches the literal text, `<C-x>` does nothing, and flash uses the exact
+match. No error shows.
 
 ## Related
 
-- `plugins/flash` — `s` accepts romaji through the same `query.lua`
-- `plugins/fuzzy-motion` — `<CR>`, via `g:fuzzy_motion_matchers = { "fzf", "kensaku" }`
-
-[vim-kensaku]: https://github.com/lambdalisue/vim-kensaku
-[kensaku-search.vim]: https://github.com/lambdalisue/kensaku-search.vim
-[Deno]: https://deno.land
+- [`../flash/`](../flash/): `s` accepts romaji, through the same
+  `query.lua`.
+- [`../fuzzy-motion/`](../fuzzy-motion/): `<CR>` in normal mode, with
+  `g:fuzzy_motion_matchers = { "fzf", "kensaku" }`.
