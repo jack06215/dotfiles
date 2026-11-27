@@ -1,6 +1,6 @@
 return {
   "pwntester/octo.nvim",
-  requires = {
+  dependencies = {
     "nvim-lua/plenary.nvim",
     "nvim-telescope/telescope.nvim",
     -- OR 'ibhagwan/fzf-lua',
@@ -8,9 +8,6 @@ return {
     "nvim-tree/nvim-web-devicons",
   },
   cmd = { "Octo" },
-  config = function()
-    require("octo").setup()
-  end,
   opts = {
     default_merge_method = "squash",
     default_delete_branch = true,

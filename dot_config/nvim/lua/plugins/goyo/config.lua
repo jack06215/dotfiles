@@ -2,6 +2,7 @@ return {
   {
     "junegunn/goyo.vim",
     cmd = { "Goyo" },
+    dependencies = { "junegunn/limelight.vim" },
     init = function()
       vim.g.goyo_width = 100
       vim.g.goyo_height = "80%"
