@@ -43,6 +43,11 @@
 # Copilot into the picker; it reads the picker's own pane state now.
 .config/tmux-powerline/segments/claude_agents.sh
 
+# nvim-cmp never ran: LazyVim's blink extra disables it, and blink.cmp is the
+# completion. The folder went with it, but a deployed copy would still be
+# imported by lazy.nvim as plugins.cmp.
+.config/nvim/lua/plugins/cmp
+
 # The Brewfile, Chocolatey and PowerToys exporters moved to tools/setup/, which
 # is repo-only. Run them through `bazel run //tools/setup:...` or from the
 # checkout.

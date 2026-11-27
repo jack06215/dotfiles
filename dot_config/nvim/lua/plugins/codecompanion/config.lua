@@ -151,7 +151,7 @@ return {
       log_level = "DEBUG",
     },
   },
-  -- Keys have been moved to `keymaps.lua`
+  -- Keys are in config/keymaps/codecompanion.lua, under <leader>C.
   init = function()
     vim.cmd([[cab cc CodeCompanion]])
   end,

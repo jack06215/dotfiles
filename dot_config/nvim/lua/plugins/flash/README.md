@@ -1,58 +1,53 @@
-# Flash.nvim
+# flash
 
-## Keymaps
+[folke/flash.nvim](https://github.com/folke/flash.nvim) jumps to any place on
+the screen: type a few characters, then the label of the target.
 
-- **Flash:** `s` (normal, visual, operator-pending modes)
-- **Flash Treesitter:** `S` (normal, visual, operator-pending modes)
-- **Remote Flash:** `r` (operator-pending mode)
-- **Flash Treesitter Search:** `R` (visual, operator-pending modes)
-- **Toggle Flash Search:** `<c-s>` (command-line mode)
+| Key | Mode | Action |
+| --- | --- | --- |
+| `s` | normal, visual, operator-pending | Jump. |
+| `S` | normal, visual, operator-pending | Select a tree-sitter node. |
+| `r` | operator-pending | Remote flash: run the operator at a target, then come back. |
+| `R` | visual, operator-pending | Tree-sitter search. |
+| `<c-s>` | command line | Turn flash on or off in a `/` search. |
 
-## Japanese search (romaji → kana/kanji)
+- A jump goes into the jump list, so `<C-o>` returns.
+- Labels are lowercase, with rainbow colors.
+- flash does not change `/` search or `f`/`t`. Those modes are off.
 
-`search.mode` is wired to [vim-kensaku][] through `kensaku.lua`, which delegates
-to the shared `plugins.kensaku.query`, so flash targets Japanese text by typing
-romaji — no IME switch. See `plugins/kensaku` for the same trick on `/` and
-`:%s`.
+## Japanese search
 
-Press `s`, type `nihongo`, and 日本語 gets a jump label. Internally kensaku
-expands the input into a Vim regex covering every reading:
+`search.mode` is the function in [`kensaku.lua`](kensaku.lua). It uses
+[vim-kensaku](https://github.com/lambdalisue/vim-kensaku) to make a Vim regex
+from romaji. Press `s`, type `nihongo`, and 日本語 gets a label.
 
 ```
 kensaku#query("nihongo")
 => \m\%(nihongo\|にほんご\|ニホンゴ\|日本\%(語\|…\)\|ｎｉｈｏｎｇｏ\|ﾆﾎﾝｺﾞ\)
 ```
 
-That covers romaji, hiragana, katakana, kanji, and full-/half-width forms.
+The pattern covers romaji, hiragana, katakana, kanji, and the full-width and
+half-width forms. It also contains the raw input, so `s` then `hello` still
+finds `hello`. Thus the mode is safe to keep on. All flash keys that search
+use it.
 
-**This is always on, and safe.** The raw input stays in the alternation, so the
-pattern is a strict superset of flash's default `exact` mode — `s` + `hello`
-still matches `hello`. If kensaku can't answer (denops still booting, Deno
-missing), `kensaku.lua` falls back to exact matching rather than erroring.
-
-Applies to every flash entry point that searches, so `S` / `r` / `R` accept
-romaji too.
+When kensaku does not answer, `kensaku.lua` uses the exact match of flash. That
+happens while denops starts, when Deno is not installed, or when the plugin is
+not loaded. [`../kensaku/`](../kensaku/) uses the same query for `/` and `:s`.
 
 ### Requirements
 
-- [Deno][] on `$PATH` — the denops runtime
-- `vim-denops/denops.vim` + `lambdalisue/vim-kensaku`, declared as flash
-  `dependencies` in `config.lua`
+- [Deno](https://deno.land) on `$PATH`, for denops.
+- `vim-denops/denops.vim` and `lambdalisue/vim-kensaku`. They are dependencies
+  of flash, so the Deno process already runs when you first press `s`. If it
+  did not, the first search would wait for denops to start.
 
-They're listed as flash dependencies rather than left lazy so the Deno process is
-already running when you first press `s`. Otherwise `kensaku#query` blocks on
-`denops#plugin#wait()` and the first search stalls for a second or two. The same
-two plugins also back `fuzzy-motion` (`<CR>`).
+### Turn it off
 
-### Turning it off
-
-Drop the `search.mode` line from `config.lua` to return to `exact`. To keep it
-off by default but available on a dedicated key, leave `search.mode` unset and
-pass it per-invocation instead:
+To go back to the exact match, delete the `search.mode` line in
+[`config.lua`](config.lua). To use romaji search on one key only, leave
+`search.mode` out and give the mode to that key:
 
 ```lua
 require("flash").jump({ search = { mode = require("plugins.flash.kensaku").mode } })
 ```
-
-[vim-kensaku]: https://github.com/lambdalisue/vim-kensaku
-[Deno]: https://deno.land

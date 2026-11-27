@@ -1,7 +1,7 @@
 return {
   "yuki-yano/fuzzy-motion.vim",
   cmd = { "FuzzyMotion" },
-  -- keys moved to keymaps.lua
+  keys = require("plugins.fuzzy-motion.keymaps").keys,
   dependencies = {
     "vim-denops/denops.vim",
     "lambdalisue/vim-kensaku",

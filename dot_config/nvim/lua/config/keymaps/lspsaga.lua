@@ -19,7 +19,10 @@ end
 M.create_keymaps = function()
   local map = vim.keymap.set
 
-  map("n", "<leader>ca", saga("code_action"), { desc = "Code Action" })
+  -- No <leader>ca here: actions-preview (plugins/ui) owns it. That plugin loads
+  -- on LspAttach, and lazy.nvim deletes and sets a plugin's keys again when the
+  -- plugin loads, so a Lspsaga binding would last only until the first LSP
+  -- client attached.
   map("n", "<leader>cd", saga("show_line_diagnostics"), { desc = "Line Diagnostics" })
   -- map("n", "<leader>cf", saga("lsp_finder"), { desc = "LSP Finder" })
   map("n", "<leader>cr", saga("rename"), { desc = "Rename" })

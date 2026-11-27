@@ -20,9 +20,6 @@ M.plugins = {
       end,
     },
   },
-
-  -- LazyVim default TS extras
-  { import = "lazyvim.plugins.extras.lang.typescript" },
 }
 
 return M.plugins

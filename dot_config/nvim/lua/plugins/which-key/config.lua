@@ -13,6 +13,7 @@ return {
       { "<leader><tab>", group = "Tabs" },
       { "<leader>b", group = "Buffer" },
       { "<leader>c", group = "Code" },
+      { "<leader>C", group = "CodeCompanion" },
       { "<leader>d", group = "Debug" },
       { "<leader>f", group = "File/Find" },
       { "<leader>g", group = "Git" },

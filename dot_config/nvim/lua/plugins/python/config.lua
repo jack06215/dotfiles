@@ -170,15 +170,6 @@ return {
     },
   },
 
-  -- nvim-cmp: add both py-requirements & emoji sources
-  {
-    "hrsh7th/nvim-cmp",
-    dependencies = { "hrsh7th/cmp-emoji" },
-    opts = function(_, opts)
-      table.insert(opts.sources, { name = "py-requirements" })
-    end,
-  },
-
   -- LSPConfig: configure pyright to use our cached pythonPath
   {
     "neovim/nvim-lspconfig",

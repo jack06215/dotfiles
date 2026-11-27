@@ -1,468 +1,181 @@
 # My custom `dotfiles`
 
-Personal, cross-platform dotfiles managed with [chezmoi](https://www.chezmoi.io/).
-Targets macOS (primary), WSL2, plain Linux, Termux, and Windows, with per-OS
-branches baked into the zsh startup sequence and into templated config files.
-
-- [Quick start](#quick-start)
-- [How it works](#how-it-works) — machine data, XDG, repository layout
-- [Shell (zsh)](#shell-zsh)
-- [Terminal & editor](#terminal--editor)
-- [Python workspace](#python-workspace)
-- [Tooling](#tooling) — git, tock, Claude Code, snippets, toolchains
-- [Platform notes](#platform-notes) — WSL2, Windows, Termux
+Personal dotfiles for macOS (primary), WSL2, Linux, Termux and Windows.
+[chezmoi](https://www.chezmoi.io/) manages them.
 
 ## Quick start
 
-Prerequisite: [chezmoi](https://www.chezmoi.io/).
+On macOS, Linux or WSL2:
 
-```sh
-mkdir -p ~/workspace/jack06215
-git clone https://github.com/jack06215/dotfiles ~/workspace/jack06215/dotfiles
-chezmoi init --apply --source ~/workspace/jack06215/dotfiles
-```
+1. Install chezmoi.
+2. Run these commands:
+
+   ```sh
+   mkdir -p ~/workspace/jack06215
+   git clone https://github.com/jack06215/dotfiles ~/workspace/jack06215/dotfiles
+   chezmoi init --apply --source ~/workspace/jack06215/dotfiles
+   ```
+
+3. Run the setup script. It installs Homebrew, the packages and the asdf
+   toolchains, then applies the dotfiles again:
+
+   ```sh
+   ~/setup.sh
+   ```
+
+4. Open a new terminal session.
+
+`setup.sh` supports macOS on arm64, Debian 12 and 13, and Ubuntu 22.04, 24.04
+and 26.04 (WSL2 included). If a step fails, the script continues and lists the
+failed steps at the end.
+
+For the other platforms, do the steps in these guides:
+
+- Windows: [`docs/windows-setup.md`](docs/windows-setup.md)
+- Termux: [`docs/termux-setup.md`](docs/termux-setup.md)
 
 ## How it works
 
-### Machine data
+- **Machine data.** `chezmoi init` renders
+  [`.chezmoi.toml.tmpl`](.chezmoi.toml.tmpl) into
+  `~/.config/chezmoi/chezmoi.toml`. The template records the OS, the
+  architecture, WSL2 and `IS_COMPANY_MACHINE`. It also reads per-machine paths
+  from [`.chezmoidata/lookups.toml`](.chezmoidata/lookups.toml). Templates read
+  the result as `.myComputer.*`, `.wsl.*`, `.xdg.*` and other keys.
+  [`.chezmoiignore`](.chezmoiignore) uses the same data to skip files that do
+  not apply to the machine. The template also finds the Windows home and the
+  paths of the Windows apps (WSL2).
 
-`chezmoi init` renders `.chezmoi.toml.tmpl` into `~/.config/chezmoi/chezmoi.toml`,
-recording the `--source` checkout as `sourceDir` so later commands need no flag.
+> [!IMPORTANT]
+> Only `chezmoi init` sets the machine data. After you edit
+> `.chezmoi.toml.tmpl` or `lookups.toml`, run `chezmoi init` again.
+> `chezmoi apply` warns when the template changed.
 
-```mermaid
-flowchart LR
-  I["OS / arch / WSL2<br/>IS_COMPANY_MACHINE<br/>XDG paths"] --> T[".chezmoi.toml.tmpl"]
-  L[".chezmoidata/lookups.toml<br/>per-machine paths"] --> T
-  T -->|chezmoi init| C["~/.config/chezmoi/chezmoi.toml"]
-  C --> D[".myComputer.* .wsl.* .xdg.*<br/>.pypoetry.* .firefox.* .vscode.*"]
-  D --> A["every template"]
-  D --> G[".chezmoiignore<br/>skips OS-inapplicable files"]
+- **XDG Base Directory.** [`dot_zshenv.tmpl`](dot_zshenv.tmpl) sets the base
+  directories from the
+  [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-0.8.html)
+  version 0.8.
+  It also points cargo, go, npm, poetry, docker, gnupg, git, rustup and other
+  tools at them. These settings keep `$HOME` clean. The
+  [Arch wiki](https://wiki.archlinux.org/title/XDG_Base_Directory) lists the
+  variable that each tool needs.
+- **System Settings (macOS).**
+  [`.chezmoiscripts/run_onchange_after_macos-defaults.sh.tmpl`](.chezmoiscripts/run_onchange_after_macos-defaults.sh.tmpl)
+  writes the System Settings values with `defaults`. Then it restarts the Dock,
+  Finder and ControlCenter. To track one more setting, add a `defaults write`
+  line to the script. Trackpad, mouse and input-source settings apply only
+  after the next logout. The accessibility settings need Full Disk Access for
+  the terminal.
+- **Windows config (WSL2).** Windows apps (WezTerm, GlazeWM, Zebar, VS Code,
+  Firefox, Windows Terminal, PowerShell) read their config from the Windows
+  home. `chezmoi apply` in WSL does not write there. When one of these files
+  changes,
+  [`.chezmoiscripts/run_onchange_after_push-windows-configs.sh.tmpl`](.chezmoiscripts/run_onchange_after_push-windows-configs.sh.tmpl)
+  copies it to the Windows home. If the Windows copy is different from the last
+  copy that the script wrote, the script first saves it as
+  `<name>.chezmoi-backup-<timestamp>`.
+
+## Layout
+
+The tree lists only the paths whose names do not say what they hold. The
+GitHub file list shows the other paths.
+
+```text
+.
+├── .chezmoi.toml.tmpl      machine data template
+├── .chezmoidata/           lookup tables
+├── .chezmoitemplates/      lookup helpers
+├── .chezmoiscripts/        run_ scripts
+├── dot_zshenv.tmpl         ~/.zshenv (XDG, tool env, ZDOTDIR)
+├── dot_tool-versions.tmpl  asdf toolchain (mise on Windows)
+├── dot_config/
+│   ├── claude/             Claude Code config + skills/ → ../../skills
+│   ├── tock/               time tracker
+│   ├── private_pet/        snippets (zsh + nushell)
+│   ├── private_navi/       cheatsheets (zsh + nushell)
+│   └── windows-terminal/, powershell/   (Windows)
+├── dot_local/
+│   ├── bin/                zshfn (zsh functions as commands) + clipboard shims
+│   └── share/              tool data (tock, gnupg, lynx, posting)
+├── dot_glzr/               GlazeWM + Zebar (Windows)
+├── dot_orca/               Orca keybindings
+├── dot_termux/             app config + Termux:Boot scripts (Termux)
+├── keyboards/              HHKB Studio keymaps, imported by hand (repo only)
+└── Library/                launchd agent for the ollama service (macOS)
 ```
 
-On WSL2 the template also finds the Windows home (`.wsl.windowsHome`, e.g.
-`/mnt/c/Users/<you>`) and `win32yank.exe`, and resolves the Firefox and VS Code
-paths on the Windows side, since those apps run on Windows.
-`.chezmoiignore` uses the same data to skip OS-inapplicable files and to drop
-`.tool-versions` on one specific hostname.
-
-**Values are baked in at init time.** After editing the template or
-`lookups.toml`, run `chezmoi init` again (`chezmoi apply` warns when the
-template has changed).
-
-### XDG layout
-
-Everything follows the [XDG base directory spec](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) —
-`dot_zshenv` sets `XDG_CONFIG_HOME`, `XDG_DATA_HOME`, `XDG_CACHE_HOME`,
-`XDG_STATE_HOME`, `XDG_BIN_HOME`, then repoints dozens of tools (cargo, go, npm,
-poetry, docker, gnupg, git, rustup, …) at XDG paths so `$HOME` stays clean.
-
-### Repository layout
-
-```
-.chezmoi.toml.tmpl          → chezmoi config template (machine data; see above)
-.chezmoidata/, .chezmoitemplates/ → lookup tables + the lookup/lookupPath helpers
-.chezmoiscripts/            → run_ scripts (executed, never placed in ~)
-dot_zshenv                  → ~/.zshenv (XDG + tool env vars, ZDOTDIR)
-dot_tool-versions           → ~/.tool-versions (asdf-managed toolchain)
-dot_config/
-  zsh/                      → shell config
-  claude/                   → Claude Code settings; skills/ symlinks to ../../skills
-  git/, gh-dash/, lazygit/  → git tooling
-  starship/                 → prompt theme (Nord palette)
-  tock/                     → time tracker (tock.yaml; SQLite db under XDG_DATA_HOME)
-  tmux/, tmux-powerline/    → multiplexer config, which-key menu, status bar
-  wezterm/                  → terminal emulator (plain Lua + a rendered machine.lua)
-  nvim/                     → LazyVim-based Neovim config
-  zellij/                   → terminal multiplexer keybinds
-  bottom/, btop/, htop/     → system monitors
-  carapace/                 → shell completions
-  npm/, pip/, pyproject/    → language package-manager config
-  myscripts/, private_pet/  → misc scripts + `pet` snippet manager
-  private_navi/             → `navi` cheatsheets: config.yaml, cheats/ (zsh)
-                              and cheats-nu/ (nushell), ported from pet
-  vscode/, firefox/         → VS Code settings, Firefox user.js + userChrome.css
-  windows-terminal/         → Windows Terminal settings (jsonnet source + json)
-  powershell/               → PowerShell 7 profile, MyModule, Scripts, and the
-                              Chocolatey/winget manifests
-dot_glzr/
-  glazewm/, zebar/          → Windows tiling WM + status bar
-dot_termux/                 → Termux app settings + Termux:Boot scripts (Android only)
-```
-
-Repo-maintenance entry points live at the root and under `tools/`:
+Files for repository maintenance:
 
 | Path | Purpose |
 | --- | --- |
-| `brewfiles/` | per-OS Homebrew manifests (`darwin`, `wsl2`) carrying taps + formulae + casks + tap trust; `Brewfile.tmpl` renders the matching one to `~/Brewfile` for `brew bundle install`, and `tools/setup/generate-brewfile.sh` regenerates the one for the machine you are on |
-| `pkgfiles/termux` | Termux's package manifest, which `setup.sh` installs with apt-get on the phone; `tools/setup/generate-termux-packages.sh` regenerates it there (see [Termux](#termux)) |
-| `MODULE.bazel`, `tools/setup/` | `bazel run //tools/setup:export_brewfile_macos` / `export_brewfile_linux` regenerate the brewfiles, `//tools/setup:export_vscode_extensions` adds the VS Code extensions installed but not yet listed to `.chezmoidata/vscode.toml` (macOS, WSL2), and `//tools/setup:export_powertoys_settings` pulls the PowerToys settings back out of `%LOCALAPPDATA%` on Windows. Not a build system for the dotfiles themselves; every target is run-only, since they write into the source tree. `tools/` is repo-only (`.chezmoiignore` keeps it out of `$HOME`), and `.bazelrc` sets `--symlink_prefix=/` so no `bazel-*` symlinks appear in a chezmoi source tree |
-| `skills/` | Claude Code skills (see [Claude Code](#claude-code)) |
-| `prompt_repository/`, `template/` | reusable prompt/PR templates |
-| `python/` | the Poetry workspace (see [Python workspace](#python-workspace)) |
+| [`Brewfile.tmpl`](Brewfile.tmpl), [`brewfiles/`](brewfiles/) | Homebrew manifests, one for each OS (macOS, WSL2). `Brewfile.tmpl` renders the applicable one to `~/Brewfile`. |
+| [`pkgfiles/termux`](pkgfiles/termux) | The package manifest (Termux). |
+| [`tools/setup/`](tools/setup/), [`MODULE.bazel`](MODULE.bazel) | Bazel targets for `bazel run` only. They regenerate the brewfiles, the VS Code extension list (macOS, WSL2) and the PowerToys config (Windows). |
+| [`skills/`](skills/) | Claude Code skills. [`dot_config/claude/symlink_skills.tmpl`](dot_config/claude/symlink_skills.tmpl) makes `~/.config/claude/skills` a symlink to this directory, so edits take effect without `chezmoi apply`. |
 
 ## Shell (zsh)
 
-`ZDOTDIR` is `~/.config/zsh`. `dot_config/zsh/dot_zshrc` is a thin loader that
-sources Flywheel-specific overrides (`~/.zshrc.flywheel`) if present, then hands
-off to `src/init.zsh`, which sources everything else in a fixed, commented order.
-
-### Startup order
+zsh reads `.zshrc` from `$ZDOTDIR` (`~/.config/zsh`).
+[`dot_config/zsh/dot_zshrc`](dot_config/zsh/dot_zshrc) sources
+`~/.zshrc.flywheel` if that file exists. Then it sources
+[`dot_config/zsh/src/init.zsh.tmpl`](dot_config/zsh/src/init.zsh.tmpl), which
+loads the modules in `dot_config/zsh/src/` in this fixed order:
 
 ```mermaid
 flowchart TD
-  A["~/.zshenv — XDG + tool env, ZDOTDIR"] --> B["$ZDOTDIR/.zshrc (+ ~/.zshrc.flywheel)"]
-  B --> C["src/init.zsh"]
-  C --> D["private credentials → core shell options"]
-  D --> E["OS pre-init: darwin / wsl / termux"]
-  E --> F["asdf, rbenv → functions"]
-  F --> G["vi_mode.zsh → zinit.zsh"]
-  G --> H["history / PATH → compinit → carapace"]
-  H --> I["prompt tools: atuin, fzf, starship, zoxide"]
-  I --> J["domain modules: aws, bazel, chezmoi, gh, git, jira,<br/>k8s, mysql, navi, notify, pet, search, tock"]
-  J --> K["aliases + keybinds"]
-  K --> L["OS post-init (last)"]
+  subgraph s1 [" "]
+    direction LR
+    a1[private credentials] --> a2[core] --> a3[OS pre-init] --> a4[zsh_python_init] --> a5["asdf, rbenv, gum"] --> a6["functions, patch_functions"]
+  end
+  subgraph s2 [" "]
+    direction LR
+    b1[vi_mode] --> b2["zinit (starts zsh-vi-mode)"] --> b3["history, path"] --> b4[completion] --> b5[carapace]
+  end
+  subgraph s3 [" "]
+    direction LR
+    c1["atuin, fzf, starship, zoxide"] --> c2[domain modules] --> c3["alias, keybinds"] --> c4[OS post-init]
+  end
+  s1 --> s2 --> s3
 ```
 
-**The order is load-bearing for keybindings.** `zsh-vi-mode` initializes while
-`zinit.zsh` sources it, and every module after that point (atuin, fzf, pet, navi,
-`keybinds.zsh`) binds on top of it. Moving one of them above `zinit.zsh`
-silently hands its keys back to the plugin.
+Read the graph row by row, from left to right. The last box in a row loads
+before the first box in the next row. Each box names one or more files in
+`dot_config/zsh/src/`, without the `.zsh` extension. A box with commas loads
+its files in that order. `rbenv.zsh` loads only when `ZSH_RUBY_MANAGER=rbenv`.
 
-Set `ZSH_DEBUG_INIT=1` or `ZSH_PROFILE_STARTUP=1` to trace/profile startup.
+Some labels are not file names:
 
-### Modules under `src/`
+- **private credentials** is `~/.zshrc.local`. This file is not in the
+  repository.
+- **OS pre-init** and **OS post-init** are the files for the current OS. On
+  macOS, `darwin_pre_init.zsh` and `darwin.zsh` load first, and
+  `darwin_post_init.zsh` loads last. WSL2 and Termux use the matching `wsl` and
+  `termux` files. Plain Linux has no OS files.
+- **domain modules** are the modules for single tools, for example `aws.zsh`,
+  `gh.zsh`, `pet.zsh` and `tock.zsh`.
 
-| File | Purpose |
+**The order is important.** `zsh-vi-mode` starts when `zinit.zsh` sources it.
+All modules after that point (atuin, fzf, pet, navi, `keybinds.zsh`) set their
+key bindings on top of it. If you move one of these modules above `zinit.zsh`,
+the plugin overwrites that module's key bindings and shows no error.
+
+Set `ZSH_DEBUG_INIT=1` to print which OS branch `init.zsh` takes. Set
+`ZSH_PROFILE_STARTUP=1` to profile startup with zprof.
+
+| File in `dot_config/zsh/src/` | Purpose |
 | --- | --- |
-| `core.zsh` | history opts, fallback `bindkey -v`, `is_macos`/`is_wsl`/`is_termux` predicates |
-| `vi_mode.zsh` | settings for `zsh-vi-mode` (text objects, surround, `^A`/`^X` keyword switching, per-mode cursor, fast `<ESC>`); sourced before `zinit.zsh` because the plugin reads its `ZVM_*` options at source time. `ZVM_INIT_MODE=sourcing` + `ZVM_LAZY_KEYBINDINGS=false` are what stop it clobbering the atuin/fzf/pet/keybinds bindings made later. Also points `vv` (visual-mode `v`, edit the line in an editor) at nvim, copies yanks to the system clipboard with per-platform commands for WSL/termux, and themes the visual selection to Catppuccin Mocha |
-| `zinit.zsh` | plugin manager bootstrap; `zsh-vi-mode` (must stay first), `fzf-tab`, `fast-syntax-highlighting`, `zsh-autosuggestions`, `zsh-completions` |
-| `functions.zsh` | `fman`, `mkcd`, `topcmds`, `csv2json`, `ls_stats`, `send_notification` |
-| `notify.zsh` | cross-platform `notify()` (terminal-notifier on macOS, BurntToast over `pwsh` on WSL, `termux-notification` on Termux) |
-| `gh.zsh` | `gh`-based PR helpers: `ghpr` (fzf picker + gum action menu; fetches nothing until you type, then searches GitHub across every PR state — `#1234` for one PR, `ctrl-r` for the newest N; rows and preview come from the monorepo's `pycli ghpr_index`, run through `pycli_cmdline` since fzf's binds can't call zsh functions), CI watchers (`ghpr_watch`, `ghpr_checks_watch`), draft PR creation |
-| `git.zsh` | git helper functions |
-| `claude.zsh` | `claude_team` (one session with experimental agent teams on), `claude_memory` (fzf over Claude Code's auto-memory in every project, newest first; preview renders the memory, enter opens the picks in `$EDITOR`, piped stdout prints the paths) |
-| `jira.zsh` | `jira_workitem` (via `acli`, rendered through `myscripts/jira_render.py`), `jira_project_list` |
-| `chezmoi.zsh` | `chezmoi-data`: fzf browser over `chezmoi data` output |
-| `pet.zsh` | binds `Ctrl-O` to `pet search` snippet lookup (`Ctrl-S` is tmux's prefix, so a `^S` binding never reaches zsh) |
-| `navi.zsh` | binds `Ctrl-G` to the `navi` widget over `private_navi/cheats/*.cheat`, a port of pet's `snippet.toml`. Runs alongside pet rather than replacing it; `NAVI_CONFIG` in `dot_zshenv` pins the config path because navi otherwise resolves it per-platform (`~/Library/Application Support/navi` on macOS). nushell gets the same `Ctrl-G` from `dot_config/nushell/function.nu`, whose `navi` wrapper passes `--path` for `cheats-nu/` so the nu pipelines stay out of the zsh picker — the same split pet makes with `snippet.nu.toml` |
-| `tock.zsh` | time tracking: `tk`, `tockpick`/`tkr`, `tkn`/`tkd`, `tks`/`tkc`/`tkl`/`tkw`/`tka` (see [Time tracking](#time-tracking-tock)) |
-| `wezterm.zsh` | `wezterm_config`: gum-driven live tuning of WezTerm opacity, macOS blur / Windows backdrop, persisted in `~/.local/state/wezterm/appearance.json` of the machine WezTerm runs on (on WSL2 the Windows home) |
-| `orca.zsh` | `orca_settings_check`: reads a copy of Orca's settings database (Orca has no settings file, CLI or import) and lists each setting these dotfiles rely on as ok or fix, with where it lives in Settings and why; exits 1 while any need fixing. Its shortcuts are `dot_orca/keybindings.json` |
-| `meetingbar.zsh` | bridges MeetingBar → Python (`meetingbar.read_json`) for meeting notifications |
-| `search.zsh` | fzf-based search helpers |
-| `aws.zsh`, `bazel.zsh`, `k8s.zsh`, `mysql.zsh`, `dart.zsh` | domain-specific shortcuts |
-| `poetry.zsh` | `activate_poetry_env [query]`: fzf over every Poetry env - the cached ones and each project's in-project `.venv` - labelled with its project; the current project's env is marked `*` and listed first. Works it out without running Poetry. `deactivate_poetry_env` |
-| `zsh_python_init.zsh` | resolves the monorepo's uv venv (`.pypoetry.zshPythonDir`, normally `<monorepo>/.venv`) and exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN`, `ALEMBIC_BIN` + aliases |
-| `executable_sleep.zsh.tmpl` / `executable_wakeup.zsh.tmpl` | sleepwatcher hooks (macOS); skip weekends, gate on `sleepwatcher.should_run`, drive a Teamspirit clock-in/out script |
-| `myscripts/` | standalone executables: `whisper-mic`, `transcribe-yt`, `convert-mp3-to-aiff`, etc. |
-
-## Terminal & editor
-
-- **wezterm** (`dot_config/wezterm/wezterm.lua`) — one plain-Lua config for macOS
-  and Windows, deciding per OS at runtime (`wezterm.target_triple`): the "Cmd"
-  key layer is CMD on macOS and CTRL+SHIFT elsewhere (plain CTRL would take
-  Ctrl-C/W/V/… from the shell); on Windows it opens the WSL2 distro through
-  WezTerm's `WSL:<distro>` domain, and the first tab runs the tmux dev workspace,
-  as on macOS. The per-machine facts it cannot work out itself (the distro, the
-  login shell there) come from `machine.lua`, rendered from chezmoi data. It also
-  defines hyperlink rules, including a custom `TICKET-123/branch-name` → GitHub
-  monorepo tree link rule for Flywheel branches. Opacity, macOS blur and the
-  Windows backdrop are read at runtime from
-  `~/.local/state/wezterm/appearance.json` (falling back to the defaults at the
-  top of `wezterm.lua`) and watched, so `wezterm_config` just writes that file —
-  on WSL2 on the Windows side — and WezTerm reloads. On WSL2 the files reach
-  `%USERPROFILE%\.config\wezterm` through the [Windows push](#wsl2--windows-config-push).
-- **nvim** (`dot_config/nvim/`) — [LazyVim](https://github.com/LazyVim/LazyVim)
-  starter, own fork at `jack06215/lazyvim-starter`.
-- **zellij** (`dot_config/zellij/config.kdl`) — autogenerated keybind overrides.
-- **starship** — Nord palette prompt. **atuin, fzf, zoxide** — shell history,
-  search and navigation, wired in `init.zsh`. **lazygit**, **gh-dash** — git/PR
-  TUIs; gh-dash is preconfigured with Flywheel-specific PR sections.
-  **bottom, btop, htop** — system monitors.
-
-### Dictionary completion (`dot_config/nvim/lua/plugins/blink/`)
-
-English words complete in prose via `blink-cmp-dictionary`, scored below every
-code source so they never outrank the LSP. The bulk word list is a build
-artifact, not config: `run_onchange_after_generate-dictionary.sh.tmpl` writes
-`$XDG_DATA_HOME/dict/words.txt` at apply time from `/usr/share/dict/words`,
-Debian's `american-english`, or wordnet's index files, whichever it finds first —
-and skips with a message if it finds none, leaving the source running on the
-spell file alone. Definitions in the docs window need `wn`
-(`brew install wordnet`) and are simply absent without it.
-
-`spellfile` points at `dot_config/nvim/spell/en.utf-8.add`, which feeds the same
-source, so a word added with `zg` completes immediately. **`zg` writes to the
-chezmoi target**, so it needs `chezmoi add ~/.config/nvim/spell/en.utf-8.add`
-afterwards or the next `chezmoi apply` reverts it.
-
-### Japanese input
-
-Two halves, because they solve different problems. Both read from
-`run_onchange_after_generate-jisyo.sh.tmpl`, which at apply time takes SKK-JISYO
-— a system-installed one (`apt install skkdic`) if there is one, otherwise
-fetched once to `$XDG_CACHE_HOME/skk` — and writes
-`$XDG_DATA_HOME/dict-ja/SKK-JISYO.utf8` (the decoded jisyo) plus
-`$XDG_DATA_HOME/dict-ja/skk.txt` (a romaji-keyed table). With no jisyo and no
-network it skips with a message and both halves stay inert.
-
-- **Word completion** (`lua/plugins/blink/`) — type romaji, get the word in the
-  blink menu, via `blink-cmp-im`: `nihongo` offers 日本語, and `shinbun` and
-  `sinbun` both reach 新聞 because the generator transliterates every reading
-  into Hepburn *and* Kunrei. **Covers nouns, compounds and proper nouns only** —
-  SKK keeps verb and adjective stems in its okuri-ari half keyed like `わかr`, so
-  there is no `wakarimashita` to complete; that is what skkeleton is for.
-  **Off until toggled** (`<leader>uj` normal, `<M-j>` insert): romaji keys like
-  `no`, `ni` and `to` are ordinary identifiers, so an always-on source would
-  offer Japanese while coding. Set `SKK_JISYO_SIZE=M` before `chezmoi apply` for
-  roughly a tenth of the entries — the table is read into memory on the first
-  Japanese completion of a session, and that is the knob if the pause is
-  noticeable.
-- **SKK** (`lua/plugins/skkeleton/`) — a real IME in the buffer, for anything
-  inflected: `<C-j>` in insert or cmdline toggles it, then `WakaRi` converts to
-  分かり and you carry on typing ました. Conjugation cannot be precomputed — the
-  jisyo cannot even tell godan from ichidan (分かる and 食べる are both `…r`) — so
-  it needs live conversion, which is exactly what SKK is. Runs on the denops
-  kensaku already loads, and lualine shows あ/ア while it is on. blink is
-  suppressed while composing (`vim.b.completion`), or it would win `<CR>` and
-  accept a completion instead of the candidate under ▼.
-  Learned words go to `dot_config/nvim/skk/user-jisyo` — in the repo, for the
-  same reason `spellfile` is, since every conversion you pick reorders your
-  candidates. **Same caveat as `zg`**: skkeleton writes to the chezmoi target, so
-  new entries need `chezmoi add ~/.config/nvim/skk/user-jisyo` or the next apply
-  reverts them. `lua/plugins/skkeleton/README.md` documents the key model in full.
-
-## Python workspace
-
-A single Poetry project (`python/pyproject.toml` + `dot_tool-versions`) backs all
-Python tooling invoked from zsh:
-
-| Package | Purpose |
-| --- | --- |
-| `common/` | shared utilities (subprocess execution, path/sys helpers, LangChain invocation, LLM client, logging) |
-| `llm_cli/` | LLM CLI plugin framework (`plugins/tools/*`, `plugins/models/*` for OpenAI/Azure backends) |
-| `llm_backend/` | LLM-backed helpers, e.g. `gh_create_pr_body` (generates PR descriptions from a template) |
-| `sleepwatcher/` | enable/disable sleepwatcher, `should_run` gate, sleep/wake hooks |
-| `meetingbar/` | MeetingBar notification bridge and model |
-| `whisper/` | Whisper transcription output post-processing |
-| `docx2md/`, `pptx2md/`, `xlsx2md/` | Office-document-to-Markdown converters (parser/formatter/CLI per format) |
-| `aws/`, `kubectl/` | AWS role/policy listing, kube context/namespace listing |
-| `regexlib/` | country-specific regex validators (Taiwan, Japan, international) |
-| `local_fs/` | filesystem utilities (e.g. copy-to-data-repo) |
-
-## Tooling
-
-### Git
-
-`dot_config/git/config` sets `GIT_CONFIG_GLOBAL`-style global config:
-`git-secrets` AWS credential-pattern scanning, a large alias set (`git a`
-fzf-add, `git hist`/`git llog` graph logs, `git find` for pickaxe+diff via fzf),
-rerere, GPG-signed commits, `origin main` as default branch, and custom merge
-helpers for unmerged files.
-
-### Time tracking (tock)
-
-[tock](https://github.com/kriuchkov/tock) logs activities to a SQLite database at
-`$XDG_DATA_HOME/tock/tock.db`. `dot_config/tock/tock.yaml` sets the backend, a
-Catppuccin Mocha theme matching WezTerm and the tmux bar, and a six-tag
-vocabulary (`deep`, `meeting`, `review`, `ops`, `admin`, `learning`) that the
-shell picker offers and the calendar colours.
-
-The point of the wiring is that tracking costs nothing to start and is impossible
-to forget:
-
-- **`tk`** (`src/tock.zsh`) starts — or switches to — an activity, taking the
-  project from the git repository root you are standing in. `tk fix the exporter`
-  is the whole interaction; bare `tk` asks via gum for a description, then a tag,
-  then a note. Because `tock start` closes whatever is running at the new start
-  time, `tk` is also the switch command, so there is nothing else to remember.
-- **Notes** are the free-form half: what "done" looks like, the ticket URL, where
-  you left off. The prompt is a `gum write` textarea — enter saves, ctrl+j is the
-  newline, esc skips — and the argument forms of `tk` stay silent, so
-  `tk fix the exporter` is still one step and `--note` sets one without asking.
-  `tkr`/`tockpick` asks on the way back in and puts the note you left last time
-  in the prompt header, which is the point: resuming shows you where you stopped.
-- **The tmux status bar** (`tmux-powerline/segments/tock.sh`) shows the running
-  activity, how long it has been going (yellow past 90 minutes, red past 5 hours
-  — that one means nobody stopped it) and today's total. With nothing running it
-  shows a dim `󰅐 —`, which is the part that matters: a tracker that is silently
-  off produces wrong numbers.
-- **`prefix + Space`, then `k`** opens the same actions as popups — start/switch,
-  resume from history, stop, calendar, reports, stopwatch. `tk` and `tockpick`
-  reach a non-interactive popup shell through the `zshfn` dispatcher
-  (`dot_local/bin/`), not through duplicated scripts.
-
-<details>
-<summary>Why the sqlite backend</summary>
-
-tock's tidier default `file` backend is out on a measured fact: on the version
-homebrew-core ships (1.9.8) it accepts tags and silently discards them — `--tag`
-writes nothing, `tock tag` reports success and writes nothing, and no `tags`
-field ever reaches `--json`. That left `todotxt` and `sqlite`, and notes decide
-it. On `todotxt` a note is not in the log at all — it goes to a sidecar file
-named after the activity's start second under a hidden `.tock/notes/`, so the log
-stops being the whole record, grepping it misses the notes, and copying it leaves
-them behind. On `sqlite` the note is a column on the activity's own row, so it
-travels with the entry through `--json`, `-F '{{.Notes}}'` and every export.
-
-The cost is that the log is no longer plaintext, greppable, or diffable;
-`tock export --fmt json --stdout` and `sqlite3` are the ways back out, and the
-schema (one `activities` table) is documented at the bottom of `tock.yaml`.
-Per-call cost is unchanged at ~7 ms, so the status bar does not notice.
-
-Unlike the todotxt backend, sqlite does not create its parent directory — a
-missing one fails every tock call outright — so `dot_local/share/private_tock/`
-carries a `.keep` to make `chezmoi apply` create it first, at `0700` since
-working notes live in there.
-
-`working_hours` in `tock.yaml` is the backstop for an activity left running
-overnight, and is the one setting left switched off — it needs a cutoff hour, and
-a guessed one truncates real work.
-
-</details>
-
-### Claude Code
-
-`dot_config/claude/settings.json` sets theme/editor mode. Skills live at the repo
-root under `skills/` (currently `commit-writer`, a Conventional Commits-based
-commit skill, and `youtube-transcribe`), kept out of the chezmoi target tree by
-`.chezmoiignore` and surfaced to Claude Code by
-`dot_config/claude/symlink_skills.tmpl`, which points `~/.config/claude/skills`
-at them with a relative symlink. **Editing a skill in the repo takes effect
-immediately** — no `chezmoi apply` needed.
-`myscripts/set_mcp_server_claude_desktop.py` patches Claude Desktop's MCP server
-config on disk.
-
-### Snippets & scripts
-
-- `dot_config/private_pet/` — [pet](https://github.com/knqyf263/pet) snippet
-  manager config + `snippet.toml`, plus a `gh_pr_reviews.py` helper for pulling
-  PR review history via `gh`/GraphQL.
-- `dot_config/private_navi/` — [navi](https://github.com/denisidoro/navi)
-  cheatsheets ported from pet; `cheats/` for zsh, `cheats-nu/` for nushell.
-- `dot_config/myscripts/` — `jira_render.py` (renders `acli` JSON issue output),
-  `set_mcp_server_claude_desktop.py`.
-
-### Toolchain versions
-
-Managed via [asdf](https://asdf-vm.com/) (`dot_tool-versions`): dasel, helm, java
-(oracle-graalvm), jq, kind, kubectl, kustomize, node, python, shellcheck, shfmt,
-mysql, poetry.
-
-On Windows the same file is read by [mise](https://mise.jdx.dev/) instead — asdf
-is a bash program and does not run there. 11 of the 13 install; java and mysql
-are skipped, and [docs/windows-setup.md](docs/windows-setup.md) explains why.
-
-## Platform notes
-
-### macOS system settings
-
-`run_onchange_after_macos-defaults.sh.tmpl` writes the System Settings choices
-that live in `defaults` domains (appearance, menu bar and clock, Spotlight,
-Dock, Stage Manager, screenshots, Finder, trackpad, Magic Mouse, keyboard
-shortcuts, text input, input sources, accessibility) and restarts the Dock,
-Finder and ControlCenter. Every settings key those domains held is written,
-including ones that match what macOS ships with, so a new Mac ends up as this
-one is whatever a later release defaults to. Bookkeeping keys (schema versions,
-timestamps, window frames, recents) are left out, which is also why it isn't a
-whole-domain `defaults import`. To track another setting, find it with
-`defaults read <domain>` and add a `defaults write` line. Trackpad, mouse,
-scroll direction and input sources need a logout to take effect, and the
-accessibility writes need the terminal to have Full Disk Access.
-
-### WSL2 → Windows config push
-
-On a WSL2 machine the Windows apps read their config from the Windows home, which
-`chezmoi apply` inside WSL never touches (and which cannot follow a symlink into
-the WSL filesystem). `run_onchange_after_push-windows-configs` copies them there
-from the repo directly.
-
-```mermaid
-flowchart LR
-  R["dotfiles repo (in WSL2)"] -->|chezmoi apply| L["~/.config — Linux-side tools"]
-  R -->|run_onchange_after_push-windows-configs| W["Windows home"]
-  W --> W1["WezTerm, GlazeWM, Zebar"]
-  W --> W2["VS Code (%APPDATA%\Code\User)<br/>Firefox profile from profiles.ini"]
-  W --> W3["Windows Terminal, PowerShell profile"]
-```
-
-It reruns whenever one of them changes. A Windows-side copy that differs from
-what it last wrote (edited on Windows, or there before it) is kept as
-`<name>.chezmoi-backup-<timestamp>` before being replaced.
-
-### Windows
-
-Provisioning maps onto the Unix side one piece at a time:
-
-| Unix | manifest | Windows |
-| --- | --- | --- |
-| Homebrew | `brewfiles/` | Chocolatey, `dot_config/powershell/chocolatey/packages.config` |
-| — | — | winget, `dot_config/powershell/winget/packages.json`, for what Chocolatey lacks |
-| asdf | `dot_tool-versions` | mise, reading the same file |
-| `setup.sh` | — | `setup.ps1` (`executable_setup.ps1.tmpl`) |
-| `generate-brewfile.sh` | — | `generate-chocofile.ps1` |
-
-`setup.ps1` requires an elevated PowerShell 7, since Chocolatey installs
-machine-wide. The PowerShell profile lives in `dot_config/powershell/` and is
-copied into `Documents\PowerShell` — the only path pwsh reads `$PROFILE` and its
-per-user `PSModulePath` entry from — by
-`run_onchange_after_link-powershell-profile.ps1` on Windows, or by
-`run_onchange_after_push-windows-configs.sh` from WSL2. Neovim, VS Code and the
-language servers are deliberately absent: development happens in WSL2.
-
-`Modules/MyModule/Functions/Bazel/` ports the fzf target pickers from
-`bazel.zsh`: `Invoke-Bzlrun`, `Invoke-Bzltest` and `Invoke-Bzlbuild`, aliased in
-the profile to `bzlrun` / `bzltest` / `bzlbuild` as on the zsh side. The zsh
-originals queue the assembled command with `print -z` for editing; PowerShell
-has no equivalent from inside a function, so these print the line and run it,
-and `-Print` returns it as a string instead.
-
-**Window management:** `dot_glzr/glazewm/config.yaml` + `dot_glzr/zebar/`
-configure [GlazeWM](https://github.com/glzr-io/glazewm) (tiling WM) and
-[Zebar](https://github.com/glzr-io/zebar) (status bar).
-
-See **[docs/windows-setup.md](docs/windows-setup.md)** for the bootstrap on a
-brand-new machine, the manual steps, and the known gaps.
-
-### Termux
-
-The Android phone runs the same shell and editor setup inside
-[Termux](https://termux.dev). chezmoi's Android build reports `.chezmoi.os` as
-`android`, not `linux`, so that is what every Termux branch tests.
-
-On a fresh phone, install Termux, Termux:API (clipboard) and Termux:Boot from
-the same source - F-Droid or GitHub, since the add-ons must be signed like the
-app - then:
-
-```sh
-pkg install git chezmoi
-# the Quick start above, then
-~/setup.sh
-```
-
-`setup.sh` provisions it without Homebrew or asdf, neither of which runs on
-Android:
-
-| Step | From |
-| --- | --- |
-| packages | `pkgfiles/termux` through apt-get, the `*-repo` entries first since they add the sources the rest come from |
-| tools Termux doesn't package | `go install` into `~/.local/bin` (tock) |
-| Yarn v4 | the corepack bundled with nodejs-lts, shims in `~/.local/bin` |
-| npm globals | the same list as elsewhere, minus mermaid-cli (puppeteer has no Chrome for Android) |
-| the app | zsh as the login shell, `termux-setup-storage`, PlemolJP Console NF into `~/.termux/font.ttf` |
-| sshd (port 8022), ssh-agent | termux-services; `~/.ssh/authorized_keys` from the GitHub account's public keys |
-| Claude Code | `tools/setup/termux_install_claude_code.sh`, vendored from claude-code-android |
-
-Each step is skipped when already done, so a rerun is cheap. The session that
-first installs termux-services cannot start services yet; open a new session
-and rerun.
-
-`tools/setup/generate-termux-packages.sh` rewrites `pkgfiles/termux` from the
-phone's manually installed packages, minus Termux's bootstrap set and the
-script's `EXCLUDED` list - what is on this phone but should not reach a fresh
-one. Add to `EXCLUDED` rather than deleting a line from the manifest, which
-the next run would put back.
-
-Termux reads its settings and Termux:Boot's scripts from `~/.termux` ahead of
-`~/.config/termux`, so they live in `dot_termux/`.
+| [`core.zsh`](dot_config/zsh/src/core.zsh) | History options, and the `is_macos`, `is_wsl` and `is_termux` functions. |
+| [`vi_mode.zsh`](dot_config/zsh/src/vi_mode.zsh) | Settings for `zsh-vi-mode`. The plugin reads `ZVM_*` when `zinit.zsh` sources it, so this file must load before `zinit.zsh`. |
+| [`zinit.zsh`](dot_config/zsh/src/zinit.zsh) | Loads the plugins. `zsh-vi-mode` must stay first, then fzf-tab, syntax highlighting, autosuggestions and completions. |
+| [`gh.zsh`](dot_config/zsh/src/gh.zsh) | `ghpr` (an fzf PR picker), CI watchers and a command that creates draft PRs. |
+| [`claude.zsh`](dot_config/zsh/src/claude.zsh) | `claude_team`, and `claude_memory`, which shows Claude Code's auto-memory in fzf. |
+| [`pet.zsh`](dot_config/zsh/src/pet.zsh), [`navi.zsh`](dot_config/zsh/src/navi.zsh) | Snippet pickers on `Ctrl-O` and `Ctrl-G`. `Ctrl-S` is the tmux prefix, so zsh never receives it. |
+| [`tock.zsh`](dot_config/zsh/src/tock.zsh) | Time tracking with tock. See [`dot_config/tock/README.md`](dot_config/tock/README.md). |
+| [`wezterm.zsh`](dot_config/zsh/src/wezterm.zsh) | `wezterm_config` changes the WezTerm opacity and blur live. |
+| [`orca.zsh`](dot_config/zsh/src/orca.zsh) | `orca_settings_check` compares the Orca settings with the values that these dotfiles need. |
+| [`poetry.zsh`](dot_config/zsh/src/poetry.zsh) | `activate_poetry_env` shows all Poetry environments in fzf. |
+| [`zsh_python_init.zsh.tmpl`](dot_config/zsh/src/zsh_python_init.zsh.tmpl) | Exports `ZSH_PYTHON_BIN`, `LLM_BIN`, `RUFF_BIN` and `ALEMBIC_BIN` from the monorepo venv. |
+| [`notify.zsh`](dot_config/zsh/src/notify.zsh) | `notify()` for all platforms. |
+| [`functions.zsh`](dot_config/zsh/src/functions.zsh), [`git.zsh`](dot_config/zsh/src/git.zsh), [`search.zsh`](dot_config/zsh/src/search.zsh), [`chezmoi.zsh`](dot_config/zsh/src/chezmoi.zsh), [`jira.zsh`](dot_config/zsh/src/jira.zsh), [`meetingbar.zsh.tmpl`](dot_config/zsh/src/meetingbar.zsh.tmpl) | General helpers. |
+| [`aws.zsh`](dot_config/zsh/src/aws.zsh), [`bazel.zsh`](dot_config/zsh/src/bazel.zsh), [`k8s.zsh`](dot_config/zsh/src/k8s.zsh), [`mysql.zsh`](dot_config/zsh/src/mysql.zsh), [`dart.zsh`](dot_config/zsh/src/dart.zsh) | Shortcuts for these tools. |
+| [`executable_sleep.zsh.tmpl`](dot_config/zsh/src/executable_sleep.zsh.tmpl), [`executable_wakeup.zsh.tmpl`](dot_config/zsh/src/executable_wakeup.zsh.tmpl) | sleepwatcher hooks. They run a Teamspirit clock-in and clock-out script (macOS). |

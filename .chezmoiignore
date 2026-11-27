@@ -131,8 +131,12 @@ setup.ps1
 .local/bin/pinentry-wslg
 {{ end }}
 
-# The repo's own README describes the repo; it is not a dotfile.
+# READMEs describe the repo, at the root and in each folder; they are not
+# dotfiles. An empty_README.md placeholder targets README.md too, so it is
+# covered. The WSL2 push to Windows reads the source tree, not this file - see
+# the PowerShell glob in run_onchange_after_push-windows-configs.sh.tmpl.
 README.md
+**/README.md
 
 # HHKB Keymap Tool exports, imported into the keyboard by hand rather than
 # read from $HOME by anything.
