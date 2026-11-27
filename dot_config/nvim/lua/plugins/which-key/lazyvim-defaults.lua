@@ -1,4 +1,12 @@
 return {
+  -- Legend for the markers in this file:
+  --   [removed]  The LazyVim key is a comment, so it is not bound.
+  --   [yours]    A file in this config binds this key. The marker gives the
+  --              file and the line.
+  --   [lsp]      LazyVim binds this key for each buffer, and only when the LSP
+  --              server has the capability. The entry stays as a comment for
+  --              reference.
+
   -- ╭──────────────────────────────────────────────────────────────────────╮
   -- │ Top level                                                            │
   -- ╰──────────────────────────────────────────────────────────────────────╯
@@ -171,12 +179,11 @@ return {
   -- { "<leader>cD", LazyVim.lsp.action["source.fixAll.ts"], desc = "Fix all diagnostics" },              -- vtsls
   -- { "<leader>cV", function() LazyVim.lsp.execute({ title = "Select TypeScript Version", filter = "vtsls", command = "typescript.selectTypeScriptVersion" }) end, desc = "Select TS workspace version" }, -- vtsls
 
-  -- overridden by config/keymaps/lspsaga.lua -- "Code Action" (Lspsaga).
-  -- plugins/ui/config.lua:37 also claims <leader>ca (actions-preview, "Code
-  -- Action Preview") as a lazy `keys` entry; the config/keymaps layer runs last,
-  -- so Lspsaga wins -- which is what happened before this file existed too.
-  -- Global here, so it loses upstream's `has = "codeAction"` gate; harmless,
-  -- because the override replaces it in every buffer anyway.
+  -- overridden by plugins/ui/config.lua -- "Code Action Preview" (actions-preview).
+  -- That is a lazy `keys` entry of a plugin that loads on LspAttach. lazy.nvim
+  -- deletes and sets a plugin's keys again when the plugin loads, so
+  -- actions-preview owns <leader>ca in every buffer with an LSP client, after
+  -- any binding from the config/keymaps layer.
   -- { "<leader>ca", vim.lsp.buf.code_action, mode = { "n", "x" }, desc = "Code Action" },
 
   -- overridden by config/keymaps/lspsaga.lua -- "Rename" (Lspsaga)
