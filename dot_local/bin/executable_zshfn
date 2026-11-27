@@ -20,6 +20,7 @@
 
 typeset -A funcs=(
   s3_fetch_blob aws.zsh
+  claude_cmds claude.zsh
   jqc jq.zsh
   jqf jq.zsh
   tk tock.zsh
