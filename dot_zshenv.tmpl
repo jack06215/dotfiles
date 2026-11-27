@@ -56,6 +56,10 @@ export VISUAL=vim
 # asdf >= 0.16's default, spelled out: plugins, installs and shims stay where
 # the old bash asdf kept them. See dot_config/zsh/src/asdf.zsh.
 export ASDF_DATA_DIR="$HOME/.asdf"
+# `asdf install nodejs` then runs `corepack enable` for the new version.
+# Without it that version has no pnpm or yarn, and the asdf shim fails with
+# "No version is set for command pnpm" as soon as .tool-versions names it.
+export ASDF_NODEJS_AUTO_ENABLE_COREPACK=1
 export BUN_INSTALL="$XDG_DATA_HOME/bun"
 export CABAL_CONFIG="$XDG_CONFIG_HOME/cabal/config"
 export GLAZEWM_CONFIG_PATH="$XDG_CONFIG_HOME/glazewm/config.yaml"
