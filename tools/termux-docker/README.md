@@ -24,6 +24,33 @@ changed dotfiles, build the image again.
 The `latest` tag of termux-docker is multi-platform. Docker pulls the build
 for the CPU of the PC, so no binary runs under QEMU.
 
+The Dockerfile uses `RUN --mount` and a heredoc, so the build needs BuildKit
+(the buildx plugin). Without buildx, docker uses the legacy builder, and the
+build fails. On macOS,
+[`dot_config/docker/modify_private_config.json`](../../dot_config/docker/modify_private_config.json)
+tells docker where Homebrew installs buildx.
+
+## Test changes without a rebuild
+
+The image holds a copy of the checkout from the time of the build. To use
+the current checkout instead, mount it over that copy. Run this command from
+the root of the checkout:
+
+```sh
+docker run -it --name termux-dev -v "$PWD":/data/data/com.termux/files/home/workspace/jack06215/dotfiles termux-dotfiles
+```
+
+Edit the files on the PC. Then run `chezmoi diff` or `chezmoi apply` in the
+container. chezmoi reads the mounted checkout, so you do not have to build
+the image again. To open the container again, run `docker start -ai termux-dev`.
+
+The container writes to the checkout on the PC, for example when git updates
+its index. On colima with virtiofs, the mounted files belong to the container
+user, so git and chezmoi work without more steps. git prints
+`warning: remote repository '...' is incompatible with fsmonitor`, because
+the global git config sets `core.fsmonitor`. git then works without
+fsmonitor.
+
 ## What the image contains
 
 | Step | What it does |
