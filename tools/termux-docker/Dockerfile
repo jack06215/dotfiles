@@ -75,3 +75,10 @@ COPY --chown=1000:1000 . $SOURCE_DIR
 # LD_PRELOAD for termux-exec, which the environment of the base image does not
 # set.
 RUN login -c "chezmoi init --apply --source '$SOURCE_DIR' && chsh -s zsh"
+
+# gh copies the one-time code of `gh auth login` to the clipboard by default,
+# through termux-clipboard-set. That command waits for the Termux:API app,
+# which the image does not have, so the login stops before it shows the code.
+# The dotfiles do not manage ~/.config/gh/config.yml, so `chezmoi apply` keeps
+# this setting.
+RUN login -c "gh config set clipboard disabled"
