@@ -72,8 +72,8 @@ open a shell as `system`.
 - The image has no Android system, so termux-api, `termux-setup-storage` and
   `am` do not work. For this reason, the image does not run the other steps
   of `setup.sh`, such as the Go tools, the npm globals, sshd and Claude Code.
-  To get them, run `~/setup.sh` in the container. The steps that need Android
-  fail, and `setup.sh` lists them at the end.
+  To get them, run `~/setup.sh` in the container. It skips the steps that
+  need `am`, because the image has no `/system/bin/app_process`.
 - The container uses the kernel of the PC. The limits that Android puts on
   apps, such as no hard links in app data, do not apply. Thus a command that
   works in the container can still fail on the phone.

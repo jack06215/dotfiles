@@ -495,6 +495,16 @@ function set_termux_shell() {
   chsh -s zsh || note_failure 'chsh -s zsh'
 }
 
+# termux-setup-storage and termux-reload-settings talk to the Termux app
+# through am, and am runs Android's /system/bin/app_process. termux-docker has
+# no Android system, so there these steps are skipped instead of reported as
+# failures.
+function can_run_am() {
+  [[ -e /system/bin/app_process ]] && return 0
+  echo "$1 needs Android's /system/bin/app_process; skipping."
+  return 1
+}
+
 # Opens Android's storage permission prompt; ~/storage appears once it is
 # granted.
 function setup_termux_storage() {
@@ -502,6 +512,7 @@ function setup_termux_storage() {
     echo "${HOME}/storage exists; skipping."
     return 0
   fi
+  can_run_am termux-setup-storage || return 0
   termux-setup-storage || note_failure 'termux-setup-storage'
 }
 
@@ -580,6 +591,7 @@ function install_termux_claude_code() {
 
 # Picks up ~/.termux/termux.properties as chezmoi just wrote it, and the font.
 function reload_termux_settings() {
+  can_run_am termux-reload-settings || return 0
   termux-reload-settings || note_failure 'termux-reload-settings'
 }
 
