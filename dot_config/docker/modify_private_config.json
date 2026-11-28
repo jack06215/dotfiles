@@ -1,0 +1,27 @@
+{{- /* chezmoi:modify-template */ -}}
+{{- /*
+Docker also writes this file (`docker context use`, `docker login`), so this
+template only adds the Homebrew plugin directory and keeps the other keys.
+docker does not search that directory by default. Without it, docker does not
+find docker-buildx or docker-compose, and `docker build` falls back to the
+legacy builder, which cannot run `RUN --mount` or heredocs.
+
+When the directory is already in the list, the template returns the file
+unchanged. Docker writes its keys in a different order than toPrettyJson, so a
+rewrite here would show as a diff after each write from Docker.
+*/ -}}
+{{- $pluginDir := "/usr/local/lib/docker/cli-plugins" -}}
+{{- if eq .chezmoi.arch "arm64" -}}
+{{-   $pluginDir = "/opt/homebrew/lib/docker/cli-plugins" -}}
+{{- end -}}
+{{- $config := dict -}}
+{{- if .chezmoi.stdin -}}
+{{-   $config = fromJson .chezmoi.stdin -}}
+{{- end -}}
+{{- $dirs := get $config "cliPluginsExtraDirs" | default (list) -}}
+{{- if has $pluginDir $dirs -}}
+{{-   .chezmoi.stdin -}}
+{{- else -}}
+{{-   $_ := set $config "cliPluginsExtraDirs" (append $dirs $pluginDir) -}}
+{{-   toPrettyJson "\t" $config -}}
+{{- end -}}
