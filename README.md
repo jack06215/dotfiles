@@ -110,6 +110,7 @@ Files for repository maintenance:
 | --- | --- |
 | [`Brewfile.tmpl`](Brewfile.tmpl), [`brewfiles/`](brewfiles/) | Homebrew manifests, one for each OS (macOS, WSL2). `Brewfile.tmpl` renders the applicable one to `~/Brewfile`. |
 | [`pkgfiles/termux`](pkgfiles/termux) | The package manifest (Termux). |
+| [`tools/termux-docker/`](tools/termux-docker/) | A Dockerfile that builds the Termux setup as an image for a PC. |
 | [`tools/setup/`](tools/setup/), [`MODULE.bazel`](MODULE.bazel) | Bazel targets for `bazel run` only. They regenerate the brewfiles, the VS Code extension list (macOS, WSL2) and the PowerToys config (Windows). |
 | [`skills/`](skills/) | Claude Code skills. [`dot_config/claude/symlink_skills.tmpl`](dot_config/claude/symlink_skills.tmpl) makes `~/.config/claude/skills` a symlink to this directory, so edits take effect without `chezmoi apply`. |
 
