@@ -56,6 +56,7 @@ fsmonitor.
 | Step | What it does |
 | --- | --- |
 | Termux packages | Upgrades the packages of the base image. Then it installs the packages in `pkgfiles/termux` with apt-get, the `*-repo` entries first, as `setup.sh` does. |
+| CA certificates | Sets `SSL_CERT_FILE` to the CA bundle of Termux. Without it, gh fails with `x509: certificate signed by unknown authority`, because it looks for CA certificates in Android's `/system/etc/security`. |
 | Dotfiles | Copies the checkout to `~/workspace/jack06215/dotfiles`, the path that [`docs/termux-setup.md`](../../docs/termux-setup.md) uses, and runs `chezmoi init --apply` on it. |
 | Login shell | Sets zsh as the login shell with `chsh -s zsh`. |
 
