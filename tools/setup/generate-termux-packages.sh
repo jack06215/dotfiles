@@ -30,7 +30,8 @@ EXCLUDED=(
   qemu-common qemu-system-x86-64-headless qemu-utils
   # databases
   duckdb mariadb postgresql
-  # JVM and build toolchains
+  # JVM and build toolchains. The monorepo's tools/termux/setup.sh, which
+  # setup.sh runs, installs bazel.
   bazel dart openjdk-21
   # media and misc
   dlib ffmpeg transmission

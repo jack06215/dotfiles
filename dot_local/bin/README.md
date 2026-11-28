@@ -51,4 +51,7 @@ platforms that need it.
 
 On Termux, Android drops a copy of about 1 MB or more without an error. For a
 copy over 512 KB, `pbcopy` reads the clipboard back and exits with an error if
-the copy did not arrive.
+the copy did not arrive. In termux-docker, which has no Android system, both
+commands stop with an error at once. `termux-clipboard-set` and
+`termux-clipboard-get` would wait for the Termux:API app, which the image does
+not have.

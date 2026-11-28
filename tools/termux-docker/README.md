@@ -56,8 +56,10 @@ fsmonitor.
 | Step | What it does |
 | --- | --- |
 | Termux packages | Upgrades the packages of the base image. Then it installs the packages in `pkgfiles/termux` with apt-get, the `*-repo` entries first, as `setup.sh` does. |
+| CA certificates | Sets `SSL_CERT_FILE` to the CA bundle of Termux. Without it, gh fails with `x509: certificate signed by unknown authority`, because it looks for CA certificates in Android's `/system/etc/security`. |
 | Dotfiles | Copies the checkout to `~/workspace/jack06215/dotfiles`, the path that [`docs/termux-setup.md`](../../docs/termux-setup.md) uses, and runs `chezmoi init --apply` on it. |
 | Login shell | Sets zsh as the login shell with `chsh -s zsh`. |
+| gh clipboard | Sets the `clipboard` setting of gh to `disabled`. Otherwise `gh auth login` stops before it shows the one-time code, because `termux-clipboard-set` waits for the Termux:API app. |
 
 The image runs everything as the `system` user (uid 1000) of termux-docker,
 because Termux's apt must not run as root. `docker run` and `docker exec` also
@@ -71,8 +73,10 @@ open a shell as `system`.
 - The image has no Android system, so termux-api, `termux-setup-storage` and
   `am` do not work. For this reason, the image does not run the other steps
   of `setup.sh`, such as the Go tools, the npm globals, sshd and Claude Code.
-  To get them, run `~/setup.sh` in the container. The steps that need Android
-  fail, and `setup.sh` lists them at the end.
+  To get them, run `~/setup.sh` in the container. It skips the steps that
+  need `am`, because the image has no `/system/bin/app_process`. For the same
+  reason, `pbcopy` and `pbpaste` stop with an error, so tmux, lazygit and the
+  vi mode of zsh cannot use a clipboard.
 - The container uses the kernel of the PC. The limits that Android puts on
   apps, such as no hard links in app data, do not apply. Thus a command that
   works in the container can still fail on the phone.
@@ -84,8 +88,25 @@ open a shell as `system`.
 ## Build the monorepo in the container
 
 `generate-termux-packages.sh` excludes `bazel`, so the image does not have it.
-To build the monorepo with Bazel in the container, clone it and follow its
-[Termux README](https://github.com/jack06215/monorepo/blob/master/tools/termux/README.md).
+`~/setup.sh` clones the monorepo into the container and runs its
+`tools/termux/setup.sh`, which installs Bazel and the other packages that it
+needs. To set up the uv venv, follow the
+[Termux README](https://github.com/jack06215/monorepo/blob/master/tools/termux/README.md)
+of the monorepo.
+
+> [!IMPORTANT]
+> Do not mount the monorepo of the PC into the container. The PC and the
+> container then share files that are correct only on the machine that wrote
+> them:
+>
+> - `.venv`: the Python of the venv of the PC is not in the container. Thus
+>   `uv sync` in the container removes the venv and makes a new one on the
+>   Python of Termux. pycli, pipf and the other tools that use this venv then
+>   do not work on the PC. To make the venv again, run `uv sync --locked` on
+>   the PC.
+> - `.python-version` and `tools/termux/generated.bazelrc`: the
+>   `tools/termux/setup.sh` of the monorepo writes them with paths in the
+>   container. git ignores them, but uv and Bazel on the PC read them.
 
 ## See also
 

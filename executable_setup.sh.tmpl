@@ -495,6 +495,16 @@ function set_termux_shell() {
   chsh -s zsh || note_failure 'chsh -s zsh'
 }
 
+# termux-setup-storage and termux-reload-settings talk to the Termux app
+# through am, and am runs Android's /system/bin/app_process. termux-docker has
+# no Android system, so there these steps are skipped instead of reported as
+# failures.
+function can_run_am() {
+  [[ -e /system/bin/app_process ]] && return 0
+  echo "$1 needs Android's /system/bin/app_process; skipping."
+  return 1
+}
+
 # Opens Android's storage permission prompt; ~/storage appears once it is
 # granted.
 function setup_termux_storage() {
@@ -502,6 +512,7 @@ function setup_termux_storage() {
     echo "${HOME}/storage exists; skipping."
     return 0
   fi
+  can_run_am termux-setup-storage || return 0
   termux-setup-storage || note_failure 'termux-setup-storage'
 }
 
@@ -578,8 +589,30 @@ function install_termux_claude_code() {
   bash "${TERMUX_CLAUDE_INSTALLER}" || note_failure "Claude Code (${TERMUX_CLAUDE_INSTALLER})"
 }
 
+# The monorepo's tools/termux/setup.sh installs the packages that it needs
+# (bazel among them, which pkgfiles/termux leaves out), makes the Bazel build
+# of the monorepo run on Termux, and writes .python-version, which points uv
+# at a Python that can load manylinux wheels. It runs only when the
+# generated.bazelrc that it writes is missing, because it starts Bazel and
+# copies a whole Python. After a change to the Python or Node pin, run it
+# again by hand, as its README says.
+function setup_termux_monorepo_build() {
+  local script="${MONOREPO_DIR}/tools/termux/setup.sh"
+  local generated="${MONOREPO_DIR}/tools/termux/generated.bazelrc"
+  if [[ ! -f "${script}" ]]; then
+    echo "${script} not found; skipping."
+    return 0
+  fi
+  if [[ -f "${generated}" ]]; then
+    echo "${generated} exists; skipping."
+    return 0
+  fi
+  bash "${script}" || note_failure "${script}"
+}
+
 # Picks up ~/.termux/termux.properties as chezmoi just wrote it, and the font.
 function reload_termux_settings() {
+  can_run_am termux-reload-settings || return 0
   termux-reload-settings || note_failure 'termux-reload-settings'
 }
 
@@ -733,6 +766,9 @@ function setup_termux() {
 
   section 'Cloning the monorepo'
   clone_monorepo
+
+  section "Setting up the monorepo's Termux build"
+  setup_termux_monorepo_build
 
   section 'Re-applying dotfiles'
   reapply_dotfiles

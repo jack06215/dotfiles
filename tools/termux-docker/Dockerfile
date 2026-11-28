@@ -55,6 +55,14 @@ apt-get clean
 rm -rf "$PREFIX"/var/lib/apt/lists/*
 EOF
 
+# gh does not read the CA bundle of Termux. It looks for CA certificates in
+# Android's /system/etc/security, which the image does not have, so every
+# request fails with `x509: certificate signed by unknown authority`. gh is a
+# Go program, and Go also reads the file that SSL_CERT_FILE names. The
+# entrypoint clears the environment only when the container starts as root,
+# so `system` keeps this variable.
+ENV SSL_CERT_FILE=/data/data/com.termux/files/usr/etc/tls/cert.pem
+
 # The path from docs/termux-setup.md. chezmoi writes this path into the files
 # that it renders, so the same path as on the phone gives the same files.
 ARG SOURCE_DIR=/data/data/com.termux/files/home/workspace/jack06215/dotfiles
@@ -67,3 +75,10 @@ COPY --chown=1000:1000 . $SOURCE_DIR
 # LD_PRELOAD for termux-exec, which the environment of the base image does not
 # set.
 RUN login -c "chezmoi init --apply --source '$SOURCE_DIR' && chsh -s zsh"
+
+# gh copies the one-time code of `gh auth login` to the clipboard by default,
+# through termux-clipboard-set. That command waits for the Termux:API app,
+# which the image does not have, so the login stops before it shows the code.
+# The dotfiles do not manage ~/.config/gh/config.yml, so `chezmoi apply` keeps
+# this setting.
+RUN login -c "gh config set clipboard disabled"

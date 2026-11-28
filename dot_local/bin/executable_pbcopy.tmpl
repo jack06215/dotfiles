@@ -13,6 +13,17 @@
 # the next paste would be stale. Every termux-api call takes about half a
 # second, so the text is read back only when it is large enough for that to
 # happen, rather than doubling the time of every small copy.
+#
+# termux-docker has no Android system and no Termux:API app, and
+# termux-clipboard-set waits for that app, so a copy there would hang.
+# /system/bin/app_process is on every Android system, so its absence marks
+# that case. stdin is read first, so the program that pipes into pbcopy does
+# not get SIGPIPE.
+if [ ! -e /system/bin/app_process ]; then
+  cat >/dev/null
+  echo "pbcopy: no Android system (/system/bin/app_process), so no clipboard" >&2
+  exit 1
+fi
 tmp="$(mktemp)" || exit
 trap 'rm -f "$tmp"' EXIT
 cat >"$tmp" || exit
