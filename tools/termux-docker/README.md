@@ -88,8 +88,11 @@ open a shell as `system`.
 ## Build the monorepo in the container
 
 `generate-termux-packages.sh` excludes `bazel`, so the image does not have it.
-To build the monorepo with Bazel in the container, clone it and follow its
-[Termux README](https://github.com/jack06215/monorepo/blob/master/tools/termux/README.md).
+`~/setup.sh` clones the monorepo into the container and runs its
+`tools/termux/setup.sh`, which installs Bazel and the other packages that it
+needs. To set up the uv venv, follow the
+[Termux README](https://github.com/jack06215/monorepo/blob/master/tools/termux/README.md)
+of the monorepo.
 
 > [!IMPORTANT]
 > Do not mount the monorepo of the PC into the container. The PC and the

@@ -53,7 +53,8 @@ chezmoi writes [`executable_setup.sh.tmpl`](../executable_setup.sh.tmpl) to
 | Termux app | Sets zsh as the login shell, opens the storage permission prompt, and installs PlemolJP Console NF as `~/.termux/font.ttf`. |
 | sshd, ssh-agent | Writes `~/.ssh/authorized_keys` from the public keys of the GitHub account. Then it enables sshd (port 8022) and ssh-agent with termux-services. |
 | Claude Code | Runs [`tools/setup/termux_install_claude_code.sh`](../tools/setup/termux_install_claude_code.sh), which comes from claude-code-android. |
-| Monorepo, dotfiles | Clones the monorepo, applies the dotfiles again, and reloads the Termux settings. |
+| Monorepo | Clones the monorepo and runs its `tools/termux/setup.sh`. That script installs Bazel and the other packages that it needs, and makes the Bazel build of the monorepo work on Termux. |
+| Dotfiles | Applies the dotfiles again and reloads the Termux settings. |
 
 ## Run it again
 
@@ -63,6 +64,10 @@ steps and exits with status 1.
 
 `setup.sh` does not rebuild tock when `~/.local/bin/tock` exists. To rebuild
 it, delete that file and run `~/setup.sh` again.
+
+`setup.sh` does not run the `tools/termux/setup.sh` of the monorepo when
+`tools/termux/generated.bazelrc` exists in the monorepo. After you change the
+Python or Node pin, run that script yourself.
 
 ## Run the setup on a PC
 
