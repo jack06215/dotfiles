@@ -64,6 +64,13 @@ steps and exits with status 1.
 `setup.sh` does not rebuild tock when `~/.local/bin/tock` exists. To rebuild
 it, delete that file and run `~/setup.sh` again.
 
+## Run the setup on a PC
+
+[`tools/termux-docker/`](../tools/termux-docker/) builds a Docker image from
+the official termux-docker image, with the packages in `pkgfiles/termux` and
+these dotfiles. Its [README](../tools/termux-docker/README.md) tells how to
+build it and how the container differs from the phone.
+
 ## Package manifest
 
 `pkgfiles/termux` lists the packages, one on each line. `setup.sh` reads it from
