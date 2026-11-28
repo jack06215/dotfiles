@@ -88,6 +88,20 @@ open a shell as `system`.
 To build the monorepo with Bazel in the container, clone it and follow its
 [Termux README](https://github.com/jack06215/monorepo/blob/master/tools/termux/README.md).
 
+> [!IMPORTANT]
+> Do not mount the monorepo of the PC into the container. The PC and the
+> container then share files that are correct only on the machine that wrote
+> them:
+>
+> - `.venv`: the Python of the venv of the PC is not in the container. Thus
+>   `uv sync` in the container removes the venv and makes a new one on the
+>   Python of Termux. pycli, pipf and the other tools that use this venv then
+>   do not work on the PC. To make the venv again, run `uv sync --locked` on
+>   the PC.
+> - `.python-version` and `tools/termux/generated.bazelrc`: the
+>   `tools/termux/setup.sh` of the monorepo writes them with paths in the
+>   container. git ignores them, but uv and Bazel on the PC read them.
+
 ## See also
 
 - [`docs/termux-setup.md`](../../docs/termux-setup.md): the setup on the phone.
